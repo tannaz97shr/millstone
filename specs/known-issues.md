@@ -35,6 +35,6 @@ _None yet._
 
 - **`/dev/tokens` is publicly reachable.** Remove it or gate it to development before launch.
 - **ESLint held at 9, TypeScript held at 6.0.** `eslint-plugin-react` (via `eslint-config-next`) doesn't support ESLint 10 yet, and `typescript-eslint` needs TypeScript below 6.1. Upgrade once they catch up.
-- **Node 21.1.0 locally.** It's end-of-life. Next 16 works with it, but Node 24 LTS is recommended.
+- ~~**Node 21.1.0 locally.**~~ Resolved 30 Sep 2026: Node 24.21.0 (LTS) installed via nvm. Build, lint and `bun test` pass on it. nvm's default alias still points at v21.1.0, so new non-interactive shells pick 21 until `nvm alias default 24` is run.
 - **Stray `~/package-lock.json`** outside the repo made Next guess the wrong workspace root. `turbopack.root` is pinned in `next.config.mjs` to work around it.
 - **`next-env.d.ts` is tracked** even though `.gitignore` lists it; Next regenerates it on every build.
