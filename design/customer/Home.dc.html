@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>C1 Home — Millstone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/504d17282c8e583c69e6f3129a969f86") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/3ee4132da12d481f2d726ae5e1541de7") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/3130871d5e49b7c5c530cdf575291fca") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/ab3f33e4b7b70bdd93ebe3b81dc69633") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+.mc-branches .ms-choice-title{font-family:Bitter,Rockwell,"Roboto Slab",Georgia,serif;font-weight:600;font-size:20px;line-height:26px}
+.mc-branches .ms-choice-hint{white-space:pre-line;font-size:16px;line-height:24px}
+.mc-branches .ms-choice-dot{margin-top:2px}
+</style>
+</helmet>
+<div style="{{root}}">
+<div style="flex: 1 1 auto; min-height: 0; overflow-y: auto;">
+<header style="display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding: 8px 16px 0; box-sizing: border-box;">
+<span style="font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-weight: 700; font-size: 24px; line-height: 30px;">Millstone</span>
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{signIn}}">{{accountLabel}}</x-import>
+</header>
+<main style="display: flex; flex-direction: column; gap: 32px; padding: 16px 16px 32px;">
+<section style="display: flex; flex-direction: column; gap: 8px;">
+<h1 style="margin: 0; SERIF font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">Order ahead, pick up at the counter</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">Choose your Millstone, pick a day, and your order will be waiting for you. No need to call.</p>
+</section>
+<section aria-labelledby="how-title" style="display: flex; flex-direction: column; gap: 16px;">
+<h2 id="how-title" style="margin: 0; SERIF font-size: 22px; line-height: 28px; font-weight: 600;">How it works</h2>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 16px;">
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+<span aria-hidden="true" style="flex: none; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: #ece2d1; border-radius: 4px; SERIF font-weight: 700; font-size: 20px;">1</span>
+<div style="display: flex; flex-direction: column;">
+<span style="font-size: 16px; line-height: 24px; font-weight: 700;">Choose your branch</span>
+<span style="font-size: 16px; line-height: 24px; color: #665543;">Each of our three bakeries takes its own orders.</span>
+</div>
+</li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+<span aria-hidden="true" style="flex: none; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: #ece2d1; border-radius: 4px; SERIF font-weight: 700; font-size: 20px;">2</span>
+<div style="display: flex; flex-direction: column;">
+<span style="font-size: 16px; line-height: 24px; font-weight: 700;">Pick a day and your bakes</span>
+<span style="font-size: 16px; line-height: 24px; color: #665543;">Order by 2pm for next-day pickup. Come in any time that day.</span>
+</div>
+</li>
+<li style="display: flex; gap: 16px; align-items: flex-start;">
+<span aria-hidden="true" style="flex: none; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: #ece2d1; border-radius: 4px; SERIF font-weight: 700; font-size: 20px;">3</span>
+<div style="display: flex; flex-direction: column;">
+<span style="font-size: 16px; line-height: 24px; font-weight: 700;">Pay online or at pickup</span>
+<span style="font-size: 16px; line-height: 24px; color: #665543;">Pay now by card, or at the counter when you collect.</span>
+</div>
+</li>
+</ol>
+</section>
+<section aria-labelledby="branch-title" style="display: flex; flex-direction: column; gap: 16px;">
+<h2 id="branch-title" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">Choose your branch</h2>
+<sc-if value="{{hasCart}}" hint-placeholder-val="{{false}}">
+<div role="status" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; background: #fffbf4; border: 1.5px solid #8a7862; border-radius: 10px;">
+<span style="display: flex; padding-top: 2px; font-size: 20px;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import></span>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">Your order has {{countLabel}}. If the branch you choose doesn't make something in it, we'll take it out and tell you what.</p>
+</div>
+</sc-if>
+<x-import component-from-global-scope="Millstone.ChoiceGroup" class-name="mc-branches" label="Which Millstone will you pick up from?" options="{{branches}}" value="{{picked}}" on-change="{{pick}}" name="branch"></x-import>
+<sc-if value="{{hasBack}}" hint-placeholder-val="{{false}}">
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" icon="left" on-click="{{back}}">Back to the {{current}} menu</x-import>
+</sc-if>
+</section>
+<section aria-labelledby="rec-title" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px;">
+<div style="display: flex;"><x-import component-from-global-scope="Millstone.RecurringLabel"></x-import></div>
+<h2 id="rec-title" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">For cafes and regulars</h2>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">Set up a recurring order and we'll make the same bakes on the days you choose. You can skip a day, pause or change it any time before 2pm the day before.</p>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: #665543;">You'll need an account for this, so you can manage it later.</p>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" block="{{yes}}" on-click="{{recurring}}">Set up a recurring order</x-import>
+</section>
+</main>
+</div>
+<div style="flex: none; padding: 12px 16px 16px; background: #fffbf4; border-top: 1px solid #dccfba; box-shadow: 0 -2px 0 #2b20160f, 0 -6px 16px #2b201614;">
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" disabled="{{noPick}}" on-click="{{go}}">{{goLabel}}</x-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"startBranch":{"editor":"enum","options":["","Northcote","Fitzroy","Brunswick"],"default":"","section":"Scenario"},"cartCount":{"editor":null},"signedIn":{"editor":null},"height":{"editor":null},"onChoose":{"editor":null},"onBack":{"editor":null},"onSignIn":{"editor":null},"onRecurring":{"editor":null},"$preview":{"width":390,"height":1560}}'>
+class Component extends DCLogic {
+  rootStyle(h) { return 'position: relative; width: 390px; height: ' + (h || 844) + 'px; display: flex; flex-direction: column; overflow: hidden; background: #f6efe3; color: #2b2016; font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;'; }
+  label(iso) {
+    const p = iso.split('-').map(Number);
+    const d = new Date(p[0], p[1] - 1, p[2]);
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
+  }
+  money(n) { return '$' + n.toFixed(2); }
+  st() { return this.state || {}; }
+  cur(key, prop, dflt) { const s = this.st(); if (s[key] !== undefined) return s[key]; const v = this.props[prop]; return v !== undefined && v !== null ? v : dflt; }
+  renderVals() {
+    const picked = this.cur('picked', 'startBranch', '');
+    const count = this.props.cartCount || 0;
+    const info = { Northcote: ['214 High Street, Northcote', '03 7010 2140'], Fitzroy: ['87 Gertrude Street, Fitzroy', '03 7010 0870'], Brunswick: ['402 Sydney Road, Brunswick', '03 7010 4020'] };
+    const hint = (b) => info[b][0] + '\n' + info[b][1] + '\nOrder by 2pm for next-day pickup';
+    return {
+      root: this.rootStyle(this.props.height || 1560),
+      yes: true,
+      accountLabel: this.props.signedIn ? 'My account' : 'Sign in',
+      signIn: () => { if (this.props.onSignIn) this.props.onSignIn(); },
+      branches: ['Northcote', 'Fitzroy', 'Brunswick'].map((b) => ({ value: b, label: b, hint: hint(b) })),
+      picked: picked,
+      pick: (v) => this.setState({ picked: v }),
+      noPick: !picked,
+      goLabel: picked ? 'See the ' + picked + ' menu' : 'Choose a branch first',
+      go: () => { if (picked && this.props.onChoose) this.props.onChoose(picked); },
+      hasCart: count > 0,
+      hasBack: !!this.props.startBranch,
+      countLabel: count === 1 ? '1 item' : count + ' items',
+      current: this.props.startBranch || 'Northcote',
+      recurring: () => { if (this.props.onRecurring) this.props.onRecurring(); },
+      back: () => { if (this.props.onBack) this.props.onBack(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

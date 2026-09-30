@@ -1,33 +1,206 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+/* design/ holds reference HTML and bundles; never generate utilities from it. */
+@source not "../../design";
+
+/*
+ * Millstone design tokens, from design/system/tokens.json.
+ * Tailwind's default palette, radii, shadows, fonts and text sizes are cleared
+ * so only design tokens can be used. `static` emits every token as a CSS
+ * variable even when no utility uses it yet.
+ */
+@theme static {
+  --color-*: initial;
+  --color-flour: #f6efe3;
+  --color-flour-raised: #fffbf4;
+  --color-flour-sunk: #ece2d1;
+  --color-line: #dccfba;
+  --color-line-strong: #8a7862;
+  --color-ink: #2b2016;
+  --color-ink-muted: #665543;
+  --color-crust: #94451a;
+  --color-crust-deep: #76350f;
+  --color-crust-soft: #f4e0cd;
+  --color-on-crust: #fffbf4;
+  --color-wheat: #e2b458;
+  --color-wheat-soft: #f8e8c4;
+  --color-wheat-ink: #6a4808;
+  --color-sage: #3b6636;
+  --color-sage-soft: #dde8d4;
+  --color-on-sage: #fffbf4;
+  --color-brick: #9e2f1d;
+  --color-brick-soft: #f6dcd4;
+  --color-delft: #2e5476;
+  --color-delft-soft: #dce5ee;
+  --color-focus: var(--color-delft);
+
+  /* 4px base: p-1 … p-12 are space-1 … space-12. */
+  --spacing: 4px;
+
+  --radius-*: initial;
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  --shadow-*: initial;
+  --shadow-card: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;
+  --shadow-sheet: 0 -2px 0 #2b20160f, 0 12px 32px #2b201629;
+  --shadow-focus-ring: 0 0 0 2px var(--color-flour), 0 0 0 5px var(--color-focus);
+
+  --text-*: initial;
+  --font-*: initial;
 }
 
-@media (prefers-color-scheme: dark) {
+/*
+ * Values that depend on something set lower in the tree: next/font variables
+ * on <html>, and control sizes that change under data-context="admin".
+ */
+@theme inline {
+  --font-serif: var(--font-bitter), Rockwell, "Roboto Slab", Georgia, serif;
+  --font-sans: var(--font-atkinson), "Segoe UI", system-ui, sans-serif;
+
+  /* h-control, min-h-tap, h-action, size-tap … */
+  --spacing-control: var(--control-h);
+  --spacing-tap: var(--tap-min);
+  --spacing-action: var(--action-h);
+}
+
+@layer base {
   :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+    color-scheme: light;
+    --control-h: 48px;
+    --tap-min: 48px;
+    --action-h: 48px;
+  }
+
+  [data-context="admin"] {
+    --control-h: 64px;
+    --tap-min: 64px;
+    --action-h: 72px;
+    font-size: 20px;
+    line-height: 28px;
+  }
+
+  body {
+    background-color: var(--color-flour);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus-ring);
   }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+/* Type styles, named as in tokens.json. */
+
+@utility page-title {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+@utility section-title {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 600;
+}
+
+@utility product-name {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+@utility body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+}
+
+@utility body-strong {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+}
+
+@utility price {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The smallest customer size. Admin text never goes below 16px. */
+@utility caption {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+
+  [data-context="admin"] & {
+    font-size: 16px;
+    line-height: 22px;
+  }
+}
+
+@utility admin-title {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 700;
+}
+
+@utility admin-order-number {
+  font-family: var(--font-sans);
+  font-size: 32px;
+  line-height: 36px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+@utility admin-body {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 400;
+}
+
+@utility admin-strong {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+}
+
+@utility admin-caption {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 400;
+}
+
+/* "Millstone" wordmark: no logo yet, just Bitter 700 in ink. */
+@utility brand-name {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+  color: var(--color-ink);
+
+  [data-context="admin"] & {
+    font-size: 28px;
+    line-height: 32px;
   }
 }

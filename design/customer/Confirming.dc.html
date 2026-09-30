@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>C6 Confirming payment — Millstone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/504d17282c8e583c69e6f3129a969f86") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/3ee4132da12d481f2d726ae5e1541de7") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/3130871d5e49b7c5c530cdf575291fca") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/ab3f33e4b7b70bdd93ebe3b81dc69633") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+
+</style>
+</helmet>
+<div style="{{root}}">
+<header style="display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding: 8px 16px 0; box-sizing: border-box;">
+<span style="font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-weight: 700; font-size: 24px; line-height: 30px;">Millstone</span>
+</header>
+<main role="status" aria-live="polite" style="flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 24px; padding: 24px 16px 48px;">
+<span style="display: flex; font-size: 48px; color: #665543;"><x-import component-from-global-scope="Millstone.Icon" name="{{icon}}"></x-import></span>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">{{title}}</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">{{body}}</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px;">
+<span style="font-size: 16px; line-height: 24px; font-weight: 700;">Pickup {{dateLabel}} at {{branch}}</span>
+<span style="font-size: 14px; line-height: 20px; color: #665543; font-variant-numeric: tabular-nums;">{{countLabel}} · {{totalLabel}}</span>
+</div>
+<sc-if value="{{slow}}" hint-placeholder-val="{{false}}">
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" on-click="{{checkAgain}}">Check again</x-import>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"slow":{"editor":"boolean","default":false,"section":"Scenario"},"email":{"editor":null},"branch":{"editor":null},"date":{"editor":null},"count":{"editor":null},"total":{"editor":null},"height":{"editor":null},"onConfirmed":{"editor":null},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  rootStyle(h) { return 'position: relative; width: 390px; height: ' + (h || 844) + 'px; display: flex; flex-direction: column; overflow: hidden; background: #f6efe3; color: #2b2016; font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;'; }
+  label(iso) {
+    const p = iso.split('-').map(Number);
+    const d = new Date(p[0], p[1] - 1, p[2]);
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
+  }
+  money(n) { return '$' + n.toFixed(2); }
+  st() { return this.state || {}; }
+  cur(key, prop, dflt) { const s = this.st(); if (s[key] !== undefined) return s[key]; const v = this.props[prop]; return v !== undefined && v !== null ? v : dflt; }
+  componentDidMount() { if (this.props.onConfirmed) this.timer = setTimeout(() => this.props.onConfirmed(), 2500); }
+  componentWillUnmount() { clearTimeout(this.timer); }
+  renderVals() {
+    const slow = !!this.props.slow;
+    const count = this.props.count || 5;
+    const email = this.props.email || 'ben.okafor@example.com';
+    return {
+      root: this.rootStyle(this.props.height),
+      slow: slow,
+      icon: 'ring',
+      title: slow ? 'Still confirming your payment' : 'Confirming your payment',
+      body: slow
+        ? "This is taking longer than usual. If your payment went through, your order is safe. We'll email the confirmation to " + email + ' as soon as it arrives.'
+        : 'This usually takes a few seconds. Please keep this page open.',
+      branch: this.props.branch || 'Northcote',
+      dateLabel: this.label(this.props.date || '2026-09-30'),
+      countLabel: count === 1 ? '1 item' : count + ' items',
+      totalLabel: this.money(this.props.total !== undefined ? this.props.total : 20.7),
+      checkAgain: () => { if (this.props.onConfirmed) this.props.onConfirmed(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

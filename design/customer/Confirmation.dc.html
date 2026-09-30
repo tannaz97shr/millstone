@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>C7 Order confirmation — Millstone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/504d17282c8e583c69e6f3129a969f86") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/3ee4132da12d481f2d726ae5e1541de7") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/3130871d5e49b7c5c530cdf575291fca") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/ab3f33e4b7b70bdd93ebe3b81dc69633") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+
+</style>
+</helmet>
+<div style="{{root}}">
+<div style="flex: 1 1 auto; min-height: 0; overflow-y: auto;">
+<header style="display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding: 8px 16px 0; box-sizing: border-box;">
+<span style="font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-weight: 700; font-size: 24px; line-height: 30px;">Millstone</span>
+</header>
+<main style="display: flex; flex-direction: column; gap: 24px; padding: 16px 16px 32px;">
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<span style="display: flex; font-size: 40px; color: #3b6636;"><x-import component-from-global-scope="Millstone.Icon" name="check"></x-import></span>
+<h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">Your order is in</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">Thanks, {{firstName}}. We'll have it ready at {{branch}} on {{dateLabel}}.</p>
+</div>
+<section aria-label="Order number" style="display: flex; flex-direction: column; gap: 4px; padding: 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px; box-shadow: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;">
+<span style="font-size: 14px; line-height: 20px; color: #665543;">Order number</span>
+<span style="font-size: 32px; line-height: 36px; font-weight: 700; letter-spacing: 0.02em;">{{orderNumber}}</span>
+<span style="font-size: 14px; line-height: 20px; color: #665543;">Say this number at the counter when you pick up.</span>
+</section>
+<section aria-labelledby="pick-title" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px;">
+<h2 id="pick-title" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">Pickup</h2>
+<div style="display: flex; flex-direction: column;">
+<span style="font-size: 16px; line-height: 24px; font-weight: 700;">{{dateLabel}}</span>
+<span style="font-size: 16px; line-height: 24px;">Millstone {{branch}}</span>
+<span style="font-size: 16px; line-height: 24px; color: #665543;">{{address}}</span>
+<span style="font-size: 14px; line-height: 20px; color: #665543; margin-top: 4px;">To change or cancel, call us on {{phone}}.</span>
+</div>
+<div style="height: 1px; background: #dccfba;"></div>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px;">
+<sc-for list="{{lines}}" as="l" hint-placeholder-count="2">
+<li style="display: flex; justify-content: space-between; gap: 12px; font-size: 16px; line-height: 24px; font-variant-numeric: tabular-nums;"><span>{{l.text}}</span><span>{{l.total}}</span></li>
+</sc-for>
+</ul>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid #dccfba;">
+<span style="font-size: 16px; line-height: 24px; font-weight: 700;">Total</span>
+<span style="font-size: 18px; line-height: 24px; font-weight: 700; font-variant-numeric: tabular-nums;">{{totalLabel}}</span>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+<x-import component-from-global-scope="Millstone.PaymentLabel" status="{{payStatus}}">{{payWord}}</x-import>
+<span style="font-size: 14px; line-height: 20px; color: #665543;">{{payNote}}</span>
+</div>
+</section>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">We've emailed these details to <strong>{{email}}</strong>.</p>
+<sc-if value="{{offer}}" hint-placeholder-val="{{false}}">
+<section aria-labelledby="acct-title" style="display: flex; flex-direction: column; gap: 16px; padding: 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<h2 id="acct-title" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">Save your details for next time</h2>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">Set a password and your details will fill in by themselves next time. This order goes into your account too.</p>
+</div>
+<x-import component-from-global-scope="Millstone.TextField" label="Password" hint="{{pwHint}}" type="password" auto-complete="new-password" value="{{pw}}" on-change="{{setPw}}" error="{{pwError}}"></x-import>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{create}}">Create account</x-import>
+</section>
+</sc-if>
+<sc-if value="{{created}}" hint-placeholder-val="{{false}}">
+<div role="status" style="display: flex; align-items: flex-start; gap: 12px; padding: 16px; background: #fffbf4; border: 1.5px solid #8a7862; border-radius: 10px;">
+<span style="display: flex; padding-top: 2px; font-size: 20px; color: #3b6636;"><x-import component-from-global-scope="Millstone.Icon" name="check"></x-import></span>
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<p style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 700;">Your account is set up</p>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">You're signed in as {{email}}, and this order is in My account.</p>
+</div>
+</div>
+</sc-if>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" block="{{yes}}" on-click="{{toMenu}}">Back to the menu</x-import>
+<sc-if value="{{hasAccount}}" hint-placeholder-val="{{false}}">
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" block="{{yes}}" on-click="{{toAccount}}">See your orders in My account</x-import>
+</sc-if>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"payment":{"editor":"enum","options":["paid","unpaid"],"default":"paid","section":"Scenario"},"signedIn":{"editor":"boolean","default":false,"section":"Scenario"},"startAccount":{"editor":null},"orderNumber":{"editor":null},"contact":{"editor":null},"lines":{"editor":null},"total":{"editor":null},"branch":{"editor":null},"date":{"editor":null},"height":{"editor":null},"onMenu":{"editor":null},"onAccount":{"editor":null},"$preview":{"width":390,"height":1400}}'>
+class Component extends DCLogic {
+  rootStyle(h) { return 'position: relative; width: 390px; height: ' + (h || 844) + 'px; display: flex; flex-direction: column; overflow: hidden; background: #f6efe3; color: #2b2016; font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;'; }
+  label(iso) {
+    const p = iso.split('-').map(Number);
+    const d = new Date(p[0], p[1] - 1, p[2]);
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
+  }
+  money(n) { return '$' + n.toFixed(2); }
+  st() { return this.state || {}; }
+  cur(key, prop, dflt) { const s = this.st(); if (s[key] !== undefined) return s[key]; const v = this.props[prop]; return v !== undefined && v !== null ? v : dflt; }
+  renderVals() {
+    const s = this.st();
+    const contact = this.props.contact || { name: 'Ben Okafor', phone: '0491 570 157', email: 'ben.okafor@example.com' };
+    const lines = this.props.lines || [{ name: 'Sourdough rye loaf', qty: 1, price: 9.5 }, { name: 'Plain bagel', qty: 4, price: 2.8 }];
+    const total = this.props.total !== undefined ? this.props.total : lines.reduce((t, l) => t + l.qty * l.price, 0);
+    const paid = (this.props.payment || 'paid') === 'paid';
+    const branch = this.props.branch || 'Northcote';
+    const account = s.account !== undefined ? s.account : (this.props.startAccount || (this.props.signedIn ? 'member' : 'offer'));
+    const pw = s.pw || '';
+    const tried = !!s.tried;
+    const pwError = tried && pw.length < 8 ? 'Use at least 8 characters.' : null;
+    return {
+      root: this.rootStyle(this.props.height || 1400),
+      yes: true,
+      firstName: contact.name.trim().split(' ')[0] || 'there',
+      orderNumber: this.props.orderNumber || 'MS-1048',
+      branch: branch,
+      address: { Northcote: '214 High Street, Northcote', Fitzroy: '87 Gertrude Street, Fitzroy', Brunswick: '402 Sydney Road, Brunswick' }[branch],
+      phone: { Northcote: '03 7010 2140', Fitzroy: '03 7010 0870', Brunswick: '03 7010 4020' }[branch],
+      toAccount: () => { if (this.props.onAccount) this.props.onAccount(); },
+      dateLabel: this.label(this.props.date || '2026-09-30'),
+      lines: lines.map((l) => ({ text: l.qty + ' \u00d7 ' + l.name, total: this.money(l.qty * l.price) })),
+      totalLabel: this.money(total),
+      payStatus: paid ? 'paid' : 'unpaid',
+      payWord: paid ? 'Paid' : 'Pay at pickup',
+      payNote: paid ? 'Paid online. Nothing to pay at the counter.' : 'Pay ' + this.money(total) + ' at the counter when you collect.',
+      email: contact.email,
+      offer: account === 'offer',
+      created: account === 'created',
+      hasAccount: account !== 'offer',
+      pw: pw,
+      pwHint: 'At least 8 characters. Your account email is ' + contact.email + '.',
+      pwError: pwError,
+      setPw: (e) => this.setState({ pw: e.target.value, tried: tried, account: account }),
+      create: () => { if (pw.length < 8) return this.setState({ tried: true, pw: pw, account: account }); this.setState({ account: 'created', pw: '', tried: false }); },
+      toMenu: () => { if (this.props.onMenu) this.props.onMenu(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

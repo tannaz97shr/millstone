@@ -1,0 +1,6 @@
+// Single source of truth for API paths. Endpoints are added with the features
+// that need them; never hand-build an /api path elsewhere.
+
+export const apiRoutes = {} as const;
+
+export type ApiRoutes = typeof apiRoutes;

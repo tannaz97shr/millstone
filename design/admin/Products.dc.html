@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>Products — Millstone admin</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/a97343382604aa44962c2def560d70f2") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/7d7688b0e88d020bd460d2d7de7e47cc") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/c021df3cc7e5ade35cf70a420baa900a") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/bc7eb9b10dd258b579fba3ff624e517e") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+.ms-btn.ms-btn-secondary.ms-seg-on,.ms-btn.ms-btn-secondary.ms-seg-on:hover:not(:disabled){background:#2b2016;border-color:#2b2016;color:#fffbf4}
+.ms-nav-link{display:inline-flex;align-items:center;min-height:64px;padding:0 16px;font-size:20px;font-weight:700;color:#665543;text-decoration:none;border-bottom:4px solid transparent;box-sizing:border-box}
+.ms-nav-link:hover{color:#2b2016}
+.ms-nav-link[aria-current="page"]{color:#2b2016;border-bottom-color:#94451a}
+.ms-nav-link:focus-visible{outline:none;box-shadow:0 0 0 2px #f6efe3,0 0 0 5px #2e5476;border-radius:10px}
+</style>
+</helmet>
+<div data-context="admin" style="width: 1180px; height: 1500px; box-sizing: border-box; position: relative; overflow: hidden; display: flex; flex-direction: column; background: var(--flour); color: var(--ink); font-family: var(--font-sans);">
+
+<header style="display: flex; align-items: center; gap: 24px; height: 80px; padding: 0 32px; flex-shrink: 0; background: var(--flour-raised); border-bottom: 2px solid var(--line); box-sizing: border-box;">
+<div style="font-family: var(--font-serif); font-size: 28px; line-height: 32px; font-weight: 700; color: var(--ink);">Millstone</div>
+<nav aria-label="Admin" style="display: flex; align-items: stretch; gap: 4px; flex-grow: 1; align-self: stretch;">
+<a class="ms-nav-link" href="Owner.dc.html" style="min-height: 78px;">Orders</a>
+<a class="ms-nav-link" href="AvailabilityOwner.dc.html" style="min-height: 78px;">Availability</a>
+<a class="ms-nav-link" href="Products.dc.html" aria-current="page" style="min-height: 78px;">Products</a>
+</nav>
+<div style="display: flex; flex-direction: column; align-items: flex-end;">
+<span style="font-size: 20px; line-height: 26px; font-weight: 700;">All branches</span>
+<span style="font-size: 16px; line-height: 22px; color: var(--ink-muted);">Signed in as owner</span>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary">Sign out</x-import>
+</header>
+
+<section aria-label="Products" style="display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; padding: 24px 32px 20px; flex-shrink: 0; border-bottom: 2px solid var(--line);">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<h1 style="margin: 0; font-family: var(--font-serif); font-size: 32px; line-height: 40px; font-weight: 700;">Products</h1>
+<p style="margin: 0; font-size: 18px; line-height: 26px; color: var(--ink-muted); max-width: 640px;">One list for all three branches, at the same price everywhere. Each branch switches products on or off in Availability.</p>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" icon="plus" on-click="{{openNew}}">Add product</x-import>
+</section>
+
+<div style="display: flex; align-items: center; min-height: 64px; padding: 12px 32px; box-sizing: border-box; flex-shrink: 0;">
+<sc-if value="{{msg}}" hint-placeholder-val="{{false}}">
+<p role="status" style="margin: 0; display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 12px; background: var(--sage-soft); border: 2px solid var(--sage); border-radius: 10px; font-size: 18px; line-height: 24px; font-weight: 700; color: var(--ink);"><span style="display: inline-flex; color: var(--sage); font-size: 22px;"><x-import component-from-global-scope="Millstone.Icon" name="check"></x-import></span>{{msg}}</p>
+</sc-if>
+<sc-if value="{{noMsg}}" hint-placeholder-val="{{true}}">
+<p style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 700;">{{summary}}</p>
+</sc-if>
+</div>
+
+<main style="flex-grow: 1; overflow-y: auto; padding: 0 32px 40px; display: flex; flex-direction: column; gap: 28px;">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<section aria-labelledby="{{g.id}}" style="display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; align-items: baseline; gap: 16px;">
+<h2 id="{{g.id}}" style="margin: 0; font-family: var(--font-serif); font-size: 28px; line-height: 36px; font-weight: 700;">{{g.title}}</h2>
+<span style="font-size: 18px; line-height: 24px; color: var(--ink-muted);">{{g.caption}}</span>
+</div>
+<sc-for list="{{g.rows}}" as="p" hint-placeholder-count="4">
+<article aria-label="{{p.name}}" style="{{p.style}}">
+<div aria-hidden="true" style="width: 72px; height: 54px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--flour-sunk); border-radius: 10px; font-family: var(--font-serif); font-size: 28px; font-weight: 700; color: var(--ink-muted);">{{p.initial}}</div>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+<span style="{{p.nameStyle}}">{{p.name}}</span>
+<span style="font-size: 16px; line-height: 22px; color: var(--ink-muted);">{{p.desc}}</span>
+</div>
+<span style="width: 96px; flex-shrink: 0; text-align: right; font-size: 20px; line-height: 28px; font-weight: 700; font-variant-numeric: tabular-nums;">{{p.price}}</span>
+<span style="width: 200px; flex-shrink: 0; font-size: 16px; line-height: 22px; color: var(--ink-muted);">{{p.where}}</span>
+<span style="width: 150px; flex-shrink: 0; display: flex;"><span class="ms-tag" style="{{p.tagStyle}}"><x-import component-from-global-scope="Millstone.Icon" name="{{p.tagIcon}}"></x-import>{{p.tagText}}</span></span>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" aria-label="Edit {{p.name}}" on-click="{{p.edit}}">Edit</x-import>
+</article>
+</sc-for>
+</section>
+</sc-for>
+</main>
+
+<sc-if value="{{form}}" hint-placeholder-val="{{false}}">
+<div aria-hidden="true" style="position: absolute; top: 80px; left: 0; bottom: 0; right: 600px; background: #2b201640;"></div>
+<aside role="dialog" aria-labelledby="form-title" style="position: absolute; top: 80px; right: 0; bottom: 0; width: 600px; display: flex; flex-direction: column; background: var(--flour-raised); border-left: 2px solid var(--line); box-shadow: var(--shadow-sheet); box-sizing: border-box;">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px 32px 20px; border-bottom: 2px solid var(--line); flex-shrink: 0;">
+<h2 id="form-title" style="margin: 0; font-family: var(--font-serif); font-size: 32px; line-height: 40px; font-weight: 700;">{{form.title}}</h2>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" icon="cross" on-click="{{closeForm}}">Close</x-import>
+</div>
+
+<div style="flex-grow: 1; overflow-y: auto; padding: 24px 32px; display: flex; flex-direction: column; gap: 24px;">
+<sc-if value="{{form.isNew}}" hint-placeholder-val="{{false}}">
+<div role="note" style="display: flex; gap: 12px; align-items: flex-start; padding: 16px 20px; background: var(--delft-soft); border: 2px solid var(--delft); border-radius: 10px;">
+<span style="display: inline-flex; color: var(--delft); font-size: 24px; margin-top: 2px;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import></span>
+<span style="font-size: 18px; line-height: 26px;">New products go on the menu at all three branches. A branch that doesn’t make it can switch it off in Availability.</span>
+</div>
+</sc-if>
+
+<x-import component-from-global-scope="Millstone.TextField" label="Name" value="{{form.name}}" on-change="{{form.onName}}" error="{{form.errName}}" placeholder="Sourdough rye loaf"></x-import>
+<x-import component-from-global-scope="Millstone.TextField" label="Description" optional="{{yes}}" multiline="{{yes}}" hint="One short line for the menu." value="{{form.desc}}" on-change="{{form.onDesc}}"></x-import>
+
+<div role="group" aria-labelledby="lbl-cat" style="display: flex; flex-direction: column; gap: 8px;">
+<span id="lbl-cat" style="font-size: 18px; line-height: 23px; font-weight: 700;">Category</span>
+<div style="display: flex; flex-wrap: wrap; gap: 8px;">
+<sc-for list="{{form.catOpts}}" as="c" hint-placeholder-count="4">
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" class-name="{{c.cls}}" aria-pressed="{{c.pressed}}" icon="{{c.icon}}" on-click="{{c.pick}}">{{c.label}}</x-import>
+</sc-for>
+</div>
+<sc-if value="{{form.errCat}}" hint-placeholder-val="{{false}}">
+<p style="display: flex; gap: 4px; align-items: center; margin: 0; font-size: 16px; line-height: 22px; font-weight: 700; color: var(--brick);"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import>{{form.errCat}}</p>
+</sc-if>
+</div>
+<sc-if value="{{form.isNewCat}}" hint-placeholder-val="{{false}}">
+<x-import component-from-global-scope="Millstone.TextField" label="New category name" hint="It shows as a heading on the menu." value="{{form.newCat}}" on-change="{{form.onNewCat}}" error="{{form.errNewCat}}"></x-import>
+</sc-if>
+
+<x-import component-from-global-scope="Millstone.TextField" label="Price" hint="The same at every branch. In dollars, like 9.50." input-mode="decimal" value="{{form.price}}" on-change="{{form.onPrice}}" error="{{form.errPrice}}"></x-import>
+<sc-if value="{{form.priceNote}}" hint-placeholder-val="{{false}}">
+<div role="note" style="display: flex; gap: 12px; align-items: flex-start; padding: 16px 20px; background: var(--flour); border: 2px solid var(--line-strong); border-radius: 10px;">
+<span style="display: inline-flex; font-size: 24px; margin-top: 2px;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import></span>
+<span style="font-size: 18px; line-height: 26px;">{{form.priceNote}}</span>
+</div>
+</sc-if>
+
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<span style="font-size: 18px; line-height: 23px; font-weight: 700;">Photo <span style="font-weight: 400; color: var(--ink-muted);">(optional)</span></span>
+<div style="display: flex; align-items: center; gap: 20px;">
+<div aria-hidden="true" style="width: 160px; height: 120px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--flour-sunk); border-radius: 10px; font-family: var(--font-serif); font-size: 48px; font-weight: 700; color: var(--ink-muted);">{{form.initial}}</div>
+<div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
+<x-import component-from-global-scope="Millstone.Button" variant="secondary">Choose photo</x-import>
+<span style="font-size: 16px; line-height: 22px; color: var(--ink-muted);">A real Millstone bake, natural light, 4:3. Until there’s a photo, the menu shows the first letter.</span>
+</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 12px; padding-top: 8px; border-top: 2px solid var(--line);">
+<x-import component-from-global-scope="Millstone.Toggle" label="Show on menus" checked="{{form.active}}" on-change="{{form.onActive}}" on-text="On the menu at branches that have it switched on" off-text="Hidden from every branch’s menu"></x-import>
+<sc-if value="{{form.hideNote}}" hint-placeholder-val="{{false}}">
+<div role="note" style="display: flex; gap: 12px; align-items: flex-start; padding: 16px 20px; background: var(--wheat-soft); border: 2px solid var(--wheat); border-radius: 10px; color: var(--wheat-ink);">
+<span style="display: inline-flex; font-size: 24px; margin-top: 2px;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import></span>
+<span style="font-size: 18px; line-height: 26px;"><strong>Hiding takes it off all three menus.</strong> Orders already placed keep it at the price they paid. Recurring orders will leave it out and say why in their note.</span>
+</div>
+</sc-if>
+</div>
+</div>
+
+<div style="flex-shrink: 0; padding: 20px 32px 24px; border-top: 2px solid var(--line); display: flex; gap: 12px;">
+<x-import component-from-global-scope="Millstone.Button" variant="primary" icon="check" on-click="{{save}}" style="flex-grow: 1;">{{form.saveLabel}}</x-import>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" on-click="{{closeForm}}">Cancel</x-import>
+</div>
+</aside>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"editId":{"editor":null},"newProduct":{"editor":null},"presetName":{"editor":null},"presetDesc":{"editor":null},"presetCat":{"editor":null},"presetNewCat":{"editor":null},"presetPrice":{"editor":null},"presetActive":{"editor":null},"$preview":{"width":1180,"height":1500}}'>
+class Component extends DCLogic {
+  seed() {
+    return [
+      { id: 'rye', cat: 'Breads', name: 'Sourdough rye loaf', price: 9.5, desc: '800g, dark crust, caraway.', active: true, notAt: ['Fitzroy'] },
+      { id: 'seeded', cat: 'Breads', name: 'Seeded sandwich loaf', price: 8.5, desc: 'Sliced, for the week.', active: true, notAt: [] },
+      { id: 'white', cat: 'Breads', name: 'White sourdough', price: 8, desc: 'Long ferment, open crumb.', active: true, notAt: [] },
+      { id: 'fruit', cat: 'Breads', name: 'Fruit loaf', price: 7.5, desc: 'Raisins and orange peel.', active: true, notAt: ['Fitzroy'] },
+      { id: 'pumpkin', cat: 'Breads', name: 'Pumpkin loaf', price: 8, desc: 'Roast pumpkin and pepitas. Autumn only.', active: false, notAt: [] },
+      { id: 'croissant', cat: 'Pastries', name: 'Almond croissant', price: 6, desc: 'Twice-baked, frangipane.', active: true, notAt: [] },
+      { id: 'butter', cat: 'Pastries', name: 'Butter croissant', price: 4.8, desc: 'Laminated by hand.', active: true, notAt: [] },
+      { id: 'scroll', cat: 'Pastries', name: 'Cinnamon scroll', price: 5, desc: 'Brown sugar, cardamom.', active: true, notAt: [] },
+      { id: 'turnover', cat: 'Pastries', name: 'Apple turnover', price: 5.5, desc: 'Stewed apple, flaky pastry.', active: true, notAt: [] },
+      { id: 'bagel', cat: 'Bagels', name: 'Plain bagel', price: 2.8, desc: 'Boiled, then baked.', active: true, notAt: [] },
+      { id: 'sesame', cat: 'Bagels', name: 'Sesame bagel', price: 3, desc: 'Toasted sesame crust.', active: true, notAt: [] },
+      { id: 'poppy', cat: 'Bagels', name: 'Poppy seed bagel', price: 3, desc: 'Blue poppy seed crust.', active: true, notAt: [] },
+      { id: 'everything', cat: 'Bagels', name: 'Everything bagel', price: 3.2, desc: 'Seeds, garlic, onion, salt.', active: true, notAt: ['Brunswick'] }
+    ];
+  }
+  st() { return this.state || {}; }
+  products() { return this.st().products || this.seed(); }
+  money(n) { return '$' + n.toFixed(2); }
+  cats(list) { const out = []; list.forEach((p) => { if (out.indexOf(p.cat) < 0) out.push(p.cat); }); return out; }
+  blankForm(p) {
+    if (p) return { mode: 'edit', id: p.id, name: p.name, desc: p.desc, cat: p.cat, newCat: '', price: p.price.toFixed(2), active: p.active, origPrice: p.price, origActive: p.active, tried: false };
+    return { mode: 'new', id: null, name: '', desc: '', cat: null, newCat: '', price: '', active: true, origPrice: null, origActive: true, tried: false };
+  }
+  propForm() {
+    const pr = this.props;
+    let f = null;
+    if (pr.editId) { const p = this.seed().filter((x) => x.id === pr.editId)[0]; if (p) f = this.blankForm(p); }
+    else if (pr.newProduct) f = this.blankForm(null);
+    if (!f) return null;
+    if (pr.presetName != null) f.name = pr.presetName;
+    if (pr.presetDesc != null) f.desc = pr.presetDesc;
+    if (pr.presetCat != null) f.cat = pr.presetCat;
+    if (pr.presetNewCat != null) f.newCat = pr.presetNewCat;
+    if (pr.presetPrice != null) f.price = pr.presetPrice;
+    if (pr.presetActive != null) f.active = pr.presetActive;
+    return f;
+  }
+  curForm() { const s = this.st(); return s.form !== undefined ? s.form : this.propForm(); }
+  setForm(patch) { this.setState({ form: Object.assign({}, this.curForm(), patch) }); }
+  check(f) {
+    const e = {};
+    if (!f.name.trim()) e.name = 'Give it a name, like it would read on the menu.';
+    if (!f.cat) e.cat = 'Choose a category.';
+    if (f.cat === 'new' && !f.newCat.trim()) e.newCat = 'Name the new category.';
+    const t = f.price.trim().replace(/^\$/, '');
+    if (!/^\d+(\.\d{1,2})?$/.test(t) || Number(t) <= 0) e.price = 'Enter the price in dollars, like 9.50.';
+    return e;
+  }
+  renderVals() {
+    const s = this.st();
+    const list = this.products();
+    const catNames = this.cats(list);
+    const groups = catNames.map((c, i) => {
+      const inCat = list.filter((p) => p.cat === c);
+      const hidden = inCat.filter((p) => !p.active).length;
+      return {
+        id: 'cat-' + i, title: c,
+        caption: inCat.length + (inCat.length === 1 ? ' product' : ' products') + (hidden ? ' · ' + hidden + ' hidden' : ''),
+        rows: inCat.map((p) => ({
+          name: p.name, desc: p.desc || 'No description yet.', initial: p.name.charAt(0), price: this.money(p.price),
+          where: !p.active ? 'On no menus' : p.notAt.length ? 'At ' + (3 - p.notAt.length) + ' of 3 branches · not ' + p.notAt.join(', ') : 'At all 3 branches',
+          tagText: p.active ? 'On menus' : 'Hidden', tagIcon: p.active ? 'check' : 'cross',
+          tagStyle: p.active ? 'background: var(--flour-raised); color: var(--ink); border-color: var(--line-strong);' : 'background: transparent; color: var(--ink-muted); border-color: var(--line-strong); border-style: dashed;',
+          nameStyle: 'font-size: 20px; line-height: 28px; font-weight: 700;' + (p.active ? '' : ' color: var(--ink-muted);'),
+          style: 'display: flex; align-items: center; gap: 20px; min-height: 88px; padding: 12px 20px; box-sizing: border-box; border: 2px solid var(--line); border-radius: 16px; ' + (p.active ? 'background: var(--flour-raised); box-shadow: var(--shadow-card);' : 'background: var(--flour); border-style: dashed;'),
+          edit: () => this.setState({ form: this.blankForm(p), msg: null })
+        }))
+      };
+    });
+    const hiddenCount = list.filter((p) => !p.active).length;
+
+    const f = this.curForm();
+    let form = null;
+    if (f) {
+      const errs = f.tried ? this.check(f) : {};
+      const t = f.price.trim().replace(/^\$/, '');
+      const newPrice = /^\d+(\.\d{1,2})?$/.test(t) ? Number(t) : null;
+      const priceChanged = f.mode === 'edit' && newPrice != null && newPrice > 0 && Math.abs(newPrice - f.origPrice) > 0.001;
+      form = {
+        title: f.mode === 'new' ? 'New product' : 'Edit ' + (f.name.trim() || 'product'),
+        isNew: f.mode === 'new',
+        name: f.name, desc: f.desc, price: f.price, newCat: f.newCat, active: f.active,
+        initial: (f.name.trim() || '?').charAt(0).toUpperCase(),
+        onName: (e) => this.setForm({ name: e.target.value }),
+        onDesc: (e) => this.setForm({ desc: e.target.value }),
+        onPrice: (e) => this.setForm({ price: e.target.value }),
+        onNewCat: (e) => this.setForm({ newCat: e.target.value }),
+        onActive: (v) => this.setForm({ active: v }),
+        catOpts: catNames.map((c) => ({ label: c, icon: null, cls: f.cat === c ? 'ms-seg-on' : '', pressed: f.cat === c ? 'true' : 'false', pick: () => this.setForm({ cat: c }) }))
+          .concat([{ label: 'New category', icon: 'plus', cls: f.cat === 'new' ? 'ms-seg-on' : '', pressed: f.cat === 'new' ? 'true' : 'false', pick: () => this.setForm({ cat: 'new' }) }]),
+        isNewCat: f.cat === 'new',
+        errName: errs.name || null, errCat: errs.cat || null, errNewCat: errs.newCat || null, errPrice: errs.price || null,
+        priceNote: priceChanged ? 'The new price, ' + this.money(newPrice) + ', applies to new orders and to recurring orders made from now on. Orders already placed keep ' + this.money(f.origPrice) + '.' : null,
+        hideNote: f.origActive && !f.active,
+        saveLabel: f.mode === 'new' ? 'Add product' : 'Save changes'
+      };
+    }
+
+    return {
+      summary: list.length + ' products · ' + (list.length - hiddenCount) + ' on menus' + (hiddenCount ? ' · ' + hiddenCount + ' hidden' : ''),
+      msg: s.msg || null, noMsg: !s.msg,
+      groups: groups,
+      form: form,
+      yes: true,
+      openNew: () => this.setState({ form: this.blankForm(null), msg: null }),
+      closeForm: () => this.setState({ form: null }),
+      save: () => {
+        const cur = this.curForm();
+        const errs = this.check(cur);
+        if (Object.keys(errs).length) { this.setForm({ tried: true }); return; }
+        const price = Number(cur.price.trim().replace(/^\$/, ''));
+        const cat = cur.cat === 'new' ? cur.newCat.trim() : cur.cat;
+        const all = this.products();
+        let next, msg;
+        if (cur.mode === 'new') {
+          next = all.concat([{ id: 'p' + Date.now(), cat: cat, name: cur.name.trim(), desc: cur.desc.trim(), price: price, active: cur.active, notAt: [] }]);
+          msg = cur.name.trim() + ' added. It’s on the menu at all three branches' + (cur.active ? '.' : ' once you show it.');
+        } else {
+          next = all.map((p) => (p.id === cur.id ? Object.assign({}, p, { cat: cat, name: cur.name.trim(), desc: cur.desc.trim(), price: price, active: cur.active }) : p));
+          msg = cur.name.trim() + ' saved.' + (cur.origActive && !cur.active ? ' It’s hidden from every menu.' : !cur.origActive && cur.active ? ' It’s back on the menus.' : '');
+        }
+        this.setState({ products: next, form: null, msg: msg });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>C8 Sign in — Millstone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/504d17282c8e583c69e6f3129a969f86") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/3ee4132da12d481f2d726ae5e1541de7") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/3130871d5e49b7c5c530cdf575291fca") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/ab3f33e4b7b70bdd93ebe3b81dc69633") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+
+</style>
+</helmet>
+<div style="{{root}}">
+<div style="flex: 1 1 auto; min-height: 0; overflow-y: auto;">
+<header style="display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding: 8px 8px 0 16px; box-sizing: border-box;">
+<sc-if value="{{hasBack}}" hint-placeholder-val="{{true}}">
+<span style="margin-left: -8px;"><x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{back}}" icon="left">{{backLabel}}</x-import></span>
+</sc-if>
+<sc-if value="{{noBack}}" hint-placeholder-val="{{false}}">
+<span style="font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-weight: 700; font-size: 24px; line-height: 30px;">Millstone</span>
+</sc-if>
+</header>
+<main style="padding: 16px 16px 32px;">
+<sc-if value="{{is.signin}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 20px;">
+<h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">Sign in</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">{{signinIntro}}</p>
+<sc-if value="{{badLogin}}" hint-placeholder-val="{{false}}">
+<div role="alert" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; background: #f6dcd4; border: 1.5px solid #9e2f1d; border-radius: 10px;">
+<span style="display: flex; padding-top: 2px; font-size: 20px; color: #9e2f1d;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import></span>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">That email and password don't match. Check them and try again, or reset your password.</p>
+</div>
+</sc-if>
+<x-import component-from-global-scope="Millstone.TextField" label="Email" type="email" input-mode="email" auto-complete="email" value="{{f.email}}" on-change="{{on.email}}" error="{{e.email}}"></x-import>
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<x-import component-from-global-scope="Millstone.TextField" label="Password" type="password" auto-complete="current-password" value="{{f.password}}" on-change="{{on.password}}" error="{{e.password}}"></x-import>
+<div><x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{toReset}}">Forgot your password?</x-import></div>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{signIn}}">Sign in</x-import>
+<div style="height: 1px; background: #dccfba;"></div>
+<div style="display: flex; flex-direction: column; gap: 12px;">
+<p style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 700;">New to Millstone?</p>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" block="{{yes}}" on-click="{{toSignup}}">Create an account</x-import>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: #665543;">Ordered as a guest before? Create an account with the same email and your past orders come with you.</p>
+</div>
+<sc-if value="{{fromCheckout}}" hint-placeholder-val="{{false}}">
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" block="{{yes}}" on-click="{{back}}">Continue as a guest</x-import>
+</sc-if>
+</div>
+</sc-if>
+<sc-if value="{{is.signup}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 20px;">
+<h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">Create an account</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">Save your details for next time and see your past orders.</p>
+<x-import component-from-global-scope="Millstone.TextField" label="Name" auto-complete="name" value="{{f.name}}" on-change="{{on.name}}" error="{{e.name}}"></x-import>
+<x-import component-from-global-scope="Millstone.TextField" label="Mobile number" hint="So we can call if something changes with an order." type="tel" input-mode="tel" auto-complete="tel" value="{{f.phone}}" on-change="{{on.phone}}" error="{{e.phone}}"></x-import>
+<x-import component-from-global-scope="Millstone.TextField" label="Email" hint="Ordered as a guest before? Use the same email and those orders come with you." type="email" input-mode="email" auto-complete="email" value="{{f.email}}" on-change="{{on.email}}" error="{{e.email}}"></x-import>
+<x-import component-from-global-scope="Millstone.TextField" label="Password" hint="At least 8 characters." type="password" auto-complete="new-password" value="{{f.password}}" on-change="{{on.password}}" error="{{e.password}}"></x-import>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{signUp}}">Create account</x-import>
+<div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;"><span style="font-size: 16px; line-height: 24px;">Already have an account?</span><x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{toSignin}}">Sign in</x-import></div>
+</div>
+</sc-if>
+<sc-if value="{{is.reset}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 20px;">
+<h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">Reset your password</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">Enter the email you use with Millstone. We'll send you a link to set a new password.</p>
+<x-import component-from-global-scope="Millstone.TextField" label="Email" type="email" input-mode="email" auto-complete="email" value="{{f.email}}" on-change="{{on.email}}" error="{{e.email}}"></x-import>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{sendReset}}">Send reset link</x-import>
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" block="{{yes}}" on-click="{{toSignin}}">Back to sign in</x-import>
+</div>
+</sc-if>
+<sc-if value="{{is.sent}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 20px;">
+<h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">Check your email</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">If there's a Millstone account for <strong>{{f.email}}</strong>, we've sent it a link to set a new password.</p>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: #665543;">Nothing there after a few minutes? Check your junk folder, or send it again.</p>
+<sc-if value="{{resent}}" hint-placeholder-val="{{false}}">
+<p role="status" style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px; line-height: 24px; font-weight: 700;"><span style="display: flex; color: #3b6636;"><x-import component-from-global-scope="Millstone.Icon" name="check"></x-import></span>We've sent it again.</p>
+</sc-if>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{toSignin}}">Back to sign in</x-import>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" block="{{yes}}" on-click="{{resend}}">Send it again</x-import>
+</div>
+</sc-if>
+<sc-if value="{{is.newpw}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 20px;">
+<h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">Set a new password</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">For <strong>{{f.email}}</strong>.</p>
+<x-import component-from-global-scope="Millstone.TextField" label="New password" hint="At least 8 characters." type="password" auto-complete="new-password" value="{{f.password}}" on-change="{{on.password}}" error="{{e.password}}"></x-import>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{savePw}}">Save password</x-import>
+</div>
+</sc-if>
+<sc-if value="{{is.done}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 20px;">
+<span style="display: flex; font-size: 40px; color: #3b6636;"><x-import component-from-global-scope="Millstone.Icon" name="check"></x-import></span>
+<h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">Password saved</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">You're signed in as <strong>{{f.email}}</strong>.</p>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{finish}}">Start an order</x-import>
+</div>
+</sc-if>
+<sc-if value="{{is.expired}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 20px;">
+<h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">This link has expired</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">Reset links only work once, and only for a short while. Ask for a new one and use it soon after it arrives.</p>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{toReset}}">Send a new link</x-import>
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" block="{{yes}}" on-click="{{toSignin}}">Back to sign in</x-import>
+</div>
+</sc-if>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"startMode":{"editor":"enum","options":["signin","signup","reset","sent","newpw","done","expired"],"default":"signin","section":"Scenario"},"context":{"editor":"enum","options":["checkout","menu","home","recurring"],"default":"checkout","section":"Scenario"},"startFields":{"editor":null},"showErrors":{"editor":null},"badLogin":{"editor":null},"height":{"editor":null},"onBack":{"editor":null},"onDone":{"editor":null},"$preview":{"width":390,"height":900}}'>
+class Component extends DCLogic {
+  rootStyle(h) { return 'position: relative; width: 390px; height: ' + (h || 844) + 'px; display: flex; flex-direction: column; overflow: hidden; background: #f6efe3; color: #2b2016; font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;'; }
+  label(iso) {
+    const p = iso.split('-').map(Number);
+    const d = new Date(p[0], p[1] - 1, p[2]);
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
+  }
+  money(n) { return '$' + n.toFixed(2); }
+  st() { return this.state || {}; }
+  cur(key, prop, dflt) { const s = this.st(); if (s[key] !== undefined) return s[key]; const v = this.props[prop]; return v !== undefined && v !== null ? v : dflt; }
+  snap() {
+    return {
+      mode: this.cur('mode', 'startMode', 'signin'),
+      f: this.cur('f', 'startFields', { email: '', password: '', name: '', phone: '' }),
+      tried: this.cur('tried', 'showErrors', false),
+      bad: this.cur('bad', 'badLogin', false),
+      resent: this.cur('resent', 'x', false)
+    };
+  }
+  set(p) { this.setState(Object.assign(this.snap(), p)); }
+  errs(s) {
+    const f = s.f, e = {};
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim());
+    if (!emailOk) e.email = 'Enter your email address, like name@example.com.';
+    if (s.mode === 'signin' && !f.password) e.password = 'Enter your password.';
+    if ((s.mode === 'signup' || s.mode === 'newpw') && f.password.length < 8) e.password = 'Use at least 8 characters.';
+    if (s.mode === 'newpw') delete e.email;
+    if (s.mode === 'signup') {
+      if (!f.name.trim()) e.name = 'Enter your name.';
+      if (!/^0\d{9}$/.test(f.phone.replace(/\D/g, ''))) e.phone = 'Enter a 10-digit mobile number, like 0491 570 156.';
+    }
+    if (s.mode === 'reset') delete e.password;
+    return e;
+  }
+  renderVals() {
+    const s = this.snap();
+    const ctx = this.props.context || 'checkout';
+    const e = s.tried ? this.errs(s) : {};
+    const is = {}; ['signin', 'signup', 'reset', 'sent', 'newpw', 'done', 'expired'].forEach((m) => { is[m] = s.mode === m; });
+    const on = {};
+    ['email', 'password', 'name', 'phone'].forEach((k) => { on[k] = (ev) => { const f = Object.assign({}, this.snap().f); f[k] = ev.target.value; this.set({ f: f, bad: false }); }; });
+    const go = (m) => () => this.set({ mode: m, tried: false, bad: false, resent: false, f: Object.assign({}, this.snap().f, { password: '' }) });
+    const submit = (next) => () => {
+      const cur = this.snap();
+      if (Object.keys(this.errs(cur)).length) return this.set({ tried: true });
+      next(cur);
+    };
+    const done = (acct) => { if (this.props.onDone) this.props.onDone(acct); };
+    const fromEmailLink = s.mode === 'newpw' || s.mode === 'done' || s.mode === 'expired';
+    return {
+      root: this.rootStyle(this.props.height || 900),
+      yes: true, is: is, f: s.f, on: on,
+      e: { email: e.email || null, password: e.password || null, name: e.name || null, phone: e.phone || null },
+      badLogin: s.bad && s.mode === 'signin',
+      resent: s.resent,
+      hasBack: !fromEmailLink, noBack: fromEmailLink,
+      backLabel: ctx === 'checkout' ? 'Checkout' : ctx === 'menu' ? 'Menu' : 'Home',
+      fromCheckout: ctx === 'checkout',
+      signinIntro: ctx === 'checkout' ? "Sign in and we'll fill in your details for this order." : ctx === 'recurring' ? 'You need an account to set up a recurring order, so you can change, skip or pause it later. Sign in, or create an account below.' : 'Sign in to check out faster and see your past orders.',
+      back: () => { if (this.props.onBack) this.props.onBack(); },
+      toReset: go('reset'), toSignup: go('signup'), toSignin: go('signin'),
+      signIn: submit(() => done({ name: 'Corner Cup Cafe', phone: '0491 570 158', email: 'orders@cornercup.example.com', persona: 'cafe' })),
+      signUp: submit((c) => done({ name: c.f.name.trim(), phone: c.f.phone.trim(), email: c.f.email.trim(), persona: 'new' })),
+      sendReset: submit(() => this.set({ mode: 'sent', tried: false })),
+      resend: () => this.set({ resent: true }),
+      savePw: submit(() => this.set({ mode: 'done', tried: false })),
+      finish: () => done({ name: 'Corner Cup Cafe', phone: '0491 570 158', email: 'orders@cornercup.example.com', persona: 'cafe' })
+    };
+  }
+}
+</script>
+</body>
+</html>

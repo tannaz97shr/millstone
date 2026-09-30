@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>Availability — Millstone admin</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/a97343382604aa44962c2def560d70f2") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/7d7688b0e88d020bd460d2d7de7e47cc") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/c021df3cc7e5ade35cf70a420baa900a") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/bc7eb9b10dd258b579fba3ff624e517e") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+.ms-btn.ms-btn-secondary.ms-seg-on,.ms-btn.ms-btn-secondary.ms-seg-on:hover:not(:disabled){background:#2b2016;border-color:#2b2016;color:#fffbf4}
+.ms-nav-link{display:inline-flex;align-items:center;min-height:64px;padding:0 16px;font-size:20px;font-weight:700;color:#665543;text-decoration:none;border-bottom:4px solid transparent;box-sizing:border-box}
+.ms-nav-link:hover{color:#2b2016}
+.ms-nav-link[aria-current="page"]{color:#2b2016;border-bottom-color:#94451a}
+.ms-nav-link:focus-visible{outline:none;box-shadow:0 0 0 2px #f6efe3,0 0 0 5px #2e5476;border-radius:10px}
+</style>
+</helmet>
+<div data-context="admin" style="width: 1180px; height: 1600px; box-sizing: border-box; position: relative; overflow: hidden; display: flex; flex-direction: column; background: var(--flour); color: var(--ink); font-family: var(--font-sans);">
+
+<header style="display: flex; align-items: center; gap: 24px; height: 80px; padding: 0 32px; flex-shrink: 0; background: var(--flour-raised); border-bottom: 2px solid var(--line); box-sizing: border-box;">
+<div style="font-family: var(--font-serif); font-size: 28px; line-height: 32px; font-weight: 700; color: var(--ink);">Millstone</div>
+<nav aria-label="Admin" style="display: flex; align-items: stretch; gap: 4px; flex-grow: 1; align-self: stretch;">
+<a class="ms-nav-link" href="{{nav.orders}}" style="min-height: 78px;">Orders</a>
+<a class="ms-nav-link" href="{{nav.availability}}" aria-current="page" style="min-height: 78px;">Availability</a>
+<sc-if value="{{owner}}" hint-placeholder-val="{{false}}">
+<a class="ms-nav-link" href="{{nav.products}}" style="min-height: 78px;">Products</a>
+</sc-if>
+</nav>
+<div style="display: flex; flex-direction: column; align-items: flex-end;">
+<span style="font-size: 20px; line-height: 26px; font-weight: 700;">{{headerBranch}}</span>
+<span style="font-size: 16px; line-height: 22px; color: var(--ink-muted);">{{userLabel}}</span>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary">Sign out</x-import>
+</header>
+
+<section aria-label="Branch and date" style="display: flex; flex-direction: column; gap: 20px; padding: 24px 32px 20px; flex-shrink: 0; border-bottom: 2px solid var(--line);">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; flex-wrap: wrap;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<h1 style="margin: 0; font-family: var(--font-serif); font-size: 32px; line-height: 40px; font-weight: 700;">What’s on at {{branch}}</h1>
+<p style="margin: 0; font-size: 18px; line-height: 26px; color: var(--ink-muted); max-width: 620px;">Switch a product off if this branch doesn’t make it. Mark it sold out when it’s gone for a day.</p>
+</div>
+<sc-if value="{{owner}}" hint-placeholder-val="{{false}}">
+<div role="group" aria-labelledby="lbl-av-branch" style="display: flex; flex-direction: column; gap: 8px;">
+<span id="lbl-av-branch" style="font-size: 18px; line-height: 23px; font-weight: 700;">Branch</span>
+<div style="display: flex; gap: 8px;">
+<sc-for list="{{branchOpts}}" as="b" hint-placeholder-count="3">
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" class-name="{{b.cls}}" aria-pressed="{{b.pressed}}" on-click="{{b.pick}}">{{b.label}}</x-import>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+<x-import component-from-global-scope="Millstone.DatePicker" label="Mark sold out for" value="{{selDate}}" on-change="{{pickDate}}" earliest="2026-09-30" start="2026-09-30" days="{{seven}}" closed-weekdays="{{mondays}}" note="Earliest pickup is Wed 30 Sep, because orders close at 2pm today. Sold out lasts for that one day, then clears itself."></x-import>
+</section>
+
+<div style="display: flex; align-items: center; min-height: 64px; padding: 12px 32px; box-sizing: border-box; flex-shrink: 0;">
+<sc-if value="{{msg}}" hint-placeholder-val="{{false}}">
+<p role="status" style="margin: 0; display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 12px; background: var(--sage-soft); border: 2px solid var(--sage); border-radius: 10px; font-size: 18px; line-height: 24px; font-weight: 700; color: var(--ink);"><span style="display: inline-flex; color: var(--sage); font-size: 22px;"><x-import component-from-global-scope="Millstone.Icon" name="check"></x-import></span>{{msg}}</p>
+</sc-if>
+<sc-if value="{{noMsg}}" hint-placeholder-val="{{true}}">
+<p style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 700;">{{summary}}</p>
+</sc-if>
+</div>
+
+<main style="flex-grow: 1; overflow-y: auto; padding: 0 32px 40px; display: flex; flex-direction: column; gap: 28px;">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<section aria-labelledby="{{g.id}}" style="display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; align-items: baseline; gap: 16px;">
+<h2 id="{{g.id}}" style="margin: 0; font-family: var(--font-serif); font-size: 28px; line-height: 36px; font-weight: 700;">{{g.title}}</h2>
+<span style="font-size: 18px; line-height: 24px; color: var(--ink-muted);">{{g.caption}}</span>
+</div>
+<sc-for list="{{g.rows}}" as="r" hint-placeholder-count="4">
+<div style="{{r.style}}">
+<div style="flex-grow: 1; min-width: 0;">
+<x-import component-from-global-scope="Millstone.Toggle" label="{{r.name}}" checked="{{r.on}}" on-change="{{r.toggle}}" on-text="On the menu" off-text="Off the menu"></x-import>
+</div>
+<sc-if value="{{r.soldOut}}" hint-placeholder-val="{{false}}">
+<span class="ms-tag" style="background: var(--brick-soft); color: var(--brick); border-color: var(--brick);"><x-import component-from-global-scope="Millstone.Icon" name="cross"></x-import>Sold out {{r.soldLabel}}</span>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" icon="refund" aria-label="Put {{r.name}} back on sale for {{r.soldLabel}}" on-click="{{r.backOnSale}}">Back on sale</x-import>
+</sc-if>
+<sc-if value="{{r.canMark}}" hint-placeholder-val="{{true}}">
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" aria-label="Mark {{r.name}} sold out for {{selLabel}}" on-click="{{r.markSoldOut}}">Sold out for {{selShort}}</x-import>
+</sc-if>
+<sc-if value="{{r.off}}" hint-placeholder-val="{{false}}">
+<span style="font-size: 18px; line-height: 24px; color: var(--ink-muted);">Customers at {{branch}} won’t see it.</span>
+</sc-if>
+</div>
+</sc-for>
+</section>
+</sc-for>
+<sc-if value="{{owner}}" hint-placeholder-val="{{false}}">
+<p style="margin: 0; font-size: 18px; line-height: 26px; color: var(--ink-muted);">{{hiddenNote}} <a href="{{nav.products}}" style="font-weight: 700;">Manage products</a></p>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"role":{"editor":"enum","options":["staff","owner"],"default":"staff","section":"Who is signed in"},"branch":{"editor":"enum","options":["Northcote","Fitzroy","Brunswick"],"default":"Northcote","section":"Who is signed in"},"$preview":{"width":1180,"height":1600}}'>
+class Component extends DCLogic {
+  products() {
+    return [
+      { id: 'rye', cat: 'breads', name: 'Sourdough rye loaf', active: true },
+      { id: 'seeded', cat: 'breads', name: 'Seeded sandwich loaf', active: true },
+      { id: 'white', cat: 'breads', name: 'White sourdough', active: true },
+      { id: 'fruit', cat: 'breads', name: 'Fruit loaf', active: true },
+      { id: 'pumpkin', cat: 'breads', name: 'Pumpkin loaf', active: false },
+      { id: 'croissant', cat: 'pastries', name: 'Almond croissant', active: true },
+      { id: 'butter', cat: 'pastries', name: 'Butter croissant', active: true },
+      { id: 'scroll', cat: 'pastries', name: 'Cinnamon scroll', active: true },
+      { id: 'turnover', cat: 'pastries', name: 'Apple turnover', active: true },
+      { id: 'bagel', cat: 'bagels', name: 'Plain bagel', active: true },
+      { id: 'sesame', cat: 'bagels', name: 'Sesame bagel', active: true },
+      { id: 'poppy', cat: 'bagels', name: 'Poppy seed bagel', active: true },
+      { id: 'everything', cat: 'bagels', name: 'Everything bagel', active: true }
+    ];
+  }
+  seed() {
+    return {
+      Northcote: { off: [], soldOut: { seeded: '2026-09-30', croissant: '2026-10-01' } },
+      Fitzroy: { off: ['rye', 'fruit'], soldOut: { scroll: '2026-09-30' } },
+      Brunswick: { off: ['everything'], soldOut: {} }
+    };
+  }
+  st() { return this.state || {}; }
+  avail() { return this.st().avail || this.seed(); }
+  short(iso) {
+    const a = iso.split('-').map(Number), d = new Date(a[0], a[1] - 1, a[2]);
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
+  }
+  update(branch, fn, msg) {
+    const all = JSON.parse(JSON.stringify(this.avail()));
+    fn(all[branch]);
+    this.setState({ avail: all, msg: msg });
+  }
+  renderVals() {
+    const s = this.st();
+    const owner = (this.props.role || 'staff') === 'owner';
+    const branch = owner ? (s.branch || this.props.branch || 'Northcote') : 'Northcote';
+    const selDate = s.selDate || '2026-09-30';
+    const TODAY = '2026-09-29';
+    const b = this.avail()[branch];
+    const selShort = this.short(selDate);
+    const all = this.products();
+    const active = all.filter((p) => p.active);
+    const cats = [['breads', 'Breads'], ['pastries', 'Pastries'], ['bagels', 'Bagels']];
+    let offCount = 0, soldCount = 0;
+    const groups = cats.map((c) => {
+      const list = active.filter((p) => p.cat === c[0]);
+      const rows = list.map((p) => {
+        const on = b.off.indexOf(p.id) < 0;
+        const so = b.soldOut[p.id] && b.soldOut[p.id] > TODAY ? b.soldOut[p.id] : null;
+        if (!on) offCount++;
+        if (on && so) soldCount++;
+        return {
+          name: p.name, on: on, off: !on,
+          soldOut: on && !!so, soldLabel: so ? this.short(so) : '', canMark: on && !so,
+          style: 'display: flex; align-items: center; gap: 20px; min-height: 88px; padding: 12px 24px; box-sizing: border-box; border: 2px solid var(--line); border-radius: 16px; ' + (on ? 'background: var(--flour-raised); box-shadow: var(--shadow-card);' : 'background: var(--flour); border-style: dashed;'),
+          toggle: (v) => this.update(branch, (x) => {
+            x.off = v ? x.off.filter((id) => id !== p.id) : x.off.concat([p.id]);
+          }, v ? p.name + ' is back on the menu at ' + branch + '.' : p.name + ' is off the menu at ' + branch + '. Recurring orders will leave it out and say why.'),
+          markSoldOut: () => this.update(branch, (x) => { x.soldOut[p.id] = selDate; }, p.name + ' is sold out for ' + selShort + '. Customers can’t order it for that day, and recurring orders will leave it out.'),
+          backOnSale: () => this.update(branch, (x) => { delete x.soldOut[p.id]; }, p.name + ' is back on sale' + (so ? ' for ' + this.short(so) : '') + '.')
+        };
+      });
+      const offHere = rows.filter((r) => r.off).length;
+      return { id: 'av-' + c[0], title: c[1], caption: list.length + ' products' + (offHere ? ' · ' + offHere + ' off the menu' : ''), rows: rows };
+    });
+    const hidden = all.length - active.length;
+    return {
+      owner: owner,
+      nav: owner ? { orders: 'Owner.dc.html', availability: 'AvailabilityOwner.dc.html', products: 'Products.dc.html' } : { orders: 'Main.dc.html', availability: 'Availability.dc.html', products: 'Products.dc.html' },
+      headerBranch: owner ? 'All branches' : 'Northcote',
+      userLabel: owner ? 'Signed in as owner' : 'Staff · Northcote',
+      branch: branch,
+      branchOpts: ['Northcote', 'Fitzroy', 'Brunswick'].map((x) => ({ label: x, cls: x === branch ? 'ms-seg-on' : '', pressed: x === branch ? 'true' : 'false', pick: () => this.setState({ branch: x, msg: null }) })),
+      selDate: selDate, selShort: selShort, selLabel: selShort,
+      pickDate: (iso) => this.setState({ selDate: iso, msg: null }),
+      seven: 7, mondays: [1],
+      msg: s.msg || null, noMsg: !s.msg,
+      summary: active.length + ' products · ' + (active.length - offCount) + ' on the menu' + (offCount ? ' · ' + offCount + ' off' : '') + (soldCount ? ' · ' + soldCount + ' sold out for a day' : ''),
+      groups: groups,
+      hiddenNote: hidden ? hidden + (hidden === 1 ? ' product is' : ' products are') + ' hidden from every menu, so ' + (hidden === 1 ? 'it isn’t' : 'they aren’t') + ' listed here.' : ''
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>C9 to C12 My account and recurring orders — Millstone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/504d17282c8e583c69e6f3129a969f86") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/3ee4132da12d481f2d726ae5e1541de7") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/3130871d5e49b7c5c530cdf575291fca") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/ab3f33e4b7b70bdd93ebe3b81dc69633") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+.mc-branches .ms-choice-title{font-family:Bitter,Rockwell,"Roboto Slab",Georgia,serif;font-weight:600;font-size:20px;line-height:26px}
+</style>
+</helmet>
+<div style="{{root}}">
+<sc-if value="{{is.account}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; height: 100%;">
+<div style="flex: 1 1 auto; min-height: 0; overflow-y: auto;">
+<header style="display: flex; align-items: center; min-height: 52px; padding: 8px 8px 0; box-sizing: border-box;"><x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{exit}}" icon="left">{{backLabel}}</x-import></header>
+<main style="display: flex; flex-direction: column; gap: 24px; padding: 8px 16px 32px;">
+<div style="display: flex; flex-direction: column; gap: 4px;"><h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">My account</h1><p style="margin: 0; font-size: 14px; line-height: 20px; color: #665543;">Signed in as {{profile.email}}</p></div>
+<sc-if value="{{hasFlash}}" hint-placeholder-val="{{false}}">
+<div role="status" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 12px 12px 16px; background: #fffbf4; border: 1.5px solid #8a7862; border-radius: 10px;">
+<span style="display: flex; padding-top: 2px; font-size: 20px; color: #3b6636;"><x-import component-from-global-scope="Millstone.Icon" name="check"></x-import></span>
+<p style="flex: 1 1 auto; margin: 0; font-size: 16px; line-height: 24px;">{{flash}}</p>
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{clearFlash}}" aria-label="Dismiss message">OK</x-import>
+</div>
+</sc-if>
+<section aria-labelledby="det-title" style="display: flex; flex-direction: column; gap: 16px; padding: 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px; box-shadow: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+<h2 id="det-title" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">Your details</h2>
+<sc-if value="{{notEditing}}" hint-placeholder-val="{{true}}"><x-import component-from-global-scope="Millstone.Button" variant="secondary" on-click="{{editProfile}}" aria-label="Edit your details">Edit</x-import></sc-if>
+</div>
+<sc-if value="{{notEditing}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; flex-direction: column;"><span style="font-size: 14px; line-height: 20px; color: #665543;">Name</span><span style="font-size: 16px; line-height: 24px;">{{profile.name}}</span></div>
+<div style="display: flex; flex-direction: column;"><span style="font-size: 14px; line-height: 20px; color: #665543;">Mobile number</span><span style="font-size: 16px; line-height: 24px;">{{profile.phone}}</span></div>
+<div style="display: flex; flex-direction: column;"><span style="font-size: 14px; line-height: 20px; color: #665543;">Email</span><span style="font-size: 16px; line-height: 24px;">{{profile.email}}</span></div>
+</div>
+</sc-if>
+<sc-if value="{{editing}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 16px;">
+<x-import component-from-global-scope="Millstone.TextField" label="Name" value="{{draft.name}}" on-change="{{onDraft.name}}" auto-complete="name" error="{{draftErr.name}}"></x-import>
+<x-import component-from-global-scope="Millstone.TextField" label="Mobile number" type="tel" input-mode="tel" value="{{draft.phone}}" on-change="{{onDraft.phone}}" auto-complete="tel" error="{{draftErr.phone}}"></x-import>
+<x-import component-from-global-scope="Millstone.TextField" label="Email" type="email" input-mode="email" value="{{draft.email}}" on-change="{{onDraft.email}}" auto-complete="email" error="{{draftErr.email}}"></x-import>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: #665543;">New orders will use these. Past orders keep the details they were placed with.</p>
+<div style="display: flex; gap: 8px;"><x-import component-from-global-scope="Millstone.Button" variant="primary" on-click="{{saveProfile}}">Save details</x-import><x-import component-from-global-scope="Millstone.Button" variant="secondary" on-click="{{cancelProfile}}">Cancel</x-import></div>
+</div>
+</sc-if>
+</section>
+<section aria-labelledby="rec-title" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px; box-shadow: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;">
+<div style="display: flex; align-items: center; gap: 8px;"><x-import component-from-global-scope="Millstone.RecurringLabel"></x-import></div>
+<h2 id="rec-title" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">Recurring orders</h2>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">{{recSummary}}</p>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" block="{{yes}}" on-click="{{toList}}">{{recButton}}</x-import>
+</section>
+<section aria-labelledby="hist-title" style="display: flex; flex-direction: column; gap: 12px;">
+<h2 id="hist-title" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">Your orders</h2>
+<sc-if value="{{noOrders}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 20px 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px; box-shadow: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;">
+<p style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 700;">No orders yet</p>
+<p style="margin: 0; font-size: 16px; line-height: 24px; color: #665543;">When you place an order, it'll show up here with its order number.</p>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" on-click="{{exit}}">Start an order</x-import>
+</div>
+</sc-if>
+<sc-for list="{{orders}}" as="o" hint-placeholder-count="3">
+<article style="display: flex; flex-direction: column; gap: 8px; padding: 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px; box-shadow: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
+<span style="font-size: 20px; line-height: 26px; font-weight: 700; letter-spacing: 0.02em;">{{o.num}}</span>
+<span style="font-size: 18px; line-height: 24px; font-weight: 700; font-variant-numeric: tabular-nums;">{{o.total}}</span>
+</div>
+<span style="font-size: 14px; line-height: 20px; color: #665543;">Pickup {{o.date}} at {{o.branch}}</span>
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+<x-import component-from-global-scope="Millstone.StatusBadge" status="{{o.status}}"></x-import>
+<x-import component-from-global-scope="Millstone.PaymentLabel" status="{{o.pay}}">{{o.payWord}}</x-import>
+<sc-if value="{{o.recurring}}" hint-placeholder-val="{{false}}"><x-import component-from-global-scope="Millstone.RecurringLabel"></x-import></sc-if>
+</div>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">{{o.items}}</p>
+<sc-if value="{{o.hasNote}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; gap: 8px; padding: 12px; background: #f8e8c4; border-radius: 10px; color: #6a4808;">
+<span style="display: flex; padding-top: 2px; font-size: 18px;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import></span>
+<div style="display: flex; flex-direction: column; gap: 2px;">
+<span style="font-size: 16px; line-height: 24px; font-weight: 700;">{{o.note}}</span>
+<span style="font-size: 14px; line-height: 20px;">We left this out of your order. Call {{o.branch}} on {{o.phone}} if you'd like something instead.</span>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{o.open}}" hint-placeholder-val="{{false}}">
+<span style="font-size: 14px; line-height: 20px; color: #665543;">To change or cancel, call {{o.branch}} on {{o.phone}}.</span>
+</sc-if>
+</article>
+</sc-for>
+</section>
+<div><x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{signOut}}">Sign out</x-import></div>
+</main>
+</div>
+
+</div>
+</sc-if>
+<sc-if value="{{is.list}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; height: 100%;">
+<div style="flex: 1 1 auto; min-height: 0; overflow-y: auto;">
+<header style="display: flex; align-items: center; min-height: 52px; padding: 8px 8px 0; box-sizing: border-box;"><x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{toAccount}}" icon="left">My account</x-import></header>
+<main style="display: flex; flex-direction: column; gap: 24px; padding: 8px 16px 32px;">
+<div style="display: flex; flex-direction: column; gap: 8px;"><h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">Recurring orders</h1><p style="margin: 0; font-size: 16px; line-height: 24px;">The same order on the days you choose. We make each one at 2pm the day before, and you pay at pickup.</p></div>
+<sc-if value="{{hasFlash}}" hint-placeholder-val="{{false}}">
+<div role="status" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 12px 12px 16px; background: #fffbf4; border: 1.5px solid #8a7862; border-radius: 10px;">
+<span style="display: flex; padding-top: 2px; font-size: 20px; color: #3b6636;"><x-import component-from-global-scope="Millstone.Icon" name="check"></x-import></span>
+<p style="flex: 1 1 auto; margin: 0; font-size: 16px; line-height: 24px;">{{flash}}</p>
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{clearFlash}}" aria-label="Dismiss message">OK</x-import>
+</div>
+</sc-if>
+<sc-if value="{{noRecs}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 20px 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px; box-shadow: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;">
+<p style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 700;">No recurring orders yet</p>
+<p style="margin: 0; font-size: 16px; line-height: 24px; color: #665543;">Handy if you run a cafe or need the same bread every week.</p>
+</div>
+</sc-if>
+<sc-for list="{{recs}}" as="r" hint-placeholder-count="2">
+<article style="display: flex; flex-direction: column; gap: 8px; padding: 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px; box-shadow: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+<h2 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 20px; line-height: 26px; font-weight: 600;">{{r.branch}}</h2>
+<x-import component-from-global-scope="Millstone.RecurringStatusTag" status="{{r.rstatus}}"></x-import>
+</div>
+<span style="font-size: 16px; line-height: 24px; font-weight: 700;">{{r.daysText}}</span>
+<span style="font-size: 16px; line-height: 24px;">{{r.itemsText}}</span>
+<span style="font-size: 14px; line-height: 20px; color: #665543;">{{r.nextText}}</span>
+<div style="padding-top: 4px;"><x-import component-from-global-scope="Millstone.Button" variant="secondary" block="{{yes}}" on-click="{{r.open}}" aria-label="{{r.openLabel}}">View and change</x-import></div>
+</article>
+</sc-for>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{newRec}}" icon="plus">Set up a recurring order</x-import>
+</main>
+</div>
+
+</div>
+</sc-if>
+<sc-if value="{{is.form}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; height: 100%;">
+<div style="flex: 1 1 auto; min-height: 0; overflow-y: auto;">
+<header style="display: flex; align-items: center; min-height: 52px; padding: 8px 8px 0; box-sizing: border-box;"><x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{formBack}}" icon="left">{{form.backLabel}}</x-import></header>
+<main style="display: flex; flex-direction: column; gap: 24px; padding: 8px 16px 32px;">
+<div style="display: flex; flex-direction: column; gap: 8px;"><h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">{{form.title}}</h1><p style="margin: 0; font-size: 16px; line-height: 24px;">{{form.intro}}</p></div>
+<section aria-labelledby="f-branch" style="display: flex; flex-direction: column; gap: 12px;">
+<h2 id="f-branch" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">Branch</h2>
+<sc-if value="{{form.creating}}" hint-placeholder-val="{{true}}">
+<x-import component-from-global-scope="Millstone.ChoiceGroup" class-name="mc-branches" label="Which Millstone will you pick up from?" options="{{branchOptions}}" value="{{form.branch}}" on-change="{{form.pickBranch}}" name="rbranch"></x-import>
+<sc-if value="{{form.err.branch}}" hint-placeholder-val="{{false}}"><p style="display: flex; align-items: center; gap: 4px; margin: 0; font-size: 14px; line-height: 20px; font-weight: 700; color: #9e2f1d;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import>Choose a branch.</p></sc-if>
+</sc-if>
+<sc-if value="{{form.editing}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; background: #ece2d1; border-radius: 10px;">
+<span style="font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-weight: 600; font-size: 20px; line-height: 26px;">{{form.branch}}</span>
+<span style="font-size: 14px; line-height: 20px; color: #665543;">{{form.branchAddress}}</span>
+<span style="font-size: 14px; line-height: 20px;">The branch can't be changed. To order from another branch, end this recurring order and set up a new one there.</span>
+</div>
+</sc-if>
+</section>
+<section aria-labelledby="f-days" style="display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; flex-direction: column; gap: 4px;"><h2 id="f-days" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">Pickup days</h2></div>
+<x-import component-from-global-scope="Millstone.WeekdayPicker" label="Which days?" hint="Choose one or more. We make each order at 2pm the day before." value="{{form.dayValues}}" on-change="{{form.setDays}}" closed-weekdays="{{mondays}}" error="{{form.daysError}}"></x-import>
+</section>
+<section aria-labelledby="f-items" style="display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; flex-direction: column; gap: 4px;"><h2 id="f-items" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">What you need each time</h2><p style="margin: 0; font-size: 14px; line-height: 20px; color: #665543;">Each order is charged at that day's prices.</p></div>
+<sc-if value="{{form.err.items}}" hint-placeholder-val="{{false}}"><p style="display: flex; align-items: center; gap: 4px; margin: 0; font-size: 14px; line-height: 20px; font-weight: 700; color: #9e2f1d;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import>Add at least one item.</p></sc-if>
+<sc-if value="{{form.noBranch}}" hint-placeholder-val="{{false}}">
+<p style="margin: 0; padding: 16px; font-size: 16px; line-height: 24px; color: #665543; background: #ece2d1; border-radius: 10px;">Choose a branch first to see what it makes.</p>
+</sc-if>
+<sc-if value="{{form.hasBranch}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px; box-shadow: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;">
+<sc-for list="{{form.items}}" as="it" hint-placeholder-count="6">
+<div style="{{it.rowStyle}}">
+<div style="display: flex; flex-direction: column; min-width: 0;">
+<span style="font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-weight: 600; font-size: 18px; line-height: 24px;">{{it.name}}</span>
+<span style="font-size: 14px; line-height: 20px; color: #665543; font-variant-numeric: tabular-nums;">{{it.price}} each today</span>
+</div>
+<x-import component-from-global-scope="Millstone.QuantityStepper" value="{{it.qty}}" min="{{zero}}" on-change="{{it.set}}" label="{{it.name}}"></x-import>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</section>
+<section aria-labelledby="f-dates" style="display: flex; flex-direction: column; gap: 16px;">
+<h2 id="f-dates" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">Start and end</h2>
+<sc-if value="{{form.creating}}" hint-placeholder-val="{{true}}">
+<x-import component-from-global-scope="Millstone.DatePicker" label="Starts on" value="{{form.startsOn}}" on-change="{{form.pickStart}}" earliest="2026-09-30" start="2026-09-30" days="{{fourteen}}" closed-weekdays="{{mondays}}" note="Order by 2pm for next-day pickup. Your first order is on the first chosen day from here."></x-import>
+</sc-if>
+<sc-if value="{{form.editing}}" hint-placeholder-val="{{false}}"><div style="display: flex; flex-direction: column;"><span style="font-size: 14px; line-height: 20px; color: #665543;">Started</span><span style="font-size: 16px; line-height: 24px;">{{form.startedLabel}}</span></div></sc-if>
+<x-import component-from-global-scope="Millstone.Toggle" label="Set an end date" checked="{{form.hasEnd}}" on-change="{{form.toggleEnd}}" on-text="Yes" off-text="No"></x-import>
+<sc-if value="{{form.hasEnd}}" hint-placeholder-val="{{false}}">
+<x-import component-from-global-scope="Millstone.DatePicker" layout="month" label="Last pickup" value="{{form.endsOn}}" on-change="{{form.pickEnd}}" earliest="{{form.endEarliest}}" closed-weekdays="{{mondays}}" today="2026-09-29"></x-import>
+<sc-if value="{{form.err.end}}" hint-placeholder-val="{{false}}"><p style="display: flex; align-items: center; gap: 4px; margin: 0; font-size: 14px; line-height: 20px; font-weight: 700; color: #9e2f1d;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import>Choose the last pickup day.</p></sc-if>
+</sc-if>
+</section>
+<x-import component-from-global-scope="Millstone.TextField" label="Notes for the bakery" optional="{{yes}}" hint="Like “Back door, before 7am”." multiline="{{yes}}" rows="{{two}}" value="{{form.notes}}" on-change="{{form.setNotes}}"></x-import>
+</main>
+</div>
+<div style="flex: none; display: flex; flex-direction: column; gap: 8px; padding: 12px 16px 16px; background: #fffbf4; border-top: 1px solid #dccfba; box-shadow: 0 -2px 0 #2b20160f, 0 -6px 16px #2b201614;">
+<sc-if value="{{form.err.any}}" hint-placeholder-val="{{false}}"><p role="alert" style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 700; color: #9e2f1d;">{{form.err.summary}}</p></sc-if>
+<span style="font-size: 14px; line-height: 20px;">{{form.summary}}</span>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{formSave}}">{{form.saveLabel}}</x-import>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{is.detail}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; height: 100%;">
+<div style="flex: 1 1 auto; min-height: 0; overflow-y: auto;">
+<header style="display: flex; align-items: center; min-height: 52px; padding: 8px 8px 0; box-sizing: border-box;"><x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{toList}}" icon="left">Recurring orders</x-import></header>
+<main style="display: flex; flex-direction: column; gap: 24px; padding: 8px 16px 32px;">
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"><x-import component-from-global-scope="Millstone.RecurringLabel"></x-import><x-import component-from-global-scope="Millstone.RecurringStatusTag" status="{{d.rstatus}}"></x-import></div>
+<h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">{{d.branch}}, {{d.daysText}}</h1>
+</div>
+<sc-if value="{{hasFlash}}" hint-placeholder-val="{{false}}">
+<div role="status" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 12px 12px 16px; background: #fffbf4; border: 1.5px solid #8a7862; border-radius: 10px;">
+<span style="display: flex; padding-top: 2px; font-size: 20px; color: #3b6636;"><x-import component-from-global-scope="Millstone.Icon" name="check"></x-import></span>
+<p style="flex: 1 1 auto; margin: 0; font-size: 16px; line-height: 24px;">{{flash}}</p>
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{clearFlash}}" aria-label="Dismiss message">OK</x-import>
+</div>
+</sc-if>
+<sc-if value="{{d.paused}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: #fffbf4; border: 1.5px dashed #8a7862; border-radius: 16px;">
+<p style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 700;">Paused</p>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">We won't make any new orders until you resume. Orders we've already made still stand.</p>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{resume}}">Resume</x-import>
+</div>
+</sc-if>
+<sc-if value="{{d.ended}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; background: #ece2d1; border-radius: 16px;">
+<p style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 700;">{{d.endedTitle}}</p>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">Orders we'd already made still stand. To order from {{d.branch}} again, set up a new recurring order.</p>
+</div>
+</sc-if>
+<section aria-labelledby="up-title" style="display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; flex-direction: column; gap: 4px;"><h2 id="up-title" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">Upcoming pickups</h2>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: #665543;">You can skip a day, or bring it back, until 2pm the day before.</p></div>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px; box-shadow: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;">
+<sc-for list="{{d.upcoming}}" as="u" hint-placeholder-count="5">
+<li style="{{u.rowStyle}}">
+<div style="display: flex; flex-direction: column; min-width: 0;">
+<span style="{{u.dateStyle}}">{{u.label}}</span>
+<span style="font-size: 14px; line-height: 20px; color: #665543;">{{u.caption}}</span>
+</div>
+<sc-if value="{{u.canSkip}}" hint-placeholder-val="{{true}}"><x-import component-from-global-scope="Millstone.Button" variant="secondary" on-click="{{u.skip}}" aria-label="{{u.skipLabel}}">Skip</x-import></sc-if>
+<sc-if value="{{u.isSkipped}}" hint-placeholder-val="{{false}}"><x-import component-from-global-scope="Millstone.Button" variant="secondary" icon="refund" on-click="{{u.unskip}}" aria-label="{{u.unskipLabel}}">Undo</x-import></sc-if>
+</li>
+</sc-for>
+<sc-if value="{{d.noUpcoming}}" hint-placeholder-val="{{false}}"><li style="padding: 16px; font-size: 16px; line-height: 24px; color: #665543;">{{d.noUpcomingText}}</li></sc-if>
+</ul>
+</section>
+<section aria-labelledby="in-title" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px; box-shadow: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;">
+<h2 id="in-title" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">Each order</h2>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px;">
+<sc-for list="{{d.items}}" as="i" hint-placeholder-count="3"><li style="font-size: 16px; line-height: 24px; font-weight: 700; font-variant-numeric: tabular-nums;">{{i}}</li></sc-for>
+</ul>
+<div style="height: 1px; background: #dccfba;"></div>
+<div style="display: flex; flex-direction: column;"><span style="font-size: 14px; line-height: 20px; color: #665543;">Pickup from</span><span style="font-size: 16px; line-height: 24px;">{{d.branch}}, {{d.address}}</span></div>
+<div style="display: flex; flex-direction: column;"><span style="font-size: 14px; line-height: 20px; color: #665543;">Days</span><span style="font-size: 16px; line-height: 24px;">{{d.daysText}}</span></div>
+<div style="display: flex; flex-direction: column;"><span style="font-size: 14px; line-height: 20px; color: #665543;">Started</span><span style="font-size: 16px; line-height: 24px;">{{d.startedLabel}}</span></div>
+<div style="display: flex; flex-direction: column;"><span style="font-size: 14px; line-height: 20px; color: #665543;">Ends</span><span style="font-size: 16px; line-height: 24px;">{{d.endsLabel}}</span></div>
+<sc-if value="{{d.hasNotes}}" hint-placeholder-val="{{false}}"><div style="display: flex; flex-direction: column;"><span style="font-size: 14px; line-height: 20px; color: #665543;">Notes for the bakery</span><span style="font-size: 16px; line-height: 24px;">{{d.notes}}</span></div></sc-if>
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"><x-import component-from-global-scope="Millstone.PaymentLabel" status="unpaid">Pay at pickup</x-import><span style="font-size: 14px; line-height: 20px; color: #665543;">Charged at that day's prices.</span></div>
+</section>
+<sc-if value="{{d.notEnded}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" block="{{yes}}" on-click="{{edit}}">Change items or days</x-import>
+<sc-if value="{{d.active}}" hint-placeholder-val="{{true}}"><x-import component-from-global-scope="Millstone.Button" variant="secondary" block="{{yes}}" on-click="{{pause}}">Pause</x-import></sc-if>
+<x-import component-from-global-scope="Millstone.Button" variant="danger" block="{{yes}}" on-click="{{openEnd}}">End recurring order</x-import>
+</div>
+</sc-if>
+</main>
+</div>
+
+</div>
+</sc-if>
+<sc-if value="{{endOpen}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; background: rgba(43, 32, 22, 0.45);">
+<div role="dialog" aria-modal="true" aria-labelledby="end-title" style="display: flex; flex-direction: column; gap: 16px; max-height: 92%; overflow-y: auto; padding: 24px 16px 20px; box-sizing: border-box; background: #fffbf4; border-radius: 16px 16px 0 0; box-shadow: 0 -2px 0 #2b20160f, 0 12px 32px #2b201629;">
+<h2 id="end-title" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">End this recurring order?</h2>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">No more orders will be made after the day you choose. Orders we've already made still stand.</p>
+<x-import component-from-global-scope="Millstone.ChoiceGroup" label="When should it stop?" options="{{endOptions}}" value="{{endChoice}}" on-change="{{pickEndChoice}}" name="endwhen"></x-import>
+<sc-if value="{{endOnDate}}" hint-placeholder-val="{{false}}">
+<x-import component-from-global-scope="Millstone.DatePicker" label="Last pickup" value="{{endDate}}" on-change="{{pickEndDate}}" earliest="2026-09-30" start="2026-09-30" days="{{fourteen}}" unavailable="{{endUnavailable}}" closed-weekdays="{{mondays}}" note="Only your pickup days can be chosen."></x-import>
+</sc-if>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<x-import component-from-global-scope="Millstone.Button" variant="danger" block="{{yes}}" on-click="{{confirmEnd}}">{{endConfirmLabel}}</x-import>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" block="{{yes}}" on-click="{{closeEnd}}">Keep it going</x-import>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"startScreen":{"editor":"enum","options":["account","list","form","detail"],"default":"account","section":"Scenario"},"persona":{"editor":"enum","options":["cafe","new"],"default":"cafe","section":"Scenario"},"startRecurring":{"editor":null},"startSel":{"editor":null},"startFormMode":{"editor":null},"startForm":{"editor":null},"startFlash":{"editor":null},"startEnd":{"editor":null},"showErrors":{"editor":null},"profile":{"editor":null},"extraOrders":{"editor":null},"backLabel":{"editor":null},"height":{"editor":null},"onExit":{"editor":null},"onSignOut":{"editor":null},"$preview":{"width":390,"height":1900}}'>
+class Component extends DCLogic {
+  rootStyle(h) { return 'position: relative; width: 390px; height: ' + (h || 844) + 'px; display: flex; flex-direction: column; overflow: hidden; background: #f6efe3; color: #2b2016; font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;'; }
+  label(iso) {
+    const p = iso.split('-').map(Number);
+    const d = new Date(p[0], p[1] - 1, p[2]);
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
+  }
+  money(n) { return '$' + n.toFixed(2); }
+  st() { return this.state || {}; }
+  cur(key, prop, dflt) { const s = this.st(); if (s[key] !== undefined) return s[key]; const v = this.props[prop]; return v !== undefined && v !== null ? v : dflt; }
+  br() {
+    return {
+      Northcote: { addr: '214 High Street, Northcote', phone: '03 7010 2140' },
+      Fitzroy: { addr: '87 Gertrude Street, Fitzroy', phone: '03 7010 0870' },
+      Brunswick: { addr: '402 Sydney Road, Brunswick', phone: '03 7010 4020' }
+    };
+  }
+  catalogue() {
+    return [
+      { id: 'rye', name: 'Sourdough rye loaf', price: 9.5, notAt: ['Fitzroy'] },
+      { id: 'seeded', name: 'Seeded sandwich loaf', price: 8.5 },
+      { id: 'white', name: 'White sourdough', price: 8 },
+      { id: 'fruit', name: 'Fruit loaf', price: 7.5, notAt: ['Fitzroy'] },
+      { id: 'croissant', name: 'Almond croissant', price: 6 },
+      { id: 'butter', name: 'Butter croissant', price: 4.8 },
+      { id: 'scroll', name: 'Cinnamon scroll', price: 5 },
+      { id: 'turnover', name: 'Apple turnover', price: 5.5 },
+      { id: 'bagel', name: 'Plain bagel', price: 2.8 },
+      { id: 'sesame', name: 'Sesame bagel', price: 3 },
+      { id: 'poppy', name: 'Poppy seed bagel', price: 3 },
+      { id: 'everything', name: 'Everything bagel', price: 3.2, notAt: ['Brunswick'] }
+    ];
+  }
+  today() { return '2026-09-29'; }
+  open() { return '2026-09-30'; }
+  add(iso, n) { const p = iso.split('-').map(Number); const d = new Date(p[0], p[1] - 1, p[2] + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  wd(iso) { const p = iso.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]).getDay(); }
+  dayLabel(iso) { return iso === this.today() ? 'Today, ' + this.label(iso) : this.label(iso); }
+  list(xs) { return xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1]; }
+  daysText(days) {
+    const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return this.list([1, 2, 3, 4, 5, 6, 0].filter((d) => days.indexOf(d) >= 0).map((d) => names[d]));
+  }
+  itemsText(items) {
+    return this.catalogue().filter((p) => items[p.id] > 0).map((p) => items[p.id] + ' \u00d7 ' + p.name);
+  }
+  defaultRecs() {
+    if ((this.props.persona || 'cafe') !== 'cafe') return [];
+    return [
+      { id: 'r1', branch: 'Northcote', days: [2, 4, 6], items: { bagel: 12, croissant: 6, rye: 4 }, status: 'active', startsOn: '2026-09-01', endsOn: null, notes: 'Back door on Elm Lane, before 7am', skips: ['2026-10-06'], generated: { '2026-09-29': 'MS-1042' } },
+      { id: 'r2', branch: 'Fitzroy', days: [6], items: { seeded: 2, white: 2 }, status: 'paused', startsOn: '2026-08-15', endsOn: null, notes: '', skips: [], generated: {} }
+    ];
+  }
+  defaultOrders() {
+    if ((this.props.persona || 'cafe') !== 'cafe') return [];
+    const std = [[12, 'Plain bagel', 2.8], [6, 'Almond croissant', 6], [4, 'Sourdough rye loaf', 9.5]];
+    return [
+      { num: 'MS-1042', date: '2026-09-29', branch: 'Northcote', status: 'placed', pay: 'unpaid', recurring: true, lines: [[12, 'Plain bagel', 2.8], [6, 'Almond croissant', 6]], note: 'Rye loaf \u00d74 skipped: sold out' },
+      { num: 'MS-1027', date: '2026-09-26', branch: 'Northcote', status: 'collected', pay: 'paid', recurring: true, lines: std },
+      { num: 'MS-1021', date: '2026-09-24', branch: 'Northcote', status: 'collected', pay: 'paid', recurring: true, lines: std },
+      { num: 'MS-1016', date: '2026-09-23', branch: 'Northcote', status: 'collected', pay: 'paid', recurring: false, lines: [[1, 'White sourdough', 8], [2, 'Cinnamon scroll', 5]] }
+    ];
+  }
+  defaultProfile() {
+    if (this.props.profile) return this.props.profile;
+    return (this.props.persona || 'cafe') === 'cafe'
+      ? { name: 'Corner Cup Cafe', phone: '0491 570 158', email: 'orders@cornercup.example.com' }
+      : { name: 'Sam Carter', phone: '0491 570 156', email: 'sam.carter@example.com' };
+  }
+  blankForm() { return { mode: 'create', id: null, branch: '', days: [], items: {}, startsOn: '2026-09-30', hasEnd: false, endsOn: null, notes: '', tried: false }; }
+  editForm(r) { return { mode: 'edit', id: r.id, branch: r.branch, days: r.days.slice(), items: Object.assign({}, r.items), startsOn: r.startsOn, hasEnd: !!(r.endsOn && r.endsOn >= this.open()), endsOn: r.endsOn, notes: r.notes || '', tried: false }; }
+  snap() {
+    const recs = this.cur('recs', 'startRecurring', null) || this.defaultRecs();
+    const sel = this.cur('sel', 'startSel', recs.length ? recs[0].id : null);
+    const mode = this.props.startFormMode || 'create';
+    const r0 = recs.filter((r) => r.id === sel)[0];
+    const baseForm = mode === 'edit' && r0 ? this.editForm(r0) : this.blankForm();
+    const s = this.st();
+    return {
+      screen: this.cur('screen', 'startScreen', 'account'),
+      recs: recs, sel: sel,
+      form: s.form !== undefined ? s.form : Object.assign(baseForm, this.props.startForm || {}, this.props.showErrors ? { tried: true } : {}),
+      formFrom: this.cur('formFrom', 'x', mode === 'edit' ? 'detail' : 'list'),
+      flash: this.cur('flash', 'startFlash', ''),
+      profile: this.cur('profile', 'x', this.defaultProfile()),
+      editing: this.cur('editing', 'x', false),
+      draft: this.cur('draft', 'x', null),
+      draftTried: this.cur('draftTried', 'x', false),
+      endOpen: this.cur('endOpen', 'startEnd', false),
+      endChoice: this.cur('endChoice', 'x', this.props.startEnd ? 'date' : 'now'),
+      endDate: this.cur('endDate', 'x', this.props.startEnd ? '2026-10-10' : null)
+    };
+  }
+  set(p) {
+    this.setState(Object.assign(this.snap(), p));
+    if (p.recs && this.props.onRecsChange) this.props.onRecsChange(p.recs);
+    if (p.profile && this.props.onProfileChange) this.props.onProfileChange(p.profile);
+  }
+  isEnded(r) { return !!(r.endsOn && r.endsOn < this.open()); }
+  dates(r, n) {
+    const out = [];
+    for (let i = 0; i < 70 && out.length < n; i++) {
+      const d = this.add(this.today(), i);
+      if (r.days.indexOf(this.wd(d)) < 0 || d < r.startsOn) continue;
+      if (r.endsOn && d > r.endsOn) break;
+      if (d < this.open() && !r.generated[d]) continue;
+      out.push(d);
+    }
+    return out;
+  }
+  firstPickup(r) {
+    if (this.isEnded(r)) return null;
+    return this.dates(r, 12).filter((d) => r.generated[d] || (r.status === 'active' && r.skips.indexOf(d) < 0))[0] || null;
+  }
+  nextNew(r) { return this.dates(r, 12).filter((d) => d >= this.open() && r.skips.indexOf(d) < 0)[0] || null; }
+  tag(r) {
+    return { rstatus: this.isEnded(r) ? 'ended' : r.status === 'paused' ? 'paused' : 'active' };
+  }
+  nextText(r) {
+    if (this.isEnded(r)) return 'Ended. No more orders.';
+    const f = this.firstPickup(r);
+    if (r.status === 'paused') return f && r.generated[f] ? 'Paused. ' + this.dayLabel(f) + '\u2019s order (' + r.generated[f] + ') still stands.' : 'Paused. No new orders until you resume.';
+    let t = f ? 'Next pickup ' + this.dayLabel(f) : 'No pickups coming up';
+    if (r.endsOn) t += ' \u00b7 last pickup ' + this.label(r.endsOn);
+    return t;
+  }
+  formErrors(f) {
+    const e = {};
+    if (f.mode === 'create' && !f.branch) e.branch = true;
+    if (!f.days.length) e.days = true;
+    if (!Object.keys(f.items).some((k) => f.items[k] > 0)) e.items = true;
+    if (f.hasEnd && !f.endsOn) e.end = true;
+    return e;
+  }
+  firstFrom(days, startsOn) {
+    for (let i = 0; i < 21; i++) { const d = this.add(this.open(), i); if (d >= startsOn && days.indexOf(this.wd(d)) >= 0) return d; }
+    return null;
+  }
+  renderVals() {
+    const s = this.snap();
+    const B = this.br();
+    const is = {}; ['account', 'list', 'form', 'detail'].forEach((k) => { is[k] = s.screen === k; });
+    const go = (screen, extra) => () => this.set(Object.assign({ screen: screen, flash: '' }, extra || {}));
+    // ---- C9
+    const extra = this.props.extraOrders || [];
+    const orders = extra.concat(this.defaultOrders()).map((o) => {
+      const total = o.lines.reduce((t, l) => t + l[0] * l[2], 0);
+      return {
+        num: o.num, branch: o.branch, date: this.dayLabel(o.date), status: o.status, pay: o.pay,
+        payWord: o.pay === 'paid' ? 'Paid' : 'Pay at pickup', recurring: !!o.recurring,
+        total: this.money(total), items: o.lines.map((l) => l[0] + ' \u00d7 ' + l[1]).join(', ') || 'No items',
+        hasNote: !!o.note, note: o.note || '', open: o.status === 'placed' || o.status === 'ready', phone: B[o.branch].phone
+      };
+    });
+    const live = s.recs.filter((r) => !this.isEnded(r));
+    const nexts = live.map((r) => this.firstPickup(r)).filter(Boolean).sort();
+    const draft = s.draft || s.profile;
+    const dErr = {};
+    if (s.draftTried) {
+      if (!draft.name.trim()) dErr.name = 'Enter your name.';
+      if (!/^0\d{9}$/.test(draft.phone.replace(/\D/g, ''))) dErr.phone = 'Enter a 10-digit phone number, like 0491 570 156.';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim())) dErr.email = 'Enter an email address, like name@example.com.';
+    }
+    const onDraft = {};
+    ['name', 'phone', 'email'].forEach((k) => { onDraft[k] = (ev) => { const d = Object.assign({}, this.snap().draft || this.snap().profile); d[k] = ev.target.value; this.set({ draft: d }); }; });
+    // ---- C10
+    const recs = s.recs.map((r) => Object.assign({
+      branch: r.branch, daysText: this.daysText(r.days), itemsText: this.itemsText(r.items).join(', '), nextText: this.nextText(r),
+      openLabel: 'View and change the ' + r.branch + ' recurring order',
+      open: go('detail', { sel: r.id })
+    }, this.tag(r)));
+    // ---- C12
+    const r = s.recs.filter((x) => x.id === s.sel)[0] || s.recs[0] || null;
+    const updateRec = (id, fn, extraPatch) => {
+      const next = this.snap().recs.map((x) => (x.id === id ? fn(Object.assign({}, x, { skips: x.skips.slice() })) : x));
+      this.set(Object.assign({ recs: next }, extraPatch || {}));
+    };
+    let d = { upcoming: [], items: [] };
+    if (r) {
+      const ended = this.isEnded(r), paused = r.status === 'paused';
+      const rows = [];
+      this.dates(r, 6).forEach((day) => {
+        const prev = this.label(this.add(day, -1));
+        const base = { label: this.dayLabel(day), canSkip: false, isSkipped: false, skipLabel: 'Skip ' + this.label(day), unskipLabel: 'Undo skip for ' + this.label(day) };
+        if (r.generated[day]) rows.push(Object.assign(base, { caption: 'Order ' + r.generated[day] + ' is made. To change it, call ' + r.branch + ' on ' + B[r.branch].phone + '.' }));
+        else if (paused || ended) return;
+        else if (r.skips.indexOf(day) >= 0) rows.push(Object.assign(base, { isSkipped: true, caption: 'Skipped. Undo until 2pm ' + prev + '.', unskip: () => updateRec(r.id, (x) => { x.skips = x.skips.filter((k) => k !== day); return x; }, { flash: '' }) }));
+        else rows.push(Object.assign(base, { canSkip: true, caption: 'Skip or change until 2pm ' + prev + '.', skip: () => updateRec(r.id, (x) => { x.skips.push(day); return x; }, { flash: '' }) }));
+      });
+      rows.forEach((u, i) => {
+        u.rowStyle = 'display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; min-height: 72px; box-sizing: border-box;' + (i ? ' border-top: 1px solid #dccfba;' : '');
+        u.dateStyle = 'font-size: 16px; line-height: 24px; font-weight: 700;' + (u.isSkipped ? ' text-decoration: line-through; text-decoration-thickness: 2px; color: #665543;' : '');
+      });
+      const nx = this.firstPickup(r);
+      d = Object.assign({
+        branch: r.branch, address: B[r.branch].addr, daysText: this.daysText(r.days),
+        items: this.itemsText(r.items), upcoming: rows,
+        paused: paused && !ended, ended: ended, active: !paused && !ended, notEnded: !ended,
+        endedTitle: 'Ended after ' + (r.endsOn ? this.label(r.endsOn) : ''),
+        noUpcoming: paused || ended || rows.length === 0,
+        noUpcomingText: ended ? 'No more pickups.' : paused ? 'No new pickups while paused.' : 'No pickups in the next few weeks.',
+        startedLabel: this.label(r.startsOn), endsLabel: r.endsOn ? 'After ' + this.label(r.endsOn) : 'No end date',
+        hasNotes: !!r.notes, notes: r.notes || ''
+      }, this.tag(r));
+      d.pauseFn = () => updateRec(r.id, (x) => { x.status = 'paused'; return x; }, { flash: 'Paused. We won\u2019t make any new orders until you resume.' });
+      d.resumeFn = () => {
+        const cur = Object.assign({}, r, { status: 'active' });
+        const f = this.nextNew(cur);
+        updateRec(r.id, (x) => { x.status = 'active'; return x; }, { flash: 'Resumed. ' + (f ? 'Your next new order is for ' + this.label(f) + '.' : '') });
+      };
+      d.nextLabel = nx ? this.dayLabel(nx) : '';
+    }
+    // ---- end dialog
+    const endUnavailable = [];
+    for (let i = 0; i < 14; i++) { const x = this.add(this.open(), i); if (!r || r.days.indexOf(this.wd(x)) < 0 || (r.skips || []).indexOf(x) >= 0) endUnavailable.push(x); }
+    // ---- C11
+    const f = s.form;
+    const fe = f.tried ? this.formErrors(f) : {};
+    const fen = Object.keys(fe).length;
+    const setForm = (patch) => this.set({ form: Object.assign({}, this.snap().form, patch) });
+    const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], longNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const avail = this.catalogue().filter((p) => f.branch && !(p.notAt && p.notAt.indexOf(f.branch) >= 0));
+    const itemCount = Object.keys(f.items).reduce((t, k) => t + (f.items[k] || 0), 0);
+    const applyFrom = this.firstFrom(f.days, this.open());
+    const firstNew = this.firstFrom(f.days, f.startsOn);
+    const form = {
+      title: f.mode === 'edit' ? 'Change recurring order' : 'Set up a recurring order',
+      intro: f.mode === 'edit'
+        ? 'Changes apply from ' + (applyFrom ? this.label(applyFrom) : 'your next pickup day') + '. Orders we\u2019ve already made won\u2019t change.'
+        : 'Choose the branch, the days and what you need. We make each order at 2pm the day before, and you pay at pickup.',
+      backLabel: f.mode === 'edit' ? 'Recurring order' : 'Recurring orders',
+      creating: f.mode === 'create', editing: f.mode === 'edit',
+      branch: f.branch, branchAddress: f.branch ? B[f.branch].addr : '',
+      pickBranch: (v) => { const items = {}; Object.keys(this.snap().form.items).forEach((k) => { const p = this.catalogue().filter((c) => c.id === k)[0]; if (!(p.notAt && p.notAt.indexOf(v) >= 0)) items[k] = this.snap().form.items[k]; }); setForm({ branch: v, items: items }); },
+      noBranch: !f.branch, hasBranch: !!f.branch,
+      dayValues: f.days, setDays: (v) => setForm({ days: v }), daysError: fe.days ? 'Choose at least one day.' : null,
+      days: [1, 2, 3, 4, 5, 6, 0].map((n) => ({
+        short: names[n], closed: n === 1, pressed: f.days.indexOf(n) >= 0,
+        aria: longNames[n] + (n === 1 ? ', closed' : ''),
+        toggle: () => { const cur = this.snap().form.days; setForm({ days: cur.indexOf(n) >= 0 ? cur.filter((x) => x !== n) : cur.concat([n]) }); }
+      })),
+      items: avail.map((p, i) => ({
+        name: p.name, price: this.money(p.price), qty: f.items[p.id] || 0,
+        rowStyle: 'display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px;' + (i ? ' border-top: 1px solid #dccfba;' : ''),
+        set: (n) => { const it = Object.assign({}, this.snap().form.items); if (n > 0) it[p.id] = n; else delete it[p.id]; setForm({ items: it }); }
+      })),
+      startsOn: f.startsOn, pickStart: (v) => setForm({ startsOn: v }),
+      startedLabel: this.label(f.startsOn),
+      hasEnd: !!f.hasEnd, toggleEnd: (on) => setForm({ hasEnd: on, endsOn: on ? this.snap().form.endsOn : null }),
+      endsOn: f.endsOn, pickEnd: (v) => setForm({ endsOn: v }),
+      endEarliest: f.startsOn > this.open() ? f.startsOn : this.open(),
+      notes: f.notes, setNotes: (ev) => setForm({ notes: ev.target.value }),
+      err: { branch: !!fe.branch, days: !!fe.days, items: !!fe.items, end: !!fe.end, any: fen > 0, summary: fen === 1 ? 'Fix the 1 thing marked above.' : 'Fix the ' + fen + ' things marked above.' },
+      summary: (itemCount === 1 ? '1 item' : itemCount + ' items') + ' \u00b7 ' + (f.days.length ? this.daysText(f.days) : 'no days chosen') + (f.branch ? ' \u00b7 ' + f.branch : ''),
+      saveLabel: f.mode === 'edit' ? 'Save changes' : 'Start recurring order'
+    };
+    const formSave = () => {
+      const cur = this.snap(), ff = cur.form;
+      if (Object.keys(this.formErrors(ff)).length) return this.set({ form: Object.assign({}, ff, { tried: true }) });
+      const endsOn = ff.hasEnd ? ff.endsOn : null;
+      if (ff.mode === 'create') {
+        const id = 'r' + (cur.recs.length + 1) + Date.now();
+        const rec = { id: id, branch: ff.branch, days: ff.days.slice(), items: Object.assign({}, ff.items), status: 'active', startsOn: ff.startsOn, endsOn: endsOn, notes: ff.notes, skips: [], generated: {} };
+        const first = this.firstFrom(ff.days, ff.startsOn);
+        return this.set({ recs: cur.recs.concat([rec]), sel: id, screen: 'detail', form: this.blankForm(), flash: 'Your recurring order is set up.' + (first ? ' First pickup ' + this.label(first) + '.' : '') });
+      }
+      const from = this.firstFrom(ff.days, this.open());
+      const next = cur.recs.map((x) => (x.id === ff.id ? Object.assign({}, x, { days: ff.days.slice(), items: Object.assign({}, ff.items), endsOn: endsOn, notes: ff.notes }) : x));
+      this.set({ recs: next, screen: 'detail', flash: 'Changes saved. They apply from ' + (from ? this.label(from) : 'your next pickup') + '. Orders we\u2019ve already made won\u2019t change.' });
+    };
+    return {
+      root: this.rootStyle(this.props.height || 1900),
+      yes: true, two: 2, zero: 0, fourteen: 14, mondays: [1],
+      is: is,
+      hasFlash: !!s.flash, flash: s.flash, clearFlash: () => this.set({ flash: '' }),
+      backLabel: this.props.backLabel || 'Menu',
+      exit: () => { if (this.props.onExit) this.props.onExit(); },
+      signOut: () => { if (this.props.onSignOut) this.props.onSignOut(); },
+      profile: s.profile, notEditing: !s.editing, editing: s.editing,
+      draft: draft, onDraft: onDraft,
+      draftErr: { name: dErr.name || null, phone: dErr.phone || null, email: dErr.email || null },
+      editProfile: () => this.set({ editing: true, draft: Object.assign({}, this.snap().profile), draftTried: false, flash: '' }),
+      cancelProfile: () => this.set({ editing: false, draft: null, draftTried: false }),
+      saveProfile: () => {
+        const dr = this.snap().draft || this.snap().profile;
+        const ok = dr.name.trim() && /^0\d{9}$/.test(dr.phone.replace(/\D/g, '')) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dr.email.trim());
+        if (!ok) return this.set({ draftTried: true });
+        this.set({ profile: dr, editing: false, draft: null, draftTried: false, flash: 'Details saved. New orders will use them.' });
+      },
+      recSummary: live.length
+        ? (live.length === 1 ? '1 recurring order' : live.length + ' recurring orders') + (nexts.length ? '. Next pickup ' + this.dayLabel(nexts[0]) + '.' : '.')
+        : 'Get the same order on the days you choose, made the day before.',
+      recButton: live.length ? 'Manage recurring orders' : 'Set up a recurring order',
+      toList: () => { if (!this.snap().recs.length) return this.set({ screen: 'form', form: this.blankForm(), formFrom: 'account', flash: '' }); this.set({ screen: 'list', flash: '' }); },
+      toAccount: go('account'),
+      orders: orders, noOrders: orders.length === 0,
+      recs: recs, noRecs: recs.length === 0,
+      newRec: go('form', { form: this.blankForm(), formFrom: 'list' }),
+      d: d,
+      edit: () => this.set({ screen: 'form', form: this.editForm(r), formFrom: 'detail', flash: '' }),
+      pause: () => d.pauseFn && d.pauseFn(),
+      resume: () => d.resumeFn && d.resumeFn(),
+      openEnd: () => this.set({ endOpen: true, endChoice: 'now', endDate: this.nextNew(r) }),
+      endOpen: s.endOpen && !!r,
+      endOptions: [
+        { value: 'now', label: 'Stop now', hint: 'No more orders after the ones we\u2019ve already made.' },
+        { value: 'date', label: 'After a pickup day', hint: 'Keep going until a day you choose, then stop.' }
+      ],
+      endChoice: s.endChoice, pickEndChoice: (v) => this.set({ endChoice: v }),
+      endOnDate: s.endChoice === 'date', endDate: s.endDate, pickEndDate: (v) => this.set({ endDate: v }),
+      endUnavailable: endUnavailable,
+      endConfirmLabel: s.endChoice === 'date' ? (s.endDate ? 'End after ' + this.label(s.endDate) : 'Choose a last pickup day') : 'End it now',
+      closeEnd: () => this.set({ endOpen: false }),
+      confirmEnd: () => {
+        const cur = this.snap();
+        if (cur.endChoice === 'date' && !cur.endDate) return;
+        const endsOn = cur.endChoice === 'date' ? cur.endDate : this.today();
+        updateRec(r.id, (x) => { x.endsOn = endsOn; return x; }, { endOpen: false, flash: cur.endChoice === 'date' ? 'This recurring order will end after ' + this.label(endsOn) + '.' : 'Ended. Orders we\u2019d already made still stand.' });
+      },
+      branchOptions: ['Northcote', 'Fitzroy', 'Brunswick'].map((b) => ({ value: b, label: b, hint: B[b].addr })),
+      form: form,
+      formBack: () => { const c = this.snap(); this.set({ screen: c.form.mode === 'edit' ? 'detail' : (c.formFrom === 'account' || !c.recs.length ? 'account' : 'list'), flash: '' }); },
+      formSave: formSave
+    };
+  }
+}
+
+</script>
+</body>
+</html>

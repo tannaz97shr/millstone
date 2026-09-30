@@ -1,0 +1,54 @@
+/* Millstone tokens as CSS custom properties (from the Millstone design system's tokens.json). */
+:root, [data-theme="light"] {
+  --flour: #f6efe3;
+  --flour-raised: #fffbf4;
+  --flour-sunk: #ece2d1;
+  --line: #dccfba;
+  --line-strong: #8a7862;
+  --ink: #2b2016;
+  --ink-muted: #665543;
+  --crust: #94451a;
+  --crust-deep: #76350f;
+  --crust-soft: #f4e0cd;
+  --on-crust: #fffbf4;
+  --wheat: #e2b458;
+  --wheat-soft: #f8e8c4;
+  --wheat-ink: #6a4808;
+  --sage: #3b6636;
+  --sage-soft: #dde8d4;
+  --on-sage: #fffbf4;
+  --brick: #9e2f1d;
+  --brick-soft: #f6dcd4;
+  --delft: #2e5476;
+  --delft-soft: #dce5ee;
+  --focus: var(--delft);
+  --shadow-card: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;
+  --shadow-sheet: 0 -2px 0 #2b20160f, 0 12px 32px #2b201629;
+  --focus-ring: 0 0 0 2px #f6efe3, 0 0 0 5px #2e5476;
+}
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+  --control-h: 48px;
+  --control-h-admin: 64px;
+  --action-h-admin: 72px;
+  --tap-min: 48px;
+  --tap-min-admin: 64px;
+  --font-serif: Bitter, Rockwell, "Roboto Slab", Georgia, serif;
+  --font-sans: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+.admin-title { font-family: var(--font-serif); font-size: 32px; line-height: 40px; font-weight: 700; }
+.admin-order-number { font-family: var(--font-sans); font-size: 32px; line-height: 36px; font-weight: 700; letter-spacing: 0.02em; }
+.admin-body { font-family: var(--font-sans); font-size: 20px; line-height: 28px; font-weight: 400; }
+.admin-strong { font-family: var(--font-sans); font-size: 20px; line-height: 28px; font-weight: 700; }
+.admin-caption { font-family: var(--font-sans); font-size: 16px; line-height: 22px; font-weight: 400; }
