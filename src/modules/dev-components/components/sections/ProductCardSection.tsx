@@ -32,12 +32,17 @@ export function ProductCardSection({ dates }: ProductCardSectionProps) {
             soldOut={copy.soldOutFor(formatPickupDay(dates.soldOutDay))}
           />
           <ProductCard {...copy.products.croissant} soldOut />
-          <ProductCard {...copy.products.scroll} image={samplePhoto} imageAlt={copy.imageAlt} />
+          <ProductCardDemo product="scroll" image={samplePhoto} imageAlt={copy.imageAlt} />
         </div>
       </Demo>
       <Demo caption={content.captions.rowLayout} stack>
         <ProductCardDemo product="rye" initialQuantity={1} layout="row" />
-        <ProductCard {...copy.products.scroll} layout="row" image={samplePhoto} imageAlt={copy.imageAlt} />
+        <ProductCardDemo
+          product="scroll"
+          layout="row"
+          image={samplePhoto}
+          imageAlt={copy.imageAlt}
+        />
       </Demo>
     </PreviewSection>
   );

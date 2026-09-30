@@ -185,6 +185,7 @@ export const devComponentsContent = {
     branches: ["Northcote", "Fitzroy", "Brunswick"],
     note: "Prices are the same at every branch. Some items are only made at one branch.",
     confirm: (branch: string) => `Pick up from ${branch}`,
+    keep: (branch: string) => `Keep ${branch}`,
     cancel: "Cancel",
     result: "Branch",
   },

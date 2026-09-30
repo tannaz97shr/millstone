@@ -50,7 +50,7 @@ export function SheetDemo() {
                 setOpen(false);
               }}
             >
-              {copy.confirm(pending)}
+              {pending === branch ? copy.keep(branch) : copy.confirm(pending)}
             </Button>
             <Button block onClick={close}>
               {copy.cancel}
@@ -126,6 +126,7 @@ export function ConfirmPaymentDialogDemo() {
       <Dialog
         open={open}
         onClose={() => finish(content.dialog.results.closed)}
+        adminLayout="confirm"
         title={copy.title(copy.customerName)}
         eyebrow={
           <>
