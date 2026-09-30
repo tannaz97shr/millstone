@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// No client access. Uploads go through the server (Admin SDK); product images
+// are served through token-gated download URLs, which don't depend on these rules.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
