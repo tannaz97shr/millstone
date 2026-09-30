@@ -1,8 +1,8 @@
 import { Button } from "@/shared/components/atoms/Button/Button";
 import { Notice } from "@/shared/components/molecules/Notice/Notice";
 import { devComponentsContent } from "../../content/devComponents";
-import { DismissibleNotice } from "../demos/ControlledDemos";
-import { PreviewSection } from "../PreviewSection";
+import { DismissibleNotice, DismissibleNoticeWithTarget } from "../demos/ControlledDemos";
+import { Demo, PreviewSection } from "../PreviewSection";
 
 const content = devComponentsContent;
 const copy = content.notice;
@@ -31,9 +31,14 @@ export function NoticeSection() {
       <Notice tone="warning" role="note" title={copy.warningTitle}>
         {copy.warningBody}
       </Notice>
-      <Notice tone="info" role="note">
-        {copy.info}
-      </Notice>
+      <Demo caption={content.captions.info} stack>
+        <Notice tone="info" role="note">
+          {copy.info}
+        </Notice>
+      </Demo>
+      <Demo caption={content.captions.focusTarget} stack>
+        <DismissibleNoticeWithTarget />
+      </Demo>
     </PreviewSection>
   );
 }

@@ -8,7 +8,17 @@ export {
   isSoldOut,
 } from "./pickupDates";
 export {
+  formatLongDay,
+  formatMonthTitle,
+  monthShortName,
+  weekdayName,
+} from "./formatDates";
+export {
   addDays,
+  addMonths,
+  dayOfMonth,
+  daysInMonth,
+  startOfMonth,
   isIsoDate,
   isTimeOfDay,
   toIsoDate,

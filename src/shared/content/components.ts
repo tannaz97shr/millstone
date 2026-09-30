@@ -43,4 +43,31 @@ export const componentsContent = {
     // Starts with the visible word so voice control users can say "OK".
     dismissLabel: "OK, dismiss message",
   },
+  productCard: {
+    add: "Add",
+    addLabel: (name: string) => `Add ${name} to order`,
+    soldOut: "Sold out",
+  },
+  datePicker: {
+    previousMonth: "Previous month",
+    nextMonth: "Next month",
+    unavailable: (day: string) => `${day}, not available`,
+  },
+  weekdayPicker: {
+    closed: "Closed",
+    closedLabel: (day: string, closedText: string) => `${day}, ${closedText.toLowerCase()}`,
+  },
+  orderRow: {
+    label: (orderNumber: string) => `Order ${orderNumber}`,
+    ready: "Ready",
+    collected: "Collected",
+    readyLabel: (orderNumber: string) => `Mark ${orderNumber} ready`,
+    collectedLabel: (orderNumber: string) => `Mark ${orderNumber} collected`,
+    details: "Details",
+    detailsLabel: (orderNumber: string) => `Details for ${orderNumber}`,
+    note: "Note:",
+    item: (quantity: number, name: string) => `${quantity} × ${name}`,
+    itemSeparator: ", ",
+    nameAndPhone: (phone: string) => ` · ${phone}`,
+  },
 } as const;

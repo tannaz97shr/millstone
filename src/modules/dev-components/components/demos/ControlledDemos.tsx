@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { QuantityStepper } from "@/shared/components/molecules/QuantityStepper/QuantityStepper";
+import { Button } from "@/shared/components/atoms/Button/Button";
 import { Toggle } from "@/shared/components/atoms/Toggle/Toggle";
 import { ChoiceGroup } from "@/shared/components/molecules/ChoiceGroup/ChoiceGroup";
 import { Notice } from "@/shared/components/molecules/Notice/Notice";
@@ -69,4 +70,24 @@ export function DismissibleNotice() {
   const [shown, setShown] = useState(true);
   if (!shown) return <p className="caption text-ink-muted">{content.notice.dismissed}</p>;
   return <Notice onDismiss={() => setShown(false)}>{content.notice.neutral}</Notice>;
+}
+
+/** The consumer says where focus goes: here, back to the button above the notice. */
+export function DismissibleNoticeWithTarget() {
+  const [shown, setShown] = useState(true);
+  const target = useRef<HTMLButtonElement>(null);
+  return (
+    <div className="flex flex-col items-start gap-3">
+      <Button ref={target} data-testid="focus-target">
+        {content.notice.targetButton}
+      </Button>
+      {shown ? (
+        <Notice onDismiss={() => setShown(false)} focusAfterDismiss={target} className="self-stretch">
+          {content.notice.neutral}
+        </Notice>
+      ) : (
+        <p className="caption text-ink-muted">{content.notice.dismissed}</p>
+      )}
+    </div>
+  );
 }
