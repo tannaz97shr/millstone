@@ -82,7 +82,7 @@ _Last updated: 29 Sep 2026 — design phase complete_
 | Brunswick | 402 Sydney Road, Brunswick | 03 7010 4020 |
 
 ### Sample / seed data rule
-- All sample phone numbers must be ACMA fictional numbers: mobiles from the 0491 570 range (e.g. 0491 570 006), landlines from (03) 7010 xxxx or (03) 5550 xxxx.
+- All sample phone numbers must be ACMA fictional numbers: mobiles from the 0491 570 range (e.g. 0491 570 006), landlines from 03 7010 xxxx or 03 5550 xxxx.
 - Emails use example.com. Never use real names, numbers or addresses of the real bakery.
 
 ---
