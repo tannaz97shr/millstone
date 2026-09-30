@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>Collected order, read-only — Millstone admin</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/a97343382604aa44962c2def560d70f2") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/7d7688b0e88d020bd460d2d7de7e47cc") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/c021df3cc7e5ade35cf70a420baa900a") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/bc7eb9b10dd258b579fba3ff624e517e") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+.ms-btn.ms-btn-secondary.ms-seg-on,.ms-btn.ms-btn-secondary.ms-seg-on:hover:not(:disabled){background:#2b2016;border-color:#2b2016;color:#fffbf4}
+.ms-nav-link{display:inline-flex;align-items:center;min-height:64px;padding:0 16px;font-size:20px;font-weight:700;color:#665543;text-decoration:none;border-bottom:4px solid transparent;box-sizing:border-box}
+.ms-nav-link:hover{color:#2b2016}
+.ms-nav-link[aria-current="page"]{color:#2b2016;border-bottom-color:#94451a}
+.ms-nav-link:focus-visible{outline:none;box-shadow:0 0 0 2px #f6efe3,0 0 0 5px #2e5476;border-radius:10px}
+</style>
+</helmet>
+<div style="width: 1180px; height: 1500px;">
+<dc-import name="Main" role="staff" status-filter="collected" open-id="MS-1035" hint-size="1180px,1500px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1180,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

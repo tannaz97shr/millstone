@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>Customer flow, C1 to C12 — Millstone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/504d17282c8e583c69e6f3129a969f86") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/3ee4132da12d481f2d726ae5e1541de7") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/3130871d5e49b7c5c530cdf575291fca") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/ab3f33e4b7b70bdd93ebe3b81dc69633") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; overflow: hidden; background: #f6efe3;">
+<sc-if value="{{is.home}}" hint-placeholder-val="{{true}}">
+<dc-import name="Home" height="{{h}}" start-branch="{{branch}}" cart-count="{{cartCount}}" signed-in="{{signedIn}}" on-choose="{{choose}}" on-back="{{toMenu}}" on-sign-in="{{signInFromHome}}" on-recurring="{{recurring}}" hint-size="390px,844px"></dc-import>
+</sc-if>
+<sc-if value="{{is.menu}}" hint-placeholder-val="{{false}}">
+<dc-import name="Menu" branch="{{branch}}" start-date="{{date}}" start-cart="{{cart}}" signed-in="{{signedIn}}" on-view-cart="{{toCart}}" on-change-branch="{{toHome}}" on-sign-in="{{signInFromMenu}}" hint-size="390px,844px"></dc-import>
+</sc-if>
+<sc-if value="{{is.cart}}" hint-placeholder-val="{{false}}">
+<dc-import name="Cart" start-branch="{{branch}}" start-cart="{{cart}}" date="{{date}}" on-back="{{cartBack}}" on-checkout="{{toCheckout}}" hint-size="390px,844px"></dc-import>
+</sc-if>
+<sc-if value="{{is.checkout}}" hint-placeholder-val="{{false}}">
+<dc-import name="Checkout" height="{{h}}" signed-in="{{signedIn}}" account-name="{{accountName}}" pay-failed="{{payFailed}}" lines="{{lines}}" total="{{total}}" branch="{{branch}}" date="{{date}}" start-contact="{{contact}}" start-notes="{{notes}}" start-method="{{method}}" on-place="{{place}}" on-edit="{{toCartAgain}}" on-sign-in="{{signInFromCheckout}}" hint-size="390px,844px"></dc-import>
+</sc-if>
+<sc-if value="{{is.account}}" hint-placeholder-val="{{false}}">
+<dc-import name="Account" height="{{h}}" context="{{from}}" on-back="{{accountBack}}" on-done="{{accountDone}}" hint-size="390px,844px"></dc-import>
+</sc-if>
+<sc-if value="{{is.pay}}" hint-placeholder-val="{{false}}">
+<dc-import name="PayStandIn" total="{{total}}" on-success="{{paySuccess}}" on-fail="{{payFail}}" hint-size="390px,844px"></dc-import>
+</sc-if>
+<sc-if value="{{is.confirming}}" hint-placeholder-val="{{false}}">
+<dc-import name="Confirming" email="{{email}}" branch="{{branch}}" date="{{date}}" count="{{count}}" total="{{total}}" on-confirmed="{{confirmed}}" hint-size="390px,844px"></dc-import>
+</sc-if>
+<sc-if value="{{is.done}}" hint-placeholder-val="{{false}}">
+<dc-import name="Confirmation" height="{{h}}" payment="{{payment}}" signed-in="{{signedIn}}" order-number="{{orderNumber}}" contact="{{contact}}" lines="{{lines}}" total="{{total}}" branch="{{branch}}" date="{{date}}" on-menu="{{newOrder}}" on-account="{{fromDoneToAccount}}" hint-size="390px,844px"></dc-import>
+</sc-if>
+<sc-if value="{{is.myaccount}}" hint-placeholder-val="{{false}}">
+<dc-import name="AccountArea" height="{{h}}" start-screen="{{areaStart}}" persona="{{persona}}" profile="{{account}}" start-recurring="{{recs}}" extra-orders="{{myOrders}}" back-label="{{areaBack}}" on-exit="{{areaExit}}" on-sign-out="{{signOut}}" on-recs-change="{{saveRecs}}" on-profile-change="{{saveProfile}}" hint-size="390px,844px"></dc-import>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"signedIn":{"editor":"boolean","default":false,"section":"Start the flow"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  snap() {
+    const s = this.state || {};
+    const cafe = { name: 'Corner Cup Cafe', phone: '0491 570 158', email: 'orders@cornercup.example.com' };
+    const d = { screen: 'home', from: 'home', branch: '', date: '2026-09-30', cart: {}, lines: [], total: 0, signedIn: !!this.props.signedIn, account: this.props.signedIn ? cafe : null, persona: 'cafe', recs: null, myOrders: [], areaStart: 'account', areaFrom: 'home', contact: null, notes: '', method: '', payFailed: false, payment: 'paid', orderNumber: 'MS-1048' };
+    Object.keys(d).forEach((k) => { if (s[k] !== undefined) d[k] = s[k]; });
+    return d;
+  }
+  record(pay) {
+    const s = this.snap();
+    if (!s.signedIn) return {};
+    const o = { num: s.orderNumber, date: s.date, branch: s.branch, status: 'placed', pay: pay, recurring: false, lines: s.lines.map((l) => [l.qty, l.name, l.price]) };
+    return { myOrders: [o].concat(s.myOrders.filter((x) => x.num !== o.num)) };
+  }
+  go(patch) { this.setState(Object.assign(this.snap(), patch)); }
+  renderVals() {
+    const s = this.snap();
+    const is = {}; ['home', 'menu', 'cart', 'checkout', 'account', 'pay', 'confirming', 'done', 'myaccount'].forEach((k) => { is[k] = s.screen === k; });
+    const count = (c) => Object.keys(c).reduce((t, k) => t + (c[k] || 0), 0);
+    return {
+      is: is, h: 844,
+      branch: s.branch, date: s.date, cart: s.cart, lines: s.lines, total: s.total,
+      cartCount: count(s.cart),
+      count: s.lines.reduce((t, l) => t + l.qty, 0),
+      signedIn: s.signedIn,
+      accountName: s.account ? s.account.name : '',
+      payFailed: s.payFailed, from: s.from,
+      contact: s.contact || s.account,
+      notes: s.notes, method: s.method, payment: s.payment, orderNumber: s.orderNumber,
+      email: (s.contact || s.account || { email: '' }).email,
+      choose: (b) => this.go({ screen: 'menu', branch: b }),
+      toMenu: () => this.go({ screen: 'menu' }),
+      toHome: (cart, date) => this.go({ screen: 'home', cart: cart, date: date }),
+      signInFromHome: () => this.snap().signedIn ? this.go({ screen: 'myaccount', areaStart: 'account', areaFrom: 'home' }) : this.go({ screen: 'account', from: 'home' }),
+      signInFromMenu: (cart, date) => this.snap().signedIn ? this.go({ screen: 'myaccount', areaStart: 'account', areaFrom: 'menu', cart: cart, date: date }) : this.go({ screen: 'account', from: 'menu', cart: cart, date: date }),
+      recurring: () => this.snap().signedIn ? this.go({ screen: 'myaccount', areaStart: 'form', areaFrom: 'home' }) : this.go({ screen: 'account', from: 'recurring' }),
+      fromDoneToAccount: () => this.go({ screen: 'myaccount', areaStart: 'account', areaFrom: 'done' }),
+      persona: s.persona, recs: s.recs, myOrders: s.myOrders, areaStart: s.areaStart, account: s.account,
+      areaBack: s.areaFrom === 'home' ? 'Home' : 'Menu',
+      areaExit: () => { const f = this.snap().areaFrom; if (f === 'done') return this.go({ screen: 'menu', cart: {}, lines: [], total: 0, notes: '', method: '', payFailed: false, orderNumber: 'MS-1049', contact: null }); this.go({ screen: f === 'home' && !this.snap().branch ? 'home' : f }); },
+      signOut: () => this.go({ screen: 'home', signedIn: false, account: null, contact: null, recs: null, myOrders: [], persona: 'cafe' }),
+      saveRecs: (r) => this.setState({ recs: r }),
+      saveProfile: (p) => this.setState({ account: p }),
+      signInFromCheckout: (r) => this.go({ screen: 'account', from: 'checkout', notes: r.notes, method: r.method }),
+      accountBack: () => this.go({ screen: this.snap().from }),
+      accountDone: (acct) => {
+        const cur = this.snap();
+        const a = { name: acct.name, phone: acct.phone, email: acct.email };
+        const base = { signedIn: true, account: a, persona: acct.persona || 'cafe', recs: null, myOrders: [] };
+        if (cur.from === 'recurring') return this.go(Object.assign(base, { screen: 'myaccount', areaStart: 'form', areaFrom: 'home' }));
+        const back = cur.from === 'home' && cur.branch ? 'menu' : cur.from;
+        this.go(Object.assign(base, { screen: back, contact: cur.from === 'checkout' ? a : cur.contact }));
+      },
+      toCart: (cart, date) => this.go({ screen: 'cart', cart: cart, date: date }),
+      cartBack: (r) => this.go({ screen: 'menu', cart: r.cart, branch: r.branch }),
+      toCheckout: (r) => this.go({ screen: 'checkout', cart: r.cart, branch: r.branch, lines: r.lines, total: r.total, payFailed: false }),
+      toCartAgain: () => this.go({ screen: 'cart', payFailed: false }),
+      place: (r) => {
+        const base = { contact: r.contact, notes: r.notes, method: r.method };
+        if (r.method === 'online') return this.go(Object.assign(base, { screen: 'pay' }));
+        this.go(Object.assign(base, { screen: 'done', payment: 'unpaid', cart: {} }, this.record('unpaid')));
+      },
+      paySuccess: () => this.go({ screen: 'confirming' }),
+      payFail: () => this.go({ screen: 'checkout', payFailed: true }),
+      confirmed: () => this.go(Object.assign({ screen: 'done', payment: 'paid', cart: {} }, this.record('paid'))),
+      newOrder: () => this.go({ screen: 'menu', cart: {}, lines: [], total: 0, notes: '', method: '', payFailed: false, orderNumber: s.orderNumber === 'MS-1048' ? 'MS-1049' : 'MS-1050', contact: null })
+    };
+  }
+}
+</script>
+</body>
+</html>

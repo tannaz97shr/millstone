@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>C5 Checkout — Millstone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/504d17282c8e583c69e6f3129a969f86") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/3ee4132da12d481f2d726ae5e1541de7") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/3130871d5e49b7c5c530cdf575291fca") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/ab3f33e4b7b70bdd93ebe3b81dc69633") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+
+</style>
+</helmet>
+<div style="{{root}}">
+<div style="flex: 1 1 auto; min-height: 0; overflow-y: auto;">
+<header style="display: flex; align-items: center; min-height: 52px; padding: 8px 8px 0; box-sizing: border-box;">
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" icon="left" on-click="{{edit}}">Your order</x-import>
+</header>
+<main style="display: flex; flex-direction: column; gap: 24px; padding: 8px 16px 24px;">
+<h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">Checkout</h1>
+<sc-if value="{{payFailed}}" hint-placeholder-val="{{false}}">
+<div role="alert" style="display: flex; align-items: flex-start; gap: 12px; padding: 16px; background: #f6dcd4; border: 1.5px solid #9e2f1d; border-radius: 10px;">
+<span style="display: flex; padding-top: 2px; font-size: 20px; color: #9e2f1d;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import></span>
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<p style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 700; color: #9e2f1d;">Your payment wasn't completed</p>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">You haven't been charged, and your order and details are just as you left them. Try again, or choose Pay at pickup.</p>
+</div>
+</div>
+</sc-if>
+<section aria-labelledby="sum-title" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px; box-shadow: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;">
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+<div style="display: flex; flex-direction: column;">
+<h2 id="sum-title" style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 700;">Pickup {{dateLabel}} at {{branch}}</h2>
+<span style="font-size: 14px; line-height: 20px; color: #665543;">{{countLabel}}</span>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{edit}}" aria-label="Edit your order">Edit</x-import>
+</div>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px;">
+<sc-for list="{{lines}}" as="l" hint-placeholder-count="2">
+<li style="display: flex; justify-content: space-between; gap: 12px; font-size: 16px; line-height: 24px; font-variant-numeric: tabular-nums;"><span>{{l.text}}</span><span>{{l.total}}</span></li>
+</sc-for>
+</ul>
+</section>
+<section aria-labelledby="you-title" style="display: flex; flex-direction: column; gap: 16px;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<h2 id="you-title" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">Your details</h2>
+<sc-if value="{{signedIn}}" hint-placeholder-val="{{false}}">
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: #665543;">Signed in as {{accountName}}. We've filled these in from your account. Changes here are just for this order.</p>
+</sc-if>
+</div>
+<sc-if value="{{isGuest}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 4px 4px 16px; background: #ece2d1; border-radius: 10px;">
+<span style="font-size: 16px; line-height: 24px;">Have an account?</span>
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{signIn}}">Sign in</x-import>
+</div>
+<p style="margin: -8px 0 0; font-size: 14px; line-height: 20px; color: #665543;">No account needed. We'll only use these to reach you about this order.</p>
+</sc-if>
+<x-import component-from-global-scope="Millstone.TextField" label="Name" value="{{c.name}}" on-change="{{setName}}" auto-complete="name" error="{{err.name}}"></x-import>
+<x-import component-from-global-scope="Millstone.TextField" label="Mobile number" hint="So we can call if something changes." type="tel" input-mode="tel" value="{{c.phone}}" on-change="{{setPhone}}" auto-complete="tel" error="{{err.phone}}"></x-import>
+<x-import component-from-global-scope="Millstone.TextField" label="Email" hint="We'll send your confirmation here." type="email" input-mode="email" value="{{c.email}}" on-change="{{setEmail}}" auto-complete="email" error="{{err.email}}"></x-import>
+<x-import component-from-global-scope="Millstone.TextField" label="Notes for the bakery" optional="{{yes}}" hint="Like “Sliced, please”." multiline="{{yes}}" rows="{{two}}" value="{{notes}}" on-change="{{setNotes}}"></x-import>
+</section>
+<section aria-label="Payment" style="display: flex; flex-direction: column; gap: 8px;">
+<x-import component-from-global-scope="Millstone.ChoiceGroup" label="How would you like to pay?" options="{{payOptions}}" value="{{method}}" on-change="{{setMethod}}" name="payment"></x-import>
+<sc-if value="{{err.hasMethod}}" hint-placeholder-val="{{false}}">
+<p style="display: flex; align-items: center; gap: 4px; margin: 0; font-size: 14px; line-height: 20px; font-weight: 700; color: #9e2f1d;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import>Choose how you'd like to pay.</p>
+</sc-if>
+</section>
+</main>
+</div>
+<div style="flex: none; display: flex; flex-direction: column; gap: 12px; padding: 12px 16px 16px; background: #fffbf4; border-top: 1px solid #dccfba; box-shadow: 0 -2px 0 #2b20160f, 0 -6px 16px #2b201614;">
+<sc-if value="{{err.any}}" hint-placeholder-val="{{false}}">
+<p role="alert" style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 700; color: #9e2f1d;">{{err.summary}}</p>
+</sc-if>
+<div style="display: flex; align-items: baseline; justify-content: space-between;">
+<span style="font-size: 16px; line-height: 24px; font-weight: 700;">Total</span>
+<span style="font-size: 18px; line-height: 24px; font-weight: 700; font-variant-numeric: tabular-nums;">{{totalLabel}}</span>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{place}}">{{placeLabel}}</x-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"signedIn":{"editor":"boolean","default":false,"section":"Scenario"},"payFailed":{"editor":"boolean","default":false,"section":"Scenario"},"lines":{"editor":null},"total":{"editor":null},"branch":{"editor":null},"date":{"editor":null},"startContact":{"editor":null},"startNotes":{"editor":null},"startMethod":{"editor":null},"showErrors":{"editor":null},"height":{"editor":null},"onPlace":{"editor":null},"onEdit":{"editor":null},"onSignIn":{"editor":null},"accountName":{"editor":null},"$preview":{"width":390,"height":1650}}'>
+class Component extends DCLogic {
+  rootStyle(h) { return 'position: relative; width: 390px; height: ' + (h || 844) + 'px; display: flex; flex-direction: column; overflow: hidden; background: #f6efe3; color: #2b2016; font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;'; }
+  label(iso) {
+    const p = iso.split('-').map(Number);
+    const d = new Date(p[0], p[1] - 1, p[2]);
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
+  }
+  money(n) { return '$' + n.toFixed(2); }
+  st() { return this.state || {}; }
+  cur(key, prop, dflt) { const s = this.st(); if (s[key] !== undefined) return s[key]; const v = this.props[prop]; return v !== undefined && v !== null ? v : dflt; }
+  account() { return { name: 'Sam Carter', phone: '0491 570 156', email: 'sam.carter@example.com' }; }
+  signedIn() { const s = this.st(); return s.signedIn !== undefined ? s.signedIn : !!this.props.signedIn; }
+  snap() {
+    const signed = this.signedIn();
+    const blank = signed ? this.account() : { name: '', phone: '', email: '' };
+    return {
+      signedIn: signed,
+      contact: this.cur('contact', 'startContact', blank),
+      notes: this.cur('notes', 'startNotes', ''),
+      method: this.cur('method', 'startMethod', ''),
+      tried: this.cur('tried', 'showErrors', false)
+    };
+  }
+  set(patch) { this.setState(Object.assign(this.snap(), patch)); }
+  errors(s) {
+    const c = s.contact, e = {};
+    if (!c.name.trim()) e.name = 'Enter your name.';
+    const digits = c.phone.replace(/\D/g, '');
+    if (!/^0\d{9}$/.test(digits)) e.phone = 'Enter a 10-digit mobile number, like 0491 570 156.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email.trim())) e.email = 'Enter an email address, like name@example.com.';
+    if (!s.method) e.method = true;
+    return e;
+  }
+  renderVals() {
+    const s = this.snap();
+    const lines = this.props.lines || [{ name: 'Sourdough rye loaf', qty: 1, price: 9.5 }, { name: 'Plain bagel', qty: 4, price: 2.8 }];
+    const total = this.props.total !== undefined ? this.props.total : lines.reduce((t, l) => t + l.qty * l.price, 0);
+    const count = lines.reduce((t, l) => t + l.qty, 0);
+    const e = s.tried ? this.errors(s) : {};
+    const n = Object.keys(e).length;
+    const field = (k) => (ev) => { const c = Object.assign({}, this.snap().contact); c[k] = ev.target.value; this.set({ contact: c }); };
+    return {
+      root: this.rootStyle(this.props.height || 1650),
+      yes: true, two: 2,
+      payFailed: !!this.props.payFailed,
+      branch: this.props.branch || 'Northcote',
+      dateLabel: this.label(this.props.date || '2026-09-30'),
+      countLabel: count === 1 ? '1 item' : count + ' items',
+      lines: lines.map((l) => ({ text: l.qty + ' \u00d7 ' + l.name, total: this.money(l.qty * l.price) })),
+      totalLabel: this.money(total),
+      signedIn: s.signedIn,
+      isGuest: !s.signedIn,
+      accountName: this.props.accountName || this.account().name,
+      c: s.contact,
+      notes: s.notes,
+      method: s.method,
+      err: { name: e.name || null, phone: e.phone || null, email: e.email || null, hasMethod: !!e.method, any: n > 0, summary: n === 1 ? 'Fix the 1 thing marked above.' : 'Fix the ' + n + ' things marked above.' },
+      setName: field('name'), setPhone: field('phone'), setEmail: field('email'),
+      setNotes: (ev) => this.set({ notes: ev.target.value }),
+      setMethod: (v) => this.set({ method: v }),
+      payOptions: [
+        { value: 'online', label: 'Pay online now', hint: 'Pay by card on a secure payment page, then come back here.' },
+        { value: 'at_pickup', label: 'Pay at pickup', hint: 'Pay at the counter when you collect your order.' }
+      ],
+      placeLabel: s.method === 'online' ? 'Continue to payment' : 'Place order',
+      edit: () => { if (this.props.onEdit) this.props.onEdit(); },
+      signIn: () => {
+        const cur = this.snap();
+        if (this.props.onSignIn) this.props.onSignIn({ notes: cur.notes, method: cur.method });
+      },
+      place: () => {
+        const cur = this.snap();
+        const errs = this.errors(cur);
+        if (Object.keys(errs).length) return this.set({ tried: true });
+        if (this.props.onPlace) this.props.onPlace({ contact: cur.contact, notes: cur.notes, method: cur.method, signedIn: cur.signedIn });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

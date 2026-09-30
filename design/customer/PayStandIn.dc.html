@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>Payment provider stand-in</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/504d17282c8e583c69e6f3129a969f86") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/3ee4132da12d481f2d726ae5e1541de7") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/3130871d5e49b7c5c530cdf575291fca") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/ab3f33e4b7b70bdd93ebe3b81dc69633") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+
+</style>
+</helmet>
+<div style="width: 390px; height: {{h}}px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px; padding: 16px; background: #f3f4f6; color: #111827; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;">
+<p style="margin: 0; padding: 12px; border: 2px dashed #6b7280; border-radius: 8px; font-size: 14px; line-height: 20px; color: #374151;">Stand-in for the payment provider's own page (Square or Stripe is still to be decided). Not part of the Millstone design. Use it to play the success and failure paths.</p>
+<div style="display: flex; flex-direction: column; gap: 16px; padding: 20px; background: #ffffff; border: 1px solid #d1d5db; border-radius: 8px;">
+<span style="font-size: 14px; line-height: 20px; color: #4b5563;">Pay Millstone Northcote</span>
+<span style="font-size: 32px; line-height: 40px; font-weight: 700; font-variant-numeric: tabular-nums;">{{amount}}</span>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<label for="card" style="font-size: 14px; line-height: 20px; font-weight: 600;">Card number</label>
+<input id="card" value="4242 4242 4242 4242" readonly="readonly" style="height: 48px; padding: 0 12px; border: 1px solid #9ca3af; border-radius: 6px; font-size: 16px; font-family: inherit; background: #f9fafb;">
+</div>
+<button type="button" onClick="{{succeed}}" style="height: 48px; border: 0; border-radius: 6px; background: #111827; color: #ffffff; font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer;">Pay {{amount}}</button>
+<button type="button" onClick="{{fail}}" style="height: 48px; border: 1px solid #9ca3af; border-radius: 6px; background: #ffffff; color: #111827; font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer;">Simulate a declined card</button>
+</div>
+<button type="button" onClick="{{cancel}}" style="align-self: flex-start; min-height: 44px; padding: 0 4px; border: 0; background: transparent; color: #1d4ed8; font-size: 16px; font-family: inherit; text-decoration: underline; cursor: pointer;">Cancel and return to Millstone</button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"total":{"editor":null},"height":{"editor":null},"onSuccess":{"editor":null},"onFail":{"editor":null},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const t = this.props.total !== undefined ? this.props.total : 20.7;
+    return {
+      h: this.props.height || 844,
+      amount: '$' + t.toFixed(2),
+      succeed: () => { if (this.props.onSuccess) this.props.onSuccess(); },
+      fail: () => { if (this.props.onFail) this.props.onFail('failed'); },
+      cancel: () => { if (this.props.onFail) this.props.onFail('cancelled'); }
+    };
+  }
+}
+</script>
+</body>
+</html>

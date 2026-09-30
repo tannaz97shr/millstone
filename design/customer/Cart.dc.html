@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>C4 Cart — Millstone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/504d17282c8e583c69e6f3129a969f86") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/3ee4132da12d481f2d726ae5e1541de7") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/3130871d5e49b7c5c530cdf575291fca") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/ab3f33e4b7b70bdd93ebe3b81dc69633") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+.mc-sheet-actions{display:flex;flex-direction:column;gap:8px}
+</style>
+</helmet>
+<div style="{{root}}">
+<div style="flex: 1 1 auto; min-height: 0; overflow-y: auto;">
+<header style="display: flex; align-items: center; min-height: 52px; padding: 8px 8px 0; box-sizing: border-box;">
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" icon="left" on-click="{{back}}">Menu</x-import>
+</header>
+<main style="display: flex; flex-direction: column; gap: 24px; padding: 8px 16px 24px;">
+<h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">Your order</h1>
+<section aria-label="Pickup" style="display: flex; flex-direction: column; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px; box-shadow: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px;">
+<div style="display: flex; flex-direction: column;">
+<span style="font-size: 14px; line-height: 20px; color: #665543;">Pickup from</span>
+<span style="font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-weight: 600; font-size: 20px; line-height: 26px;">{{branch}}</span>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" on-click="{{openSheet}}" aria-label="{{changeBranchLabel}}">Change</x-import>
+</div>
+<div style="height: 1px; margin: 0 16px; background: #dccfba;"></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px;">
+<div style="display: flex; flex-direction: column;">
+<span style="font-size: 14px; line-height: 20px; color: #665543;">Pickup day</span>
+<span style="font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-weight: 600; font-size: 20px; line-height: 26px;">{{dateLabel}}</span>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" on-click="{{back}}" aria-label="Change pickup day on the menu">Change</x-import>
+</div>
+</section>
+<sc-if value="{{hasNotice}}" hint-placeholder-val="{{false}}">
+<div role="status" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 12px 12px 16px; background: #fffbf4; border: 1.5px solid #8a7862; border-radius: 10px;">
+<span style="display: flex; padding-top: 2px; font-size: 20px;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import></span>
+<p style="flex: 1 1 auto; margin: 0; font-size: 16px; line-height: 24px;">{{notice}}</p>
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{dismiss}}" aria-label="Dismiss message">OK</x-import>
+</div>
+</sc-if>
+<sc-if value="{{hasItems}}" hint-placeholder-val="{{true}}">
+<section aria-label="Items" style="display: flex; flex-direction: column; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px; box-shadow: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;">
+<sc-for list="{{lines}}" as="l" hint-placeholder-count="2">
+<div style="{{l.rowStyle}}">
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+<div style="display: flex; flex-direction: column; min-width: 0;">
+<span style="font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-weight: 600; font-size: 18px; line-height: 24px;">{{l.name}}</span>
+<span style="font-size: 14px; line-height: 20px; color: #665543; font-variant-numeric: tabular-nums;">{{l.each}}</span>
+</div>
+<span style="font-size: 18px; line-height: 24px; font-weight: 700; font-variant-numeric: tabular-nums;">{{l.lineTotal}}</span>
+</div>
+<x-import component-from-global-scope="Millstone.QuantityStepper" value="{{l.qty}}" on-change="{{l.setQty}}" label="{{l.name}}"></x-import>
+</div>
+</sc-for>
+</section>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" icon="plus" on-click="{{back}}">Add more items</x-import>
+</sc-if>
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 24px 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px;">
+<p style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-weight: 600; font-size: 20px; line-height: 26px;">Your order is empty</p>
+<p style="margin: 0; font-size: 16px; line-height: 24px; color: #665543;">Add something from the {{branch}} menu to pick up on {{dateLabel}}.</p>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" on-click="{{back}}">Back to the menu</x-import>
+</div>
+</sc-if>
+</main>
+</div>
+<sc-if value="{{hasItems}}" hint-placeholder-val="{{true}}">
+<div style="flex: none; display: flex; flex-direction: column; gap: 12px; padding: 12px 16px 16px; background: #fffbf4; border-top: 1px solid #dccfba; box-shadow: 0 -2px 0 #2b20160f, 0 -6px 16px #2b201614;">
+<div style="display: flex; align-items: baseline; justify-content: space-between;">
+<span style="font-size: 16px; line-height: 24px; font-weight: 700;">Total <span style="font-weight: 400; color: #665543;">· {{countLabel}}</span></span>
+<span aria-live="polite" style="font-size: 18px; line-height: 24px; font-weight: 700; font-variant-numeric: tabular-nums;">{{totalLabel}}</span>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{checkout}}">Go to checkout</x-import>
+</div>
+</sc-if>
+<sc-if value="{{showSheet}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; background: rgba(43, 32, 22, 0.45);">
+<div role="dialog" aria-modal="true" aria-labelledby="sheet-title" style="display: flex; flex-direction: column; gap: 16px; padding: 24px 16px 20px; background: #fffbf4; border-radius: 16px 16px 0 0; box-shadow: 0 -2px 0 #2b20160f, 0 12px 32px #2b201629;">
+<h2 id="sheet-title" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">Pick up from</h2>
+<x-import component-from-global-scope="Millstone.ChoiceGroup" label="Which branch?" options="{{branchOptions}}" value="{{pending}}" on-change="{{choose}}" name="branch"></x-import>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: #665543;">Prices are the same at every branch. Some items are only made at one branch.</p>
+<div class="mc-sheet-actions">
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{confirmSheet}}">{{sheetConfirm}}</x-import>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" block="{{yes}}" on-click="{{closeSheet}}">Cancel</x-import>
+</div>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{showWarning}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(43, 32, 22, 0.45);">
+<div role="alertdialog" aria-modal="true" aria-labelledby="warn-title" aria-describedby="warn-body" style="display: flex; flex-direction: column; gap: 16px; width: 100%; padding: 24px 20px 20px; box-sizing: border-box; background: #fffbf4; border-radius: 16px; box-shadow: 0 -2px 0 #2b20160f, 0 12px 32px #2b201629;">
+<h2 id="warn-title" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">Change to {{pending}}?</h2>
+<p id="warn-body" style="margin: 0; font-size: 16px; line-height: 24px;">{{pending}} doesn't make {{removedCountLabel}}, so we'll take {{removedPronoun}} out of your order:</p>
+<ul style="margin: 0; padding: 12px 16px; list-style: none; display: flex; flex-direction: column; gap: 4px; background: #ece2d1; border-radius: 10px;">
+<sc-for list="{{removed}}" as="r" hint-placeholder-count="1">
+<li style="font-size: 16px; line-height: 24px; font-weight: 700; font-variant-numeric: tabular-nums;">{{r}}</li>
+</sc-for>
+</ul>
+<div class="mc-sheet-actions">
+<x-import component-from-global-scope="Millstone.Button" variant="primary" block="{{yes}}" on-click="{{confirmWarning}}">Change to {{pending}}</x-import>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" block="{{yes}}" on-click="{{keep}}">Keep {{branch}}</x-import>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"startBranch":{"editor":null},"startCart":{"editor":null},"date":{"editor":null},"startView":{"editor":null},"startPending":{"editor":null},"startNotice":{"editor":null},"height":{"editor":null},"onBack":{"editor":null},"onCheckout":{"editor":null},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  rootStyle(h) { return 'position: relative; width: 390px; height: ' + (h || 844) + 'px; display: flex; flex-direction: column; overflow: hidden; background: #f6efe3; color: #2b2016; font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;'; }
+  label(iso) {
+    const p = iso.split('-').map(Number);
+    const d = new Date(p[0], p[1] - 1, p[2]);
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
+  }
+  money(n) { return '$' + n.toFixed(2); }
+  st() { return this.state || {}; }
+  cur(key, prop, dflt) { const s = this.st(); if (s[key] !== undefined) return s[key]; const v = this.props[prop]; return v !== undefined && v !== null ? v : dflt; }
+  catalogue() {
+    return [
+      { id: 'rye', name: 'Sourdough rye loaf', price: 9.5, notAt: ['Fitzroy'] },
+      { id: 'seeded', name: 'Seeded sandwich loaf', price: 8.5 },
+      { id: 'white', name: 'White sourdough', price: 8 },
+      { id: 'fruit', name: 'Fruit loaf', price: 7.5, notAt: ['Fitzroy'] },
+      { id: 'croissant', name: 'Almond croissant', price: 6 },
+      { id: 'butter', name: 'Butter croissant', price: 4.8 },
+      { id: 'scroll', name: 'Cinnamon scroll', price: 5 },
+      { id: 'turnover', name: 'Apple turnover', price: 5.5 },
+      { id: 'bagel', name: 'Plain bagel', price: 2.8 },
+      { id: 'sesame', name: 'Sesame bagel', price: 3 },
+      { id: 'poppy', name: 'Poppy seed bagel', price: 3 },
+      { id: 'everything', name: 'Everything bagel', price: 3.2, notAt: ['Brunswick'] }
+    ];
+  }
+  snap() {
+    const branch = this.cur('branch', 'startBranch', 'Northcote');
+    return {
+      cart: this.cur('cart', 'startCart', { rye: 1, bagel: 4 }),
+      branch: branch,
+      view: this.cur('view', 'startView', ''),
+      pending: this.cur('pending', 'startPending', branch),
+      notice: this.cur('notice', 'startNotice', '')
+    };
+  }
+  set(patch) { this.setState(Object.assign(this.snap(), patch)); }
+  linesFor(cart) {
+    return this.catalogue().filter((p) => cart[p.id] > 0).map((p) => ({ id: p.id, name: p.name, price: p.price, qty: cart[p.id], notAt: p.notAt || [] }));
+  }
+  renderVals() {
+    const s = this.snap();
+    const date = this.props.date || '2026-09-30';
+    const raw = this.linesFor(s.cart);
+    let total = 0, count = 0;
+    const lines = raw.map((l, i) => {
+      total += l.qty * l.price; count += l.qty;
+      return {
+        name: l.name, qty: l.qty, each: this.money(l.price) + ' each', lineTotal: this.money(l.qty * l.price),
+        rowStyle: 'display: flex; flex-direction: column; gap: 12px; padding: 16px;' + (i ? ' border-top: 1px solid #dccfba;' : ''),
+        setQty: (n) => { const c = Object.assign({}, this.snap().cart); if (n > 0) c[l.id] = n; else delete c[l.id]; this.set({ cart: c }); }
+      };
+    });
+    const removedRaw = raw.filter((l) => l.notAt.indexOf(s.pending) >= 0);
+    const removed = removedRaw.map((l) => l.qty + ' \u00d7 ' + l.name);
+    const names = removedRaw.map((l) => l.name);
+    const nameList = names.length < 2 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+    return {
+      root: this.rootStyle(this.props.height),
+      yes: true,
+      branch: s.branch,
+      changeBranchLabel: 'Change branch, currently ' + s.branch,
+      dateLabel: this.label(date),
+      lines: lines,
+      hasItems: lines.length > 0,
+      isEmpty: lines.length === 0,
+      countLabel: count === 1 ? '1 item' : count + ' items',
+      totalLabel: this.money(total),
+      hasNotice: !!s.notice,
+      notice: s.notice,
+      dismiss: () => this.set({ notice: '' }),
+      back: () => { if (this.props.onBack) this.props.onBack({ cart: this.snap().cart, branch: this.snap().branch }); },
+      checkout: () => {
+        const cur = this.snap();
+        const ls = this.linesFor(cur.cart);
+        if (this.props.onCheckout) this.props.onCheckout({ cart: cur.cart, branch: cur.branch, lines: ls.map((l) => ({ name: l.name, qty: l.qty, price: l.price })), total: ls.reduce((t, l) => t + l.qty * l.price, 0) });
+      },
+      showSheet: s.view === 'sheet',
+      showWarning: s.view === 'warning',
+      branchOptions: [{ value: 'Northcote', label: 'Northcote' }, { value: 'Fitzroy', label: 'Fitzroy' }, { value: 'Brunswick', label: 'Brunswick' }],
+      pending: s.pending,
+      choose: (v) => this.set({ pending: v }),
+      sheetConfirm: s.pending === s.branch ? 'Keep ' + s.branch : 'Pick up from ' + s.pending,
+      openSheet: () => this.set({ view: 'sheet', pending: this.snap().branch }),
+      closeSheet: () => this.set({ view: '', pending: this.snap().branch }),
+      confirmSheet: () => {
+        const cur = this.snap();
+        if (cur.pending === cur.branch) return this.set({ view: '' });
+        const out = this.linesFor(cur.cart).filter((l) => (l.notAt || []).indexOf(cur.pending) >= 0);
+        if (out.length) return this.set({ view: 'warning' });
+        this.set({ view: '', branch: cur.pending, notice: '' });
+      },
+      removed: removed,
+      removedCountLabel: removedRaw.length > 1 ? 'these' : 'this',
+      removedPronoun: removedRaw.length > 1 ? 'them' : 'it',
+      keep: () => this.set({ view: '', pending: this.snap().branch }),
+      confirmWarning: () => {
+        const cur = this.snap();
+        const c = Object.assign({}, cur.cart);
+        removedRaw.forEach((l) => { delete c[l.id]; });
+        this.set({ view: '', cart: c, branch: cur.pending, notice: 'We took ' + nameList + ' out of your order because ' + cur.pending + " doesn't make " + (removedRaw.length > 1 ? 'them' : 'it') + '.' });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

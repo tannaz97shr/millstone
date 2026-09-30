@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>C2 Menu — Millstone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/504d17282c8e583c69e6f3129a969f86") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/3ee4132da12d481f2d726ae5e1541de7") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/3130871d5e49b7c5c530cdf575291fca") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/ab3f33e4b7b70bdd93ebe3b81dc69633") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+.ms-card-foot{flex-wrap:wrap;row-gap:8px}
+.ms-card-foot>.ms-price{flex:1 1 100%}
+.ms-card-foot>.ms-btn,.ms-card-foot>.ms-stepper{flex:1 1 100%}
+.ms-card-foot>.ms-stepper{justify-content:space-between}
+.ms-card-foot>.ms-stepper output{flex:1}
+.mc-cat{display:inline-flex;align-items:center;flex:none;min-height:48px;padding:0 16px;box-sizing:border-box;border:1.5px solid #8a7862;border-radius:10px;background:#fffbf4;color:#2b2016;font-weight:700;font-size:16px;text-decoration:none}
+.mc-cat:hover{background:#f4e0cd;color:#2b2016}
+.mc-cat:focus-visible{outline:none;box-shadow:0 0 0 2px #f6efe3,0 0 0 5px #2e5476}
+</style>
+</helmet>
+<div style="{{rootStyle}}">
+<div style="flex: 1 1 auto; min-height: 0; overflow-y: auto; scroll-behavior: smooth;">
+<header style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 4px;">
+<span style="font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-weight: 700; font-size: 24px; line-height: 30px; color: #2b2016;">Millstone</span>
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{signIn}}">{{accountLabel}}</x-import>
+</header>
+<main style="display: flex; flex-direction: column; gap: 24px; padding: 12px 16px 24px;">
+<h1 style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em;">Order for pickup</h1>
+<section aria-label="Your pickup" style="display: flex; flex-direction: column; gap: 16px; padding: 16px; background: #fffbf4; border: 1px solid #dccfba; border-radius: 16px; box-shadow: 0 1px 0 #2b201614, 0 2px 6px #2b20160f;">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+<div style="display: flex; flex-direction: column; min-width: 0;">
+<span style="font-size: 14px; line-height: 20px; color: #665543;">Pickup from</span>
+<span style="font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-weight: 600; font-size: 20px; line-height: 26px;">{{branch}}</span>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" on-click="{{changeBranch}}" aria-label="{{changeLabel}}">Change</x-import>
+</div>
+<div style="height: 1px; background: #dccfba;"></div>
+<x-import component-from-global-scope="Millstone.DatePicker" label="Pickup day" value="{{date}}" on-change="{{pickDate}}" earliest="{{earliest}}" start="2026-09-30" days="{{stripDays}}" closed-weekdays="{{mondays}}" note="{{dateNote}}"></x-import>
+</section>
+<sc-if value="{{hasNotice}}" hint-placeholder-val="{{false}}">
+<div role="status" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 12px 12px 16px; background: #fffbf4; border: 1.5px solid #8a7862; border-radius: 10px;">
+<span style="display: flex; padding-top: 2px; font-size: 20px; color: #2b2016;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import></span>
+<p style="flex: 1 1 auto; margin: 0; font-size: 16px; line-height: 24px;">{{noticeText}}</p>
+<x-import component-from-global-scope="Millstone.Button" variant="quiet" on-click="{{dismiss}}" aria-label="Dismiss message">OK</x-import>
+</div>
+</sc-if>
+<nav aria-label="Menu categories" style="display: flex; gap: 8px; overflow-x: auto; margin: -4px -16px; padding: 4px 16px;">
+<sc-for list="{{cats}}" as="c" hint-placeholder-count="3">
+<a class="mc-cat" href="#{{c.anchor}}">{{c.title}}</a>
+</sc-for>
+</nav>
+<sc-for list="{{cats}}" as="c" hint-placeholder-count="3">
+<section id="{{c.anchor}}" aria-labelledby="{{c.headId}}" style="display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 12px;">
+<h2 id="{{c.headId}}" style="margin: 0; font-family: Bitter, Rockwell, 'Roboto Slab', Georgia, serif; font-size: 22px; line-height: 28px; font-weight: 600;">{{c.title}}</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+<sc-for list="{{c.items}}" as="p" hint-placeholder-count="4">
+<x-import component-from-global-scope="Millstone.ProductCard" name="{{p.name}}" price="{{p.price}}" description="{{p.desc}}" quantity="{{p.qty}}" on-quantity-change="{{p.setQty}}" on-add="{{p.add}}" sold-out="{{p.soldOut}}"></x-import>
+</sc-for>
+</div>
+</section>
+</sc-for>
+</main>
+</div>
+<sc-if value="{{hasItems}}" hint-placeholder-val="{{true}}">
+<div aria-label="Your order" role="region" style="flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px 16px; background: #f4e0cd; border-top: 1px solid #dccfba; box-shadow: 0 -2px 0 #2b20160f, 0 -6px 16px #2b201614;">
+<div style="display: flex; flex-direction: column; min-width: 0;">
+<span style="font-size: 14px; line-height: 20px; color: #2b2016;">{{countLabel}} · Pickup {{dateLabel}}</span>
+<span aria-live="polite" style="font-size: 18px; line-height: 24px; font-weight: 700; font-variant-numeric: tabular-nums;">{{totalLabel}}</span>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" on-click="{{viewCart}}">View cart</x-import>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"afterCutoff":{"editor":"boolean","default":false,"section":"Scenario"},"branch":{"editor":"enum","options":["Northcote","Fitzroy","Brunswick"],"default":"Northcote","section":"Scenario"},"onViewCart":{"editor":null},"onChangeBranch":{"editor":null},"onSignIn":{"editor":null},"signedIn":{"editor":null},"startDate":{"editor":null},"startCart":{"editor":null},"startNotice":{"editor":null},"height":{"editor":null},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  products() {
+    return [
+      { id: 'rye', cat: 'breads', name: 'Sourdough rye loaf', price: 9.5, desc: '800g, dark crust, caraway.', notAt: ['Fitzroy'] },
+      { id: 'seeded', cat: 'breads', name: 'Seeded sandwich loaf', price: 8.5, desc: 'Sliced, for the week.', soldOutOn: '2026-09-30' },
+      { id: 'white', cat: 'breads', name: 'White sourdough', price: 8, desc: 'Long ferment, open crumb.' },
+      { id: 'fruit', cat: 'breads', name: 'Fruit loaf', price: 7.5, desc: 'Raisins and orange peel.', notAt: ['Fitzroy'] },
+      { id: 'croissant', cat: 'pastries', name: 'Almond croissant', price: 6, desc: 'Twice-baked, frangipane.', soldOutOn: '2026-10-01' },
+      { id: 'butter', cat: 'pastries', name: 'Butter croissant', price: 4.8, desc: 'Laminated by hand.' },
+      { id: 'scroll', cat: 'pastries', name: 'Cinnamon scroll', price: 5, desc: 'Brown sugar, cardamom.' },
+      { id: 'turnover', cat: 'pastries', name: 'Apple turnover', price: 5.5, desc: 'Stewed apple, flaky pastry.' },
+      { id: 'bagel', cat: 'bagels', name: 'Plain bagel', price: 2.8, desc: 'Boiled, then baked.' },
+      { id: 'sesame', cat: 'bagels', name: 'Sesame bagel', price: 3, desc: 'Toasted sesame crust.' },
+      { id: 'poppy', cat: 'bagels', name: 'Poppy seed bagel', price: 3, desc: 'Blue poppy seed crust.' },
+      { id: 'everything', cat: 'bagels', name: 'Everything bagel', price: 3.2, desc: 'Seeds, garlic, onion, salt.', notAt: ['Brunswick'] }
+    ];
+  }
+  st() { return this.state || {}; }
+  earliest() { return this.props.afterCutoff ? '2026-10-01' : '2026-09-30'; }
+  curDate() {
+    const s = this.st();
+    if (s.date !== undefined) return s.date;
+    const d = this.props.startDate;
+    return d && d >= this.earliest() ? d : this.earliest();
+  }
+  startCartRaw() { return this.props.startCart !== undefined && this.props.startCart !== null ? this.props.startCart : { rye: 1, bagel: 4 }; }
+  dropped() {
+    const branch = this.props.branch || 'Northcote';
+    const c = this.startCartRaw();
+    return this.products().filter((p) => c[p.id] > 0 && p.notAt && p.notAt.indexOf(branch) >= 0);
+  }
+  curCart() {
+    const s = this.st();
+    if (s.cart !== undefined) return s.cart;
+    const c = Object.assign({}, this.startCartRaw());
+    this.dropped().forEach((p) => { delete c[p.id]; });
+    return c;
+  }
+  curNotice() {
+    const s = this.st();
+    if (s.notice !== undefined) return s.notice;
+    if (this.props.startNotice) return this.props.startNotice;
+    const d = this.dropped().map((p) => p.name);
+    if (!d.length) return '';
+    const branch = this.props.branch || 'Northcote';
+    return 'We took ' + this.listNames(d) + ' out of your order because ' + branch + " doesn't make " + (d.length > 1 ? 'them' : 'it') + '.';
+  }
+  label(iso) {
+    const p = iso.split('-').map(Number);
+    const d = new Date(p[0], p[1] - 1, p[2]);
+    const wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
+    const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
+    return wd + ' ' + d.getDate() + ' ' + mo;
+  }
+  money(n) { return '$' + n.toFixed(2); }
+  listNames(names) {
+    if (names.length < 2) return names.join('');
+    return names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+  }
+  setCart(cart) { this.setState({ cart: cart, date: this.curDate(), notice: this.curNotice() }); }
+  renderVals() {
+    const date = this.curDate();
+    const cart = this.curCart();
+    const branch = this.props.branch || 'Northcote';
+    const all = this.products().filter((p) => !(p.notAt && p.notAt.indexOf(branch) >= 0));
+    const dateLabel = this.label(date);
+    const pickDate = (iso) => {
+      const next = Object.assign({}, this.curCart());
+      const removed = [];
+      all.forEach((p) => { if (next[p.id] > 0 && p.soldOutOn === iso) { removed.push(p.name); delete next[p.id]; } });
+      const notice = removed.length
+        ? this.listNames(removed) + (removed.length > 1 ? ' are' : ' is') + ' sold out for ' + this.label(iso) + ', so we took ' + (removed.length > 1 ? 'them' : 'it') + ' out of your order. Pick another day if you need ' + (removed.length > 1 ? 'them' : 'it') + '.'
+        : '';
+      this.setState({ date: iso, cart: next, notice: notice });
+    };
+    const withState = (p) => {
+      const sold = p.soldOutOn === date;
+      return {
+        name: p.name, price: p.price, desc: p.desc,
+        qty: sold ? 0 : (cart[p.id] || 0),
+        soldOut: sold ? 'Sold out for ' + dateLabel : false,
+        add: () => { const c = Object.assign({}, this.curCart()); c[p.id] = 1; this.setCart(c); },
+        setQty: (n) => { const c = Object.assign({}, this.curCart()); if (n > 0) c[p.id] = n; else delete c[p.id]; this.setCart(c); }
+      };
+    };
+    const cats = [['breads', 'Breads'], ['pastries', 'Pastries'], ['bagels', 'Bagels']].map((c) => ({
+      anchor: 'cat-' + c[0], headId: 'head-' + c[0], title: c[1],
+      items: all.filter((p) => p.cat === c[0]).map(withState)
+    }));
+    let count = 0, total = 0;
+    all.forEach((p) => { const q = cart[p.id] || 0; count += q; total += q * p.price; });
+    const notice = this.curNotice();
+    const h = this.props.height || 844;
+    return {
+      branch: branch,
+      changeLabel: 'Change branch, currently ' + branch,
+      accountLabel: this.props.signedIn ? 'My account' : 'Sign in',
+      signIn: () => { if (this.props.onSignIn) this.props.onSignIn(Object.assign({}, this.curCart()), this.curDate()); },
+      changeBranch: () => { if (this.props.onChangeBranch) this.props.onChangeBranch(Object.assign({}, this.curCart()), this.curDate()); },
+      viewCart: () => { if (this.props.onViewCart) this.props.onViewCart(Object.assign({}, this.curCart()), this.curDate()); },
+      rootStyle: 'width: 390px; height: ' + h + 'px; display: flex; flex-direction: column; overflow: hidden; background: #f6efe3; color: #2b2016; font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;',
+      date: date,
+      earliest: this.earliest(),
+      pickDate: pickDate,
+      stripDays: 14,
+      mondays: [1],
+      dateNote: this.props.afterCutoff
+        ? 'It\u2019s after 2pm, so the earliest pickup is ' + this.label(this.earliest()) + '. Closed Mondays.'
+        : 'Order by 2pm for next-day pickup. Closed Mondays.',
+      hasNotice: !!notice,
+      noticeText: notice,
+      dismiss: () => this.setState({ notice: '', date: this.curDate(), cart: this.curCart() }),
+      cats: cats,
+      hasItems: count > 0,
+      countLabel: count === 1 ? '1 item' : count + ' items',
+      dateLabel: dateLabel,
+      totalLabel: this.money(total)
+    };
+  }
+}
+</script>
+</body>
+</html>

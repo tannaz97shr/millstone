@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>Orders — Millstone admin</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/a97343382604aa44962c2def560d70f2") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/7d7688b0e88d020bd460d2d7de7e47cc") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/c021df3cc7e5ade35cf70a420baa900a") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/bc7eb9b10dd258b579fba3ff624e517e") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+.ms-btn.ms-btn-secondary.ms-seg-on,.ms-btn.ms-btn-secondary.ms-seg-on:hover:not(:disabled){background:#2b2016;border-color:#2b2016;color:#fffbf4}
+.ms-nav-link{display:inline-flex;align-items:center;min-height:64px;padding:0 16px;font-size:20px;font-weight:700;color:#665543;text-decoration:none;border-bottom:4px solid transparent;box-sizing:border-box}
+.ms-nav-link:hover{color:#2b2016}
+.ms-nav-link[aria-current="page"]{color:#2b2016;border-bottom-color:#94451a}
+.ms-nav-link:focus-visible{outline:none;box-shadow:0 0 0 2px #f6efe3,0 0 0 5px #2e5476;border-radius:10px}
+</style>
+</helmet>
+<div data-context="admin" style="width: 1180px; height: 1500px; box-sizing: border-box; position: relative; overflow: hidden; display: flex; flex-direction: column; background: var(--flour); color: var(--ink); font-family: var(--font-sans);">
+
+<header style="display: flex; align-items: center; gap: 24px; height: 80px; padding: 0 32px; flex-shrink: 0; background: var(--flour-raised); border-bottom: 2px solid var(--line); box-sizing: border-box;">
+<div style="font-family: var(--font-serif); font-size: 28px; line-height: 32px; font-weight: 700; color: var(--ink);">Millstone</div>
+<nav aria-label="Admin" style="display: flex; align-items: stretch; gap: 4px; flex-grow: 1; align-self: stretch;">
+<a class="ms-nav-link" href="{{nav.orders}}" aria-current="page" style="min-height: 78px;">Orders</a>
+<a class="ms-nav-link" href="{{nav.availability}}" style="min-height: 78px;">Availability</a>
+<sc-if value="{{owner}}" hint-placeholder-val="{{false}}">
+<a class="ms-nav-link" href="{{nav.products}}" style="min-height: 78px;">Products</a>
+</sc-if>
+</nav>
+<div style="display: flex; flex-direction: column; align-items: flex-end;">
+<span style="font-size: 20px; line-height: 26px; font-weight: 700;">{{branchLabel}}</span>
+<span style="font-size: 16px; line-height: 22px; color: var(--ink-muted);">{{userLabel}}</span>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary">Sign out</x-import>
+</header>
+
+<section aria-label="Find orders" style="display: flex; flex-direction: column; gap: 16px; padding: 20px 32px 16px; flex-shrink: 0; border-bottom: 2px solid var(--line);">
+<div style="display: flex; align-items: flex-end; gap: 32px;">
+<div style="flex-grow: 1; min-width: 360px;">
+<x-import component-from-global-scope="Millstone.TextField" label="Find an order" placeholder="Order number, name or phone" type="search" input-mode="search" value="{{q}}" on-change="{{onSearch}}"></x-import>
+</div>
+<sc-if value="{{notSearching}}" hint-placeholder-val="{{true}}">
+<div role="group" aria-labelledby="lbl-date" style="display: flex; flex-direction: column; gap: 8px;">
+<span id="lbl-date" style="font-size: 18px; line-height: 23px; font-weight: 700;">Pickup date</span>
+<div style="display: flex; gap: 8px;">
+<sc-for list="{{dateOpts}}" as="d" hint-placeholder-count="4">
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" class-name="{{d.cls}}" aria-pressed="{{d.pressed}}" on-click="{{d.pick}}">{{d.label}}</x-import>
+</sc-for>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{searching}}" hint-placeholder-val="{{false}}">
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" icon="cross" on-click="{{clearSearch}}">Clear search</x-import>
+</sc-if>
+</div>
+
+<sc-if value="{{picking}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; align-items: flex-start; gap: 24px; justify-content: flex-end;">
+<x-import component-from-global-scope="Millstone.DatePicker" layout="month" label="Show orders for" value="{{customDate}}" on-change="{{onPickDate}}" earliest="2026-09-01" today="2026-09-29" closed-weekdays="{{mondays}}" note="Closed Mondays."></x-import>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" icon="cross" on-click="{{closePicker}}" style="margin-top: 32px;">Close</x-import>
+</div>
+</sc-if>
+
+<sc-if value="{{notSearching}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; align-items: flex-end; gap: 40px; flex-wrap: wrap;">
+<div role="group" aria-labelledby="lbl-status" style="display: flex; flex-direction: column; gap: 8px;">
+<span id="lbl-status" style="font-size: 18px; line-height: 23px; font-weight: 700;">Show</span>
+<div style="display: flex; gap: 8px;">
+<sc-for list="{{statusOpts}}" as="o" hint-placeholder-count="5">
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" class-name="{{o.cls}}" aria-pressed="{{o.pressed}}" on-click="{{o.pick}}">{{o.label}}</x-import>
+</sc-for>
+</div>
+</div>
+<sc-if value="{{owner}}" hint-placeholder-val="{{false}}">
+<div role="group" aria-labelledby="lbl-branch" style="display: flex; flex-direction: column; gap: 8px;">
+<span id="lbl-branch" style="font-size: 18px; line-height: 23px; font-weight: 700;">Branch</span>
+<div style="display: flex; gap: 8px;">
+<sc-for list="{{branchOpts}}" as="b" hint-placeholder-count="4">
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" class-name="{{b.cls}}" aria-pressed="{{b.pressed}}" on-click="{{b.pick}}">{{b.label}}</x-import>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{searching}}" hint-placeholder-val="{{false}}">
+<p style="margin: 0; font-size: 18px; line-height: 26px; color: var(--ink-muted);">Searching every date and status, including collected and cancelled orders.</p>
+</sc-if>
+</section>
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 32px; flex-shrink: 0; min-height: 56px; box-sizing: border-box;">
+<sc-if value="{{undo}}" hint-placeholder-val="{{false}}">
+<div role="status" style="display: flex; align-items: center; gap: 16px; padding: 4px 4px 4px 16px; background: var(--sage-soft); border: 2px solid var(--sage); border-radius: 10px;">
+<span style="display: flex; align-items: center; gap: 10px; font-size: 20px; line-height: 28px; font-weight: 700; color: var(--ink);"><span style="display: inline-flex; color: var(--sage); font-size: 24px;"><x-import component-from-global-scope="Millstone.Icon" name="check"></x-import></span>{{undo.number}} collected</span>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" icon="refund" aria-label="Undo: put {{undo.number}} back to {{undo.prevLabel}}" on-click="{{undoCollect}}">Undo</x-import>
+</div>
+</sc-if>
+<sc-if value="{{lastAction}}" hint-placeholder-val="{{false}}">
+<p role="status" style="margin: 0; display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 12px; background: var(--sage-soft); border: 2px solid var(--sage); border-radius: 10px; font-size: 18px; line-height: 24px; font-weight: 700; color: var(--ink);"><span style="display: inline-flex; color: var(--sage); font-size: 22px;"><x-import component-from-global-scope="Millstone.Icon" name="check"></x-import></span>{{lastAction}}</p>
+</sc-if>
+<sc-if value="{{noLastAction}}" hint-placeholder-val="{{true}}">
+<p style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 700;">{{summary}}</p>
+</sc-if>
+<p aria-live="polite" style="margin: 0; display: flex; align-items: center; gap: 10px; font-size: 16px; line-height: 22px; color: var(--ink-muted);"><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 50%; background: var(--sage); flex-shrink: 0;"></span><sc-if value="{{arrived}}" hint-placeholder-val="{{false}}"><strong style="color: var(--ink);">{{arrived}}</strong> ·</sc-if> {{updated}}. New orders appear here by themselves.</p>
+</div>
+
+<main id="orders" style="flex-grow: 1; overflow-y: auto; padding: 4px 32px 48px; display: flex; flex-direction: column; gap: 32px;">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+<section aria-label="{{g.label}}" style="display: flex; flex-direction: column; gap: 16px;">
+<div style="display: flex; align-items: baseline; gap: 16px;">
+<h2 style="margin: 0; font-family: var(--font-serif); font-size: 32px; line-height: 40px; font-weight: 700;">{{g.label}}</h2>
+<span style="font-size: 18px; line-height: 24px; color: var(--ink-muted);">{{g.caption}}</span>
+</div>
+<sc-for list="{{g.sections}}" as="sec" hint-placeholder-count="1">
+<div style="display: flex; flex-direction: column; gap: 16px;">
+<sc-if value="{{sec.showHeading}}" hint-placeholder-val="{{false}}">
+<h3 style="margin: 8px 0 0; padding-bottom: 8px; border-bottom: 2px solid var(--line); font-size: 20px; line-height: 28px; font-weight: 700; color: var(--ink);">{{sec.branch}} <span style="font-weight: 400; color: var(--ink-muted);">· {{sec.caption}}</span></h3>
+</sc-if>
+<sc-for list="{{sec.rows}}" as="o" hint-placeholder-count="3">
+<x-import component-from-global-scope="Millstone.OrderRow" order-number="{{o.number}}" status="{{o.status}}" payment="{{o.payment}}" customer-name="{{o.name}}" phone="{{o.phone}}" items="{{o.items}}" total="{{o.total}}" recurring="{{o.recurring}}" notes="{{o.notes}}" generation-note="{{o.gen}}" selected="{{o.selected}}" on-ready="{{o.ready}}" on-collected="{{o.collected}}" on-open="{{o.open}}"></x-import>
+</sc-for>
+</div>
+</sc-for>
+</section>
+</sc-for>
+
+<sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 16px; margin-top: 24px; padding: 40px 48px; background: var(--flour-raised); border: 2px dashed var(--line-strong); border-radius: 16px;">
+<h2 style="margin: 0; font-family: var(--font-serif); font-size: 32px; line-height: 40px; font-weight: 700;">{{emptyTitle}}</h2>
+<p style="margin: 0; font-size: 20px; line-height: 28px; color: var(--ink-muted); max-width: 640px;">{{emptyHint}}</p>
+<sc-if value="{{emptyAction}}" hint-placeholder-val="{{true}}">
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" on-click="{{emptyAct}}">{{emptyAction}}</x-import>
+</sc-if>
+</div>
+</sc-if>
+</main>
+
+<sc-if value="{{panel}}" hint-placeholder-val="{{false}}">
+<div aria-hidden="true" style="position: absolute; top: 80px; left: 0; bottom: 0; right: 600px; background: #2b201640;"></div>
+<aside role="dialog" aria-labelledby="panel-title" style="position: absolute; top: 80px; right: 0; bottom: 0; width: 600px; display: flex; flex-direction: column; background: var(--flour-raised); border-left: 2px solid var(--line); box-shadow: var(--shadow-sheet); box-sizing: border-box;">
+
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 24px 32px 20px; border-bottom: 2px solid var(--line); flex-shrink: 0;">
+<div style="display: flex; flex-direction: column; gap: 12px;">
+<h2 id="panel-title" style="margin: 0; font-size: 36px; line-height: 40px; font-weight: 700; letter-spacing: 0.02em;">{{panel.number}}</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 8px;">
+<x-import component-from-global-scope="Millstone.StatusBadge" status="{{panel.status}}"></x-import>
+<sc-if value="{{panel.payment}}" hint-placeholder-val="{{true}}">
+<x-import component-from-global-scope="Millstone.PaymentLabel" status="{{panel.payment}}"></x-import>
+</sc-if>
+<sc-if value="{{panel.recurring}}" hint-placeholder-val="{{false}}">
+<x-import component-from-global-scope="Millstone.RecurringLabel"></x-import>
+</sc-if>
+</div>
+<p style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700;">Pickup {{panel.pickup}} · {{panel.branch}}</p>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" icon="cross" on-click="{{closePanel}}">Close</x-import>
+</div>
+
+<div style="flex-grow: 1; overflow-y: auto; padding: 24px 32px; display: flex; flex-direction: column; gap: 28px;">
+
+<sc-if value="{{panel.gen}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; gap: 12px; align-items: flex-start; padding: 16px 20px; background: var(--wheat-soft); border: 2px solid var(--wheat); border-radius: 10px; color: var(--wheat-ink);">
+<span style="display: inline-flex; font-size: 24px; margin-top: 2px;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import></span>
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<strong style="font-size: 20px; line-height: 28px;">{{panel.gen}}</strong>
+<span style="font-size: 18px; line-height: 26px;">Left out when this recurring order was made. Call the customer if they need it from somewhere else.</span>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{panel.refundDue}}" hint-placeholder-val="{{false}}">
+<div role="note" style="display: flex; flex-direction: column; gap: 16px; padding: 20px; background: var(--brick-soft); border: 2px solid var(--brick); border-radius: 10px;">
+<div style="display: flex; gap: 12px; align-items: flex-start; color: var(--brick);">
+<span style="display: inline-flex; font-size: 24px; margin-top: 2px;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import></span>
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<strong style="font-size: 20px; line-height: 28px;">Refund {{panel.total}} in the payment dashboard</strong>
+<span style="font-size: 18px; line-height: 26px; color: var(--ink);">This order was paid online. Cancelling it here doesn't send the money back. Refund it in the payment provider's dashboard first, then tap Mark refunded.</span>
+</div>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="primary" icon="refund" block="{{yes}}" on-click="{{markRefunded}}">Mark refunded</x-import>
+</div>
+</sc-if>
+
+<section aria-labelledby="h-customer" style="display: flex; flex-direction: column; gap: 4px;">
+<h3 id="h-customer" style="margin: 0 0 4px; font-size: 16px; line-height: 22px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted);">Customer</h3>
+<p style="margin: 0; font-size: 22px; line-height: 30px; font-weight: 700;">{{panel.name}}</p>
+<a href="{{panel.tel}}" style="display: inline-flex; align-items: center; min-height: 48px; font-size: 20px; line-height: 28px; font-weight: 700; font-variant-numeric: tabular-nums; align-self: flex-start;">{{panel.phone}}</a>
+<a href="{{panel.mailto}}" style="display: inline-flex; align-items: center; min-height: 48px; font-size: 20px; line-height: 28px; align-self: flex-start;">{{panel.email}}</a>
+</section>
+
+<sc-if value="{{panel.notes}}" hint-placeholder-val="{{false}}">
+<section aria-labelledby="h-notes" style="display: flex; flex-direction: column; gap: 8px;">
+<h3 id="h-notes" style="margin: 0; font-size: 16px; line-height: 22px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted);">Customer notes</h3>
+<p style="margin: 0; padding: 12px 16px; background: var(--flour); border-radius: 10px; font-size: 20px; line-height: 28px;">{{panel.notes}}</p>
+</section>
+</sc-if>
+
+<section aria-labelledby="h-items" style="display: flex; flex-direction: column; gap: 8px;">
+<h3 id="h-items" style="margin: 0; font-size: 16px; line-height: 22px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted);">Items</h3>
+<table style="width: 100%; border-collapse: collapse; font-size: 20px; line-height: 28px; font-variant-numeric: tabular-nums;">
+<thead>
+<tr style="text-align: left; font-size: 16px; line-height: 22px; color: var(--ink-muted);">
+<th scope="col" style="padding: 4px 0; font-weight: 400;">Item</th>
+<th scope="col" style="padding: 4px 0; font-weight: 400; text-align: right;">Each</th>
+<th scope="col" style="padding: 4px 0; font-weight: 400; text-align: right;">Total</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{panel.lines}}" as="l" hint-placeholder-count="2">
+<tr style="border-top: 1px solid var(--line);">
+<td style="padding: 10px 12px 10px 0;"><strong>{{l.quantity}} ×</strong> {{l.name}}</td>
+<td style="padding: 10px 0; text-align: right; color: var(--ink-muted);">{{l.each}}</td>
+<td style="padding: 10px 0; text-align: right;">{{l.line}}</td>
+</tr>
+</sc-for>
+<sc-if value="{{panel.emptyItems}}" hint-placeholder-val="{{false}}">
+<tr style="border-top: 1px solid var(--line);"><td colspan="3" style="padding: 10px 0; color: var(--ink-muted);">No items — every item was unavailable. Call the customer.</td></tr>
+</sc-if>
+<tr style="border-top: 2px solid var(--ink);">
+<th scope="row" colspan="2" style="padding: 12px 0; text-align: left; font-size: 22px;">Total</th>
+<td style="padding: 12px 0; text-align: right; font-size: 22px; font-weight: 700;">{{panel.total}}</td>
+</tr>
+</tbody>
+</table>
+</section>
+
+<section aria-labelledby="h-pay" style="display: flex; flex-direction: column; gap: 4px;">
+<h3 id="h-pay" style="margin: 0 0 4px; font-size: 16px; line-height: 22px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted);">Payment</h3>
+<p style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 700;">{{panel.method}}</p>
+<p style="margin: 0; font-size: 18px; line-height: 26px; color: var(--ink-muted);">{{panel.payLine}}</p>
+</section>
+
+<sc-if value="{{panel.reason}}" hint-placeholder-val="{{false}}">
+<section aria-labelledby="h-reason" style="display: flex; flex-direction: column; gap: 4px;">
+<h3 id="h-reason" style="margin: 0 0 4px; font-size: 16px; line-height: 22px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted);">Why it was cancelled</h3>
+<p style="margin: 0; font-size: 20px; line-height: 28px;">{{panel.reason}}</p>
+</section>
+</sc-if>
+
+<section aria-labelledby="h-history" style="display: flex; flex-direction: column; gap: 8px;">
+<h3 id="h-history" style="margin: 0; font-size: 16px; line-height: 22px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted);">History</h3>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column;">
+<sc-for list="{{panel.history}}" as="hst" hint-placeholder-count="2">
+<li style="display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 18px; line-height: 26px;">
+<strong>{{hst.label}}</strong>
+<span style="color: var(--ink-muted); font-variant-numeric: tabular-nums;">{{hst.when}}</span>
+</li>
+</sc-for>
+</ol>
+</section>
+</div>
+
+<div style="flex-shrink: 0; padding: 20px 32px 24px; border-top: 2px solid var(--line); background: var(--flour-raised); display: flex; flex-direction: column; gap: 12px;">
+<sc-if value="{{panel.canAct}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; gap: 12px;">
+<sc-if value="{{panel.canReady}}" hint-placeholder-val="{{true}}">
+<x-import component-from-global-scope="Millstone.Button" variant="primary" counter="{{yes}}" icon="check" on-click="{{panel.ready}}" style="flex-grow: 1;">Ready</x-import>
+</sc-if>
+<x-import component-from-global-scope="Millstone.Button" variant="{{panel.collectVariant}}" counter="{{yes}}" icon="check" on-click="{{panel.collected}}" style="flex-grow: 1;">Collected</x-import>
+</div>
+<x-import component-from-global-scope="Millstone.Button" variant="danger" icon="cross" on-click="{{openCancel}}" style="align-self: flex-start;">Cancel order</x-import>
+</sc-if>
+<sc-if value="{{panel.locked}}" hint-placeholder-val="{{false}}">
+<p style="margin: 0; font-size: 18px; line-height: 26px; color: var(--ink-muted);">{{panel.lockedText}}</p>
+</sc-if>
+</div>
+</aside>
+</sc-if>
+
+<sc-if value="{{cancel}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: #2b201680; display: flex; justify-content: center; align-items: flex-start; padding-top: 120px;">
+<div role="dialog" aria-modal="true" aria-labelledby="cancel-title" style="width: 640px; box-sizing: border-box; padding: 32px; display: flex; flex-direction: column; gap: 20px; background: var(--flour-raised); border-radius: 16px; box-shadow: var(--shadow-sheet);">
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<h2 id="cancel-title" style="margin: 0; font-family: var(--font-serif); font-size: 32px; line-height: 40px; font-weight: 700;">Cancel {{cancel.number}}?</h2>
+<p style="margin: 0; font-size: 20px; line-height: 28px;">{{cancel.name}} · {{cancel.total}} · pickup {{cancel.pickup}}. A cancelled order can't be reopened.</p>
+</div>
+<x-import component-from-global-scope="Millstone.ChoiceGroup" label="Why is it being cancelled?" value="{{cancel.reason}}" on-change="{{pickReason}}" options="{{reasonOptions}}"></x-import>
+<sc-if value="{{cancel.isOther}}" hint-placeholder-val="{{false}}">
+<x-import component-from-global-scope="Millstone.TextField" label="What happened?" hint="A few words for whoever looks at this order next." value="{{cancel.text}}" on-change="{{onReasonText}}"></x-import>
+</sc-if>
+<sc-if value="{{cancel.paidOnline}}" hint-placeholder-val="{{false}}">
+<div role="note" style="display: flex; gap: 12px; align-items: flex-start; padding: 16px 20px; background: var(--brick-soft); border: 2px solid var(--brick); border-radius: 10px;">
+<span style="display: inline-flex; color: var(--brick); font-size: 24px; margin-top: 2px;"><x-import component-from-global-scope="Millstone.Icon" name="alert"></x-import></span>
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<strong style="font-size: 20px; line-height: 28px; color: var(--brick);">Paid online: remember the refund</strong>
+<span style="font-size: 18px; line-height: 26px;">Cancelling doesn't send the {{cancel.total}} back. Refund it in the payment provider's dashboard, then tap Mark refunded on this order.</span>
+</div>
+</div>
+</sc-if>
+<div style="display: flex; gap: 12px; margin-top: 4px;">
+<x-import component-from-global-scope="Millstone.Button" variant="danger" counter="{{yes}}" icon="cross" disabled="{{cancel.blocked}}" on-click="{{doCancel}}" style="flex-grow: 1;">{{cancel.cta}}</x-import>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" counter="{{yes}}" on-click="{{keepOrder}}">Keep order</x-import>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{confirm}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: #2b201680; display: flex; justify-content: center; align-items: flex-start; padding-top: 180px;">
+<div role="dialog" aria-modal="true" aria-labelledby="pay-title" style="width: 600px; box-sizing: border-box; padding: 32px; display: flex; flex-direction: column; gap: 16px; background: var(--flour-raised); border-radius: 16px; box-shadow: var(--shadow-sheet);">
+<div style="display: flex; align-items: center; gap: 12px;">
+<span style="font-size: 32px; line-height: 36px; font-weight: 700; letter-spacing: 0.02em;">{{confirm.number}}</span>
+<x-import component-from-global-scope="Millstone.PaymentLabel" status="unpaid"></x-import>
+</div>
+<h2 id="pay-title" style="margin: 0; font-family: var(--font-serif); font-size: 32px; line-height: 40px; font-weight: 700;">Has {{confirm.name}} paid?</h2>
+<p style="margin: 0; font-size: 20px; line-height: 28px;">They chose to pay at pickup. Take <strong>{{confirm.total}}</strong> before you hand the order over.</p>
+<div style="display: flex; gap: 12px; margin-top: 8px;">
+<x-import component-from-global-scope="Millstone.Button" variant="ready" counter="{{yes}}" icon="check" on-click="{{confirmPaid}}" style="flex-grow: 1;">Yes, paid · Collected</x-import>
+<x-import component-from-global-scope="Millstone.Button" variant="secondary" counter="{{yes}}" on-click="{{notYet}}">Not yet</x-import>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"role":{"editor":"enum","options":["staff","owner"],"default":"staff","section":"Who is signed in"},"query":{"editor":null},"statusFilter":{"editor":null},"dateFilter":{"editor":null},"branchFilter":{"editor":null},"confirmId":{"editor":null},"undoId":{"editor":null},"openId":{"editor":null},"cancelId":{"editor":null},"cancelReason":{"editor":null},"cancelText":{"editor":null},"$preview":{"width":1180,"height":1500}}'>
+class Component extends DCLogic {
+  seed() {
+    const P = { rye: ['Sourdough rye loaf', 9.5], seeded: ['Seeded sandwich loaf', 8.5], bagel: ['Plain bagel', 2.8], croissant: ['Almond croissant', 6], scroll: ['Cinnamon scroll', 5] };
+    const it = (q, k) => ({ quantity: q, name: P[k][0], price: P[k][1] });
+    const O = (o) => Object.assign({ branch: 'Northcote', recurring: false, notes: null, gen: null, reason: null, readyAt: null, collectedAt: null, cancelledAt: null, paidAt: null, refundedAt: null, ref: null }, o);
+    return [
+      O({ id: 'MS-1038', date: '2026-09-29', status: 'ready', method: 'at_pickup', payment: 'unpaid', name: 'Priya Nair', phone: '0491 570 157', email: 'priya.nair@example.com', items: [it(1, 'seeded')], placedAt: '3:02pm Sun 27 Sep', readyAt: '8:05am Tue 29 Sep' }),
+      O({ id: 'MS-1040', date: '2026-09-29', status: 'ready', method: 'online', payment: 'paid', name: 'Tom Walsh', phone: '0491 570 158', email: 'tom.walsh@example.com', items: [it(2, 'rye'), it(4, 'bagel')], placedAt: '6:40pm Mon 28 Sep', paidAt: '6:41pm Mon 28 Sep', ref: 'PAY-7Q2M81', readyAt: '8:20am Tue 29 Sep' }),
+      O({ id: 'MS-1042', date: '2026-09-29', status: 'placed', method: 'at_pickup', payment: 'unpaid', recurring: true, name: 'Corner Cup Cafe', phone: '03 7010 1120', email: 'orders@cornercup.example.com', items: [it(12, 'bagel'), it(6, 'croissant')], placedAt: '2:00pm Mon 28 Sep', gen: 'Rye loaf \u00d74 skipped: sold out', notes: 'Back door on Elm Lane, before 7am' }),
+      O({ id: 'MS-1043', date: '2026-09-29', status: 'placed', method: 'online', payment: 'paid', name: 'Sam Carter', phone: '0491 570 156', email: 'sam.carter@example.com', items: [it(1, 'rye'), it(2, 'scroll')], placedAt: '8:14pm Mon 28 Sep', paidAt: '8:15pm Mon 28 Sep', ref: 'PAY-3KD9X4', notes: 'Sliced, please' }),
+      O({ id: 'MS-1044', date: '2026-09-29', status: 'placed', method: 'at_pickup', payment: 'unpaid', name: 'Mei Lin', phone: '0491 570 159', email: 'mei.lin@example.com', items: [it(1, 'croissant'), it(1, 'bagel')], placedAt: '9:30am Mon 28 Sep' }),
+      O({ id: 'MS-1045', date: '2026-09-30', status: 'placed', method: 'at_pickup', payment: 'unpaid', name: 'Little Fox Espresso', phone: '03 7010 2200', email: 'hello@littlefox.example.com', items: [it(24, 'bagel')], placedAt: '7:15am Tue 29 Sep' }),
+      O({ id: 'MS-1046', date: '2026-09-30', status: 'placed', method: 'online', payment: 'paid', name: 'Ava Brooks', phone: '0491 570 110', email: 'ava.brooks@example.com', items: [it(1, 'seeded')], placedAt: '9:02am Tue 29 Sep', paidAt: '9:03am Tue 29 Sep', ref: 'PAY-9WB2T7', notes: 'Picking up after 4pm' }),
+      O({ id: 'MS-1031', date: '2026-09-29', status: 'cancelled', method: 'online', payment: 'refunded', name: 'Jo Bell', phone: '0491 570 313', email: 'jo.bell@example.com', items: [it(2, 'croissant')], placedAt: '5:10pm Sun 27 Sep', paidAt: '5:11pm Sun 27 Sep', ref: 'PAY-1HX7C2', cancelledAt: '7:50am Tue 29 Sep', reason: 'Customer request', refundedAt: '8:02am Tue 29 Sep' }),
+      O({ id: 'MS-1037', date: '2026-09-29', status: 'cancelled', method: 'online', payment: 'paid', name: 'Lena Fischer', phone: '0491 570 737', email: 'lena.fischer@example.com', items: [it(1, 'croissant'), it(2, 'scroll')], placedAt: '7:48pm Sun 27 Sep', paidAt: '7:49pm Sun 27 Sep', ref: 'PAY-6TR4N8', cancelledAt: '8:30am Tue 29 Sep', reason: 'Customer request' }),
+      O({ id: 'MS-1034', date: '2026-09-27', status: 'cancelled', method: 'at_pickup', payment: 'unpaid', name: 'Mei Lin', phone: '0491 570 159', email: 'mei.lin@example.com', items: [it(2, 'seeded')], placedAt: '1:15pm Fri 25 Sep', readyAt: '7:30am Sun 27 Sep', cancelledAt: '3:55pm Sun 27 Sep', reason: 'Not collected' }),
+      O({ id: 'MS-1035', date: '2026-09-29', status: 'collected', method: 'at_pickup', payment: 'paid', name: 'Sam Carter', phone: '0491 570 156', email: 'sam.carter@example.com', items: [it(1, 'rye')], placedAt: '4:25pm Sun 27 Sep', readyAt: '7:40am Tue 29 Sep', collectedAt: '7:58am Tue 29 Sep', paidAt: '7:58am Tue 29 Sep' }),
+      O({ id: 'MS-1029', date: '2026-09-27', status: 'collected', method: 'at_pickup', payment: 'paid', name: 'Priya Nair', phone: '0491 570 157', email: 'priya.nair@example.com', items: [it(1, 'seeded')], placedAt: '11:20am Sat 26 Sep', readyAt: '7:35am Sun 27 Sep', collectedAt: '9:12am Sun 27 Sep', paidAt: '9:12am Sun 27 Sep' }),
+      O({ id: 'MS-1039', branch: 'Fitzroy', date: '2026-09-29', status: 'placed', method: 'online', payment: 'paid', name: 'Tom Walsh', phone: '0491 570 158', email: 'tom.walsh@example.com', items: [it(2, 'rye')], placedAt: '7:05pm Mon 28 Sep', paidAt: '7:06pm Mon 28 Sep', ref: 'PAY-2ZL5H3' }),
+      O({ id: 'MS-1041', branch: 'Brunswick', date: '2026-09-29', status: 'ready', method: 'at_pickup', payment: 'unpaid', name: 'Jo Bell', phone: '0491 570 313', email: 'jo.bell@example.com', items: [it(6, 'bagel'), it(1, 'croissant')], placedAt: '12:40pm Mon 28 Sep', readyAt: '8:10am Tue 29 Sep' }),
+      O({ id: 'MS-1036', branch: 'Fitzroy', date: '2026-09-30', status: 'placed', method: 'at_pickup', payment: 'unpaid', name: 'Bean There Cafe', phone: '03 7010 5530', email: 'orders@beanthere.example.com', items: [it(10, 'bagel')], placedAt: '4:55pm Sun 27 Sep' })
+    ].map((o) => Object.assign(o, { total: o.items.reduce((t, i) => t + i.quantity * i.price, 0) }));
+  }
+  incoming() {
+    return { id: 'MS-1047', branch: 'Northcote', date: '2026-09-30', status: 'placed', method: 'online', payment: 'paid', recurring: false, name: 'Ben Okafor', phone: '0491 570 006', email: 'ben.okafor@example.com', items: [{ quantity: 2, name: 'Cinnamon scroll', price: 5 }], total: 10, placedAt: '9:41am Tue 29 Sep', paidAt: '9:41am Tue 29 Sep', ref: 'PAY-8FN1D6', notes: null, gen: null, reason: null };
+  }
+  st() { return this.state || {}; }
+  pick(key, prop, dflt) {
+    const s = this.st();
+    if (s[key] !== undefined) return s[key];
+    const p = this.props[prop];
+    return (p !== undefined && p !== null && p !== '') ? p : dflt;
+  }
+  orders() {
+    const s = this.st();
+    if (s.orders) return s.orders;
+    const u = this.props.undoId;
+    return this.seed().map((o) => (u && o.id === u ? Object.assign({}, o, { status: 'collected' }) : o));
+  }
+  componentDidMount() { this.timer = setInterval(() => this.tick(), 30000); }
+  componentWillUnmount() { clearInterval(this.timer); clearTimeout(this.undoTimer); }
+  now() {
+    const mins = 9 * 60 + 41 + Math.floor((this.st().ticks || 0) / 2);
+    const hh = Math.floor(mins / 60), mm = mins % 60;
+    return (hh > 12 ? hh - 12 : hh) + ':' + (mm < 10 ? '0' : '') + mm + (hh >= 12 ? 'pm' : 'am');
+  }
+  stamp() { return this.now() + ' Tue 29 Sep'; }
+  collectWithUndo(o) {
+    clearTimeout(this.undoTimer);
+    const orders = this.orders().map((x) => (x.id === o.id ? Object.assign({}, x, { status: 'collected', collectedAt: this.stamp() }) : x));
+    this.setState({ orders: orders, last: null, confirm: null, undo: { id: o.id, prev: o.status } });
+    this.undoTimer = setTimeout(() => this.setState({ undo: null }), 5000);
+  }
+  undoCollect(u) {
+    clearTimeout(this.undoTimer);
+    const word = u.prev === 'ready' ? 'Ready' : 'Placed';
+    const orders = this.orders().map((x) => (x.id === u.id ? Object.assign({}, x, { status: u.prev, collectedAt: null }) : x));
+    this.setState({ orders: orders, undo: null, last: u.id + ' is back in ' + word + '.' });
+  }
+  tick() {
+    const s = this.st();
+    const orders = this.orders();
+    const upd = { ticks: (s.ticks || 0) + 1 };
+    const inc = this.incoming();
+    if (!orders.some((o) => o.id === inc.id)) {
+      upd.orders = orders.concat([inc]);
+      upd.arrived = inc.id + ' just came in';
+    }
+    this.setState(upd);
+  }
+  patch(id, changes, message) {
+    const orders = this.orders().map((o) => (o.id === id ? Object.assign({}, o, changes) : o));
+    clearTimeout(this.undoTimer);
+    this.setState({ orders: orders, last: message, confirm: null, undo: null });
+  }
+  // Cancelled pay-at-pickup orders never took money: no payment label. Cancelled online orders keep Paid (refund owed) or Refunded.
+  payShown(o) { return o.status === 'cancelled' && o.method === 'at_pickup' ? null : o.payment; }
+  money(n) { return '$' + n.toFixed(2); }
+  d(iso) { const a = iso.split('-'); return new Date(+a[0], +a[1] - 1, +a[2]); }
+  short(iso) {
+    const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const MO = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const x = this.d(iso);
+    return WD[x.getDay()] + ' ' + x.getDate() + ' ' + MO[x.getMonth()];
+  }
+  renderVals() {
+    const TODAY = '2026-09-29', TOMORROW = '2026-09-30', HOME = 'Northcote';
+    const s = this.st();
+    const owner = (this.props.role || 'staff') === 'owner';
+    const branchF = owner ? this.pick('branchF', 'branchFilter', 'all') : HOME;
+    const q = this.pick('q', 'query', '');
+    const statusF = this.pick('statusF', 'statusFilter', 'todo');
+    const dateF = this.pick('dateF', 'dateFilter', 'all');
+    const undoState = s.undo !== undefined ? s.undo : (this.props.undoId ? { id: this.props.undoId, prev: 'placed' } : null);
+    const confirmId = s.confirm !== undefined ? s.confirm : (this.props.confirmId || null);
+    const orders = this.orders();
+    const searching = q.trim().length > 0;
+
+    const inBranch = orders.filter((o) => branchF === 'all' || o.branch === branchF);
+    const dateOk = (o) => dateF === 'all' ? true : dateF === 'today' ? o.date === TODAY : dateF === 'tomorrow' ? o.date === TOMORROW : o.date === dateF;
+    const statusOk = (f) => (o) => f === 'todo' ? (o.status === 'placed' || o.status === 'ready') : o.status === f;
+
+    let rows;
+    if (searching) {
+      const qq = q.trim().toLowerCase();
+      const digits = qq.replace(/\D/g, '');
+      rows = inBranch.filter((o) => o.id.toLowerCase().indexOf(qq) >= 0 || o.name.toLowerCase().indexOf(qq) >= 0 ||
+        (digits.length >= 3 && (o.phone.replace(/\D/g, '').indexOf(digits) >= 0 || o.id.replace(/\D/g, '').indexOf(digits) >= 0)));
+    } else {
+      rows = inBranch.filter(dateOk).filter(statusOk(statusF));
+    }
+
+    const dateLabel = (iso) => iso === TODAY ? 'Today · ' + this.short(iso) : iso === TOMORROW ? 'Tomorrow · ' + this.short(iso) : this.short(iso);
+    const dates = Array.from(new Set(rows.map((o) => o.date))).sort();
+    const splitBranches = owner && branchF === 'all';
+    const view = (o) => ({
+      number: o.id, status: o.status, payment: this.payShown(o), name: o.name, phone: o.phone, items: o.items, total: o.total,
+      recurring: !!o.recurring, notes: o.notes || null, gen: o.gen || null, selected: s.sel === o.id,
+      ready: o.status === 'placed' ? () => this.patch(o.id, { status: 'ready', readyAt: this.stamp() }, o.id + ' is ready.') : null,
+      collected: (o.status === 'placed' || o.status === 'ready') ? () => {
+        if (o.payment === 'unpaid') this.setState({ confirm: o.id });
+        else this.collectWithUndo(o);
+      } : null,
+      open: () => this.setState({ sel: o.id, panelId: o.id })
+    });
+    const count = (list) => list.length + (list.length === 1 ? ' order' : ' orders');
+    const groups = dates.map((iso) => {
+      const inDate = rows.filter((o) => o.date === iso).sort((a, b) => a.id < b.id ? -1 : 1);
+      const ready = inDate.filter((o) => o.status === 'ready').length;
+      const caption = count(inDate) + (!searching && statusF === 'todo' ? ' · ' + ready + ' ready' : '');
+      let sections;
+      if (splitBranches) {
+        sections = ['Northcote', 'Fitzroy', 'Brunswick']
+          .map((b) => ({ branch: b, list: inDate.filter((o) => o.branch === b) }))
+          .filter((x) => x.list.length)
+          .map((x) => ({ branch: x.branch, showHeading: true, caption: count(x.list), rows: x.list.map(view) }));
+      } else {
+        sections = [{ branch: '', showHeading: false, caption: '', rows: inDate.map(view) }];
+      }
+      return { label: dateLabel(iso), caption: caption, sections: sections };
+    });
+
+    const base = inBranch.filter(dateOk);
+    const statusOpts = [['todo', 'To do'], ['placed', 'Placed'], ['ready', 'Ready'], ['collected', 'Collected'], ['cancelled', 'Cancelled']].map((x) => ({
+      label: x[1] + ' · ' + base.filter(statusOk(x[0])).length,
+      cls: x[0] === statusF ? 'ms-seg-on' : '', pressed: x[0] === statusF ? 'true' : 'false',
+      pick: () => this.setState({ statusF: x[0], last: null })
+    }));
+    const custom = ['all', 'today', 'tomorrow'].indexOf(dateF) < 0;
+    const dateOpts = [['all', 'All dates'], ['today', 'Today'], ['tomorrow', 'Tomorrow'], ['custom', custom ? this.short(dateF) : 'Choose date']].map((x) => {
+      const on = x[0] === 'custom' ? custom : x[0] === dateF;
+      return {
+        label: x[1], cls: on ? 'ms-seg-on' : '', pressed: on ? 'true' : 'false',
+        pick: x[0] === 'custom' ? () => this.setState({ picking: true }) : () => this.setState({ dateF: x[0], picking: false, last: null })
+      };
+    });
+    const branchOpts = [['all', 'All branches'], ['Northcote', 'Northcote'], ['Fitzroy', 'Fitzroy'], ['Brunswick', 'Brunswick']].map((x) => ({
+      label: x[1], cls: x[0] === branchF ? 'ms-seg-on' : '', pressed: x[0] === branchF ? 'true' : 'false',
+      pick: () => this.setState({ branchF: x[0], last: null })
+    }));
+
+    const statusWord = { todo: 'to do', placed: 'placed', ready: 'ready', collected: 'collected', cancelled: 'cancelled' }[statusF];
+    const where = dateF === 'all' ? '' : dateF === 'today' ? ' for today' : dateF === 'tomorrow' ? ' for tomorrow' : ' for ' + this.short(dateF);
+    const summary = searching
+      ? count(rows) + ' found for “' + q.trim() + '”'
+      : count(rows) + ' ' + statusWord + where + (owner && branchF !== 'all' ? ' at ' + branchF : '');
+
+    const empty = rows.length === 0;
+    let emptyTitle = '', emptyHint = '', emptyAction = '', emptyAct = null;
+    if (searching) {
+      emptyTitle = 'No orders match “' + q.trim() + '”.';
+      emptyHint = 'Check the order number, or try the last few digits of their phone number.';
+      emptyAction = 'Clear search'; emptyAct = () => this.setState({ q: '' });
+    } else if (dateF !== 'all') {
+      emptyTitle = 'No orders' + where + '.';
+      emptyHint = 'Orders for this date will show up here by themselves as customers place them.';
+      emptyAction = 'Show all dates'; emptyAct = () => this.setState({ dateF: 'all' });
+    } else {
+      emptyTitle = 'Nothing ' + statusWord + ' right now.';
+      emptyHint = 'New orders will show up here by themselves.';
+    }
+
+    const c = confirmId ? orders.find((o) => o.id === confirmId) : null;
+
+    const panelId = s.panelId !== undefined ? s.panelId : (this.props.openId || null);
+    const po = panelId ? orders.find((o) => o.id === panelId) : null;
+    let panel = null;
+    if (po) {
+      const pv = view(po);
+      const history = [['Placed', po.placedAt], ['Paid', po.paidAt], ['Ready', po.readyAt], ['Collected', po.collectedAt], ['Cancelled', po.cancelledAt], ['Refunded', po.refundedAt]]
+        .filter((x) => x[1]).map((x) => ({ label: x[0], when: x[1] }));
+      const online = po.method === 'online';
+      const payLine = po.payment === 'refunded' ? 'Refunded ' + po.refundedAt + (po.ref ? ' · Ref ' + po.ref : '')
+        : po.payment === 'paid' ? 'Paid ' + po.paidAt + (po.ref ? ' · Ref ' + po.ref : '')
+        : po.status === 'cancelled' ? 'Nothing was paid.' : 'Not paid yet. Take ' + this.money(po.total) + ' when they collect.';
+      const final = po.status === 'collected' || po.status === 'cancelled';
+      const refundDue = po.status === 'cancelled' && po.payment === 'paid' && online;
+      panel = {
+        number: po.id, status: po.status, payment: this.payShown(po), recurring: !!po.recurring,
+        pickup: this.short(po.date), branch: po.branch,
+        name: po.name, phone: po.phone, tel: 'tel:' + po.phone.replace(/\s/g, ''), email: po.email, mailto: 'mailto:' + po.email,
+        notes: po.notes, gen: po.gen, reason: po.reason,
+        lines: po.items.map((i) => ({ quantity: i.quantity, name: i.name, each: this.money(i.price), line: this.money(i.quantity * i.price) })),
+        emptyItems: po.items.length === 0,
+        total: this.money(po.total),
+        method: online ? 'Paid online' : 'Pay at pickup',
+        payLine: payLine, history: history,
+        refundDue: refundDue,
+        canAct: !final, canReady: po.status === 'placed', collectVariant: po.status === 'ready' ? 'ready' : 'secondary',
+        ready: pv.ready, collected: pv.collected,
+        locked: final && !refundDue,
+        lockedText: po.status === 'collected'
+          ? 'Collected orders are finished and can\u2019t be changed. If something was wrong, make a new order.'
+          : 'Cancelled orders are finished and can\u2019t be reopened. If the customer still wants it, make a new order.'
+      };
+    }
+
+    const cancelId = s.cancelId !== undefined ? s.cancelId : (this.props.cancelId || null);
+    const co = cancelId ? orders.find((o) => o.id === cancelId) : null;
+    const reason = s.reason !== undefined ? s.reason : (this.props.cancelReason || null);
+    const rtext = s.rtext !== undefined ? s.rtext : (this.props.cancelText || '');
+    const blocked = !reason || (reason === 'other' && !rtext.trim());
+    const cancel = co ? {
+      number: co.id, name: co.name, total: this.money(co.total), pickup: this.short(co.date),
+      reason: reason, isOther: reason === 'other', text: rtext,
+      paidOnline: co.method === 'online' && co.payment === 'paid',
+      blocked: blocked, cta: blocked ? (reason === 'other' ? 'Say what happened first' : 'Choose a reason first') : 'Cancel order'
+    } : null;
+    const reasonWords = { not_collected: 'Not collected', customer: 'Customer request' };
+    const mins = 9 * 60 + 41 + Math.floor((s.ticks || 0) / 2);
+    const hh = Math.floor(mins / 60), mm = mins % 60;
+    const updated = 'Updated ' + (hh > 12 ? hh - 12 : hh) + ':' + (mm < 10 ? '0' : '') + mm + (hh >= 12 ? 'pm' : 'am');
+
+    return {
+      owner: owner,
+      nav: owner ? { orders: 'Owner.dc.html', availability: 'AvailabilityOwner.dc.html', products: 'Products.dc.html' } : { orders: 'Main.dc.html', availability: 'Availability.dc.html', products: 'Products.dc.html' },
+      branchLabel: owner ? 'All branches' : HOME,
+      userLabel: owner ? 'Signed in as owner' : 'Staff · Northcote',
+      q: q, searching: searching, notSearching: !searching,
+      onSearch: (e) => this.setState({ q: e.target.value, last: null }),
+      clearSearch: () => this.setState({ q: '' }),
+      dateOpts: dateOpts, statusOpts: statusOpts, branchOpts: branchOpts,
+      picking: !!s.picking && !searching, customDate: custom ? dateF : null, mondays: [1],
+      onPickDate: (iso) => this.setState({ dateF: iso, picking: false, last: null }),
+      closePicker: () => this.setState({ picking: false }),
+      undo: undoState ? { number: undoState.id, prevLabel: undoState.prev === 'ready' ? 'Ready' : 'Placed' } : null,
+      undoCollect: () => { if (undoState) this.undoCollect(undoState); },
+      lastAction: (!undoState && s.last) || null, noLastAction: !undoState && !s.last,
+      summary: summary, updated: updated, arrived: s.arrived || null,
+      groups: groups,
+      empty: empty, emptyTitle: emptyTitle, emptyHint: emptyHint, emptyAction: emptyAction, emptyAct: emptyAct,
+      confirm: c ? { number: c.id, name: c.name, total: this.money(c.total) } : null,
+      confirmPaid: () => { if (c) this.patch(c.id, { status: 'collected', payment: 'paid', collectedAt: this.stamp(), paidAt: this.stamp() }, c.id + ' paid and collected.'); },
+      notYet: () => this.setState({ confirm: null }),
+      panel: panel,
+      closePanel: () => this.setState({ panelId: null, sel: null }),
+      markRefunded: () => { if (po) this.patch(po.id, { payment: 'refunded', refundedAt: this.stamp() }, po.id + ' marked refunded.'); },
+      openCancel: () => { if (po) this.setState({ cancelId: po.id, reason: null, rtext: '' }); },
+      cancel: cancel,
+      reasonOptions: [
+        { value: 'not_collected', label: 'Not collected', hint: 'The customer didn\u2019t come in for it.' },
+        { value: 'customer', label: 'Customer request', hint: 'They called or came in to cancel.' },
+        { value: 'other', label: 'Other', hint: 'Anything else. You\u2019ll be asked what happened.' }
+      ],
+      pickReason: (v) => this.setState({ reason: v }),
+      onReasonText: (e) => this.setState({ rtext: e.target.value }),
+      keepOrder: () => this.setState({ cancelId: null, reason: null, rtext: '' }),
+      doCancel: () => {
+        if (!co || blocked) return;
+        const why = reason === 'other' ? rtext.trim() : reasonWords[reason];
+        const orders2 = this.orders().map((x) => (x.id === co.id ? Object.assign({}, x, { status: 'cancelled', cancelledAt: this.stamp(), reason: why }) : x));
+        clearTimeout(this.undoTimer);
+        this.setState({ orders: orders2, cancelId: null, reason: null, rtext: '', undo: null, confirm: null, panelId: co.id,
+          last: co.id + ' cancelled.' + (co.method === 'online' && co.payment === 'paid' ? ' Refund it in the payment dashboard.' : '') });
+      },
+      yes: true
+    };
+  }
+}
+</script>
+</body>
+</html>

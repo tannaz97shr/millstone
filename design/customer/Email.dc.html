@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<title>C13 Confirmation email — Millstone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/millstone/tokens.css">
+<link rel="stylesheet" href="ds/millstone/components/bundle.css">
+<script src="ds/millstone/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bitter";src:url("/_blob/504d17282c8e583c69e6f3129a969f86") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Bitter";src:url("/_blob/3ee4132da12d481f2d726ae5e1541de7") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/3130871d5e49b7c5c530cdf575291fca") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/_blob/ab3f33e4b7b70bdd93ebe3b81dc69633") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+body{margin:0;background:#f6efe3;font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;color:#2b2016}
+a{color:#94451a}a:hover{color:#76350f}
+
+</style>
+</helmet>
+<div style="{{outer}}">
+<div style="padding: 12px 16px; background: #eef0f2; border-bottom: 1px solid #c9ced4; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: #1f2933;">
+<p style="margin: 0 0 6px; font-size: 12px; line-height: 16px; color: #52606d;">Mail app preview (not part of the email)</p>
+<p style="margin: 0; font-size: 15px; line-height: 20px; font-weight: 600;">Millstone {{branch}}</p>
+<p style="margin: 2px 0 0; font-size: 15px; line-height: 20px;">{{subject}}</p>
+<p style="margin: 2px 0 0; font-size: 14px; line-height: 20px; color: #52606d;">{{preheader}}</p>
+</div>
+<div style="padding: {{pad}}; background: #f6efe3;">
+<div style="max-width: 600px; margin: 0 auto; background: #fffbf4; border: 1px solid #dccfba; border-radius: 8px; font-family: 'Atkinson Hyperlegible', Arial, Helvetica, sans-serif; color: #2b2016;">
+<div style="padding: 20px 24px 16px; border-bottom: 1px solid #dccfba;">
+<span style="font-family: Bitter, Georgia, 'Times New Roman', serif; font-weight: 700; font-size: 24px; line-height: 30px;">Millstone</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 24px; padding: 24px;">
+<div>
+<h1 style="margin: 0 0 8px; font-family: Bitter, Georgia, 'Times New Roman', serif; font-size: 28px; line-height: 34px; font-weight: 700;">Your order is in</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">Thanks, {{firstName}}. We'll have it ready at {{branch}} on {{dateLabel}}.</p>
+</div>
+<div style="padding: 16px; background: #ece2d1; border-radius: 8px;">
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: #665543;">Order number</p>
+<p style="margin: 4px 0; font-size: 32px; line-height: 36px; font-weight: 700; letter-spacing: 0.02em;">{{orderNumber}}</p>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: #665543;">Say this number at the counter when you pick up.</p>
+</div>
+<div>
+<h2 style="margin: 0 0 8px; font-family: Bitter, Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 600;">Pickup</h2>
+<p style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 700;">{{dateLabel}}</p>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">Millstone {{branch}}</p>
+<p style="margin: 0; font-size: 16px; line-height: 24px; color: #665543;">{{address}}</p>
+<p style="margin: 8px 0 0; font-size: 16px; line-height: 24px;"><a href="#directions" style="color: #94451a; font-weight: 700;">Get directions</a></p>
+</div>
+<div>
+<h2 style="margin: 0 0 8px; font-family: Bitter, Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 600;">Your order</h2>
+<sc-for list="{{lines}}" as="l" hint-placeholder-count="2">
+<div style="display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #dccfba; font-size: 16px; line-height: 24px; font-variant-numeric: tabular-nums;"><span>{{l.text}}</span><span>{{l.total}}</span></div>
+</sc-for>
+<div style="display: flex; justify-content: space-between; gap: 12px; padding: 12px 0 0; font-size: 18px; line-height: 24px; font-weight: 700; font-variant-numeric: tabular-nums;"><span>Total</span><span>{{totalLabel}}</span></div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+<span style="{{tagStyle}}">{{payWord}}</span>
+<span style="font-size: 16px; line-height: 24px;">{{payNote}}</span>
+</div>
+<div style="padding: 16px; border: 1.5px solid #8a7862; border-radius: 8px;">
+<p style="margin: 0 0 4px; font-size: 16px; line-height: 24px; font-weight: 700;">Need to change or cancel?</p>
+<p style="margin: 0; font-size: 16px; line-height: 24px;">Call {{branch}} on <a href="#call" style="color: #94451a; font-weight: 700; white-space: nowrap;">{{phone}}</a>. Orders can't be changed online.</p>
+</div>
+<sc-if value="{{guest}}" hint-placeholder-val="{{false}}">
+<div style="padding: 16px; background: #ece2d1; border-radius: 8px;">
+<p style="margin: 0 0 4px; font-family: Bitter, Georgia, 'Times New Roman', serif; font-size: 20px; line-height: 26px; font-weight: 600;">Save your details for next time</p>
+<p style="margin: 0 0 12px; font-size: 16px; line-height: 24px;">Create an account with {{email}} and this order goes into it. Next time your details fill in by themselves.</p>
+<a href="#create-account" style="display: inline-block; padding: 12px 20px; background: #94451a; color: #fffbf4; border-radius: 10px; font-size: 16px; line-height: 24px; font-weight: 700; text-decoration: none;">Create an account</a>
+</div>
+</sc-if>
+</div>
+<div style="padding: 16px 24px 24px; border-top: 1px solid #dccfba; font-size: 14px; line-height: 20px; color: #665543;">
+<p style="margin: 0 0 8px;">Millstone bakeries in Northcote, Fitzroy and Brunswick.</p>
+<p style="margin: 0;">You're getting this email because you placed order {{orderNumber}} with Millstone. It's about your order only, so there's nothing to unsubscribe from.</p>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"payment":{"editor":"enum","options":["paid","unpaid"],"default":"paid","section":"Scenario"},"guest":{"editor":"boolean","default":true,"section":"Scenario"},"width":{"editor":null},"height":{"editor":null},"contact":{"editor":null},"lines":{"editor":null},"total":{"editor":null},"branch":{"editor":null},"date":{"editor":null},"orderNumber":{"editor":null},"$preview":{"width":390,"height":1560}}'>
+class Component extends DCLogic {
+  rootStyle(h) { return 'position: relative; width: 390px; height: ' + (h || 844) + 'px; display: flex; flex-direction: column; overflow: hidden; background: #f6efe3; color: #2b2016; font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;'; }
+  label(iso) {
+    const p = iso.split('-').map(Number);
+    const d = new Date(p[0], p[1] - 1, p[2]);
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
+  }
+  money(n) { return '$' + n.toFixed(2); }
+  st() { return this.state || {}; }
+  cur(key, prop, dflt) { const s = this.st(); if (s[key] !== undefined) return s[key]; const v = this.props[prop]; return v !== undefined && v !== null ? v : dflt; }
+  renderVals() {
+    const w = this.props.width || 390, h = this.props.height || 1560;
+    const contact = this.props.contact || { name: 'Ben Okafor', phone: '0491 570 157', email: 'ben.okafor@example.com' };
+    const lines = this.props.lines || [{ name: 'Sourdough rye loaf', qty: 1, price: 9.5 }, { name: 'Plain bagel', qty: 4, price: 2.8 }];
+    const total = this.props.total !== undefined ? this.props.total : lines.reduce((t, l) => t + l.qty * l.price, 0);
+    const paid = (this.props.payment || 'paid') === 'paid';
+    const branch = this.props.branch || 'Northcote';
+    const info = { Northcote: ['214 High Street, Northcote', '03 7010 2140'], Fitzroy: ['87 Gertrude Street, Fitzroy', '03 7010 0870'], Brunswick: ['402 Sydney Road, Brunswick', '03 7010 4020'] }[branch];
+    const num = this.props.orderNumber || 'MS-1048';
+    const date = this.label(this.props.date || '2026-09-30');
+    const tag = 'display: inline-block; padding: 4px 8px; border-radius: 4px; border: 1.5px solid; font-size: 14px; line-height: 18px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; ';
+    return {
+      outer: 'width: ' + w + 'px; height: ' + h + 'px; overflow: hidden; box-sizing: border-box; background: #f6efe3;',
+      pad: w >= 600 ? '24px 20px' : '12px 8px',
+      branch: branch, address: info[0], phone: info[1],
+      subject: 'Your Millstone order ' + num + ' for ' + date,
+      preheader: 'Pickup at ' + branch + '. ' + (paid ? 'Paid online, nothing to pay at the counter.' : 'Pay ' + this.money(total) + ' when you collect.'),
+      firstName: contact.name.trim().split(' ')[0], email: contact.email,
+      orderNumber: num, dateLabel: date,
+      lines: lines.map((l) => ({ text: l.qty + ' \u00d7 ' + l.name, total: this.money(l.qty * l.price) })),
+      totalLabel: this.money(total),
+      tagStyle: tag + (paid ? 'background: #dde8d4; color: #3b6636; border-color: #3b6636;' : 'background: #e2b458; color: #2b2016; border-color: #2b2016;'),
+      payWord: paid ? 'Paid' : 'Pay at pickup',
+      payNote: paid ? 'Paid online. Nothing to pay at the counter.' : 'Pay ' + this.money(total) + ' at the counter when you collect.',
+      guest: this.props.guest !== undefined ? !!this.props.guest : true
+    };
+  }
+}
+</script>
+</body>
+</html>
