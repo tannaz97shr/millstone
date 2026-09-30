@@ -30,8 +30,8 @@ _Last updated: 29 Sep 2026 — design phase complete_
 
 **Design links:**
 - Customer screens canvas: https://claude.ai/artifact/W1zWg2eNTY7wjuXCS2p5wk
-- Admin screens canvas: _(add link)_
-- Millstone design system: _(add link)_
+- Admin screens canvas: https://claude.ai/artifact/WoijnAGpy11XfYVKNdX9NW
+- Millstone design system: https://claude.ai/artifact/SUaNipiVWuourAKr63PwpM
 
 ## 3. Scope
 
@@ -93,6 +93,7 @@ _Last updated: 29 Sep 2026 — design phase complete_
 Product             id, name, description, category, price, image, is_active
 
 Branch              id, name, address, phone, order_cutoff_time,
+                    opens_at (time, default 07:00),
                     closed_days (array of weekday numbers, 0 = Sunday),
                     notifications_enabled (default false)
 
@@ -439,7 +440,7 @@ Staff can also go straight from `placed` to `collected` (see transitions table).
 
 ## 11. Screen Inventory (brief for Claude Design)
 
-**Status:** all screens below are designed (customer canvas: C1–C13; admin canvas: A2–A5 + A3 panel).
+**Status:** designed, except A1 and C3 (customer canvas: C1–C13 without C3; admin canvas: A2–A5 + A3 panel). A1 (staff login) and C3 (product detail) were not designed; they are built from existing patterns (see section 13).
 
 ### Design notes
 - **Customer side:** mobile-first — most customers will order from their phone.
@@ -489,3 +490,13 @@ Staff can also go straight from `placed` to `collected` (see transitions table).
 - Confirm assumptions: pickup only, date not time slot ("any time that day").
 - Real product photos (currently letter placeholders).
 - Sample data differs slightly between the customer and admin canvases (e.g. some phone numbers) — cosmetic only; seed data in code should follow the sample data rule in section 4.
+
+---
+
+## 13. Decisions after design
+
+_Recorded 30 Sep 2026, during project setup._
+
+- **Pickup time copy:** keep "We'll have it ready from 7am". The time comes from a new `Branch.opens_at` field (default 07:00), added in the data-model step.
+- **A1 Staff login:** not designed. Reuse the C8 sign-in layout at admin size (`data-context="admin"`).
+- **C3 Product detail:** not designed. A bottom sheet using the same sheet pattern as `design/customer/CartBranchSheet.dc.html`, built from existing components.

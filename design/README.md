@@ -1,6 +1,6 @@
 # Millstone design handoff
 
-Exported from Claude Design (29 Sep 2026). These HTML files are **visual reference only**: match layout, copy, spacing and states, but build real React components in `src/`. Do not import or copy `ds/.../bundle.js`. Font/image URLs starting `/_blob/` will not load here; fonts are in `system/fonts/`.
+Exported from Claude Design (29 Sep 2026). These HTML files are **visual reference only**: match layout, copy, spacing and states, but build real React components in `src/`. Do not import or copy `design/**/bundle.js`. Font/image URLs starting `/_blob/` will not load here; fonts are in `system/fonts/`.
 
 - `system/` — tokens (`tokens.css`, `tokens.json`), component specs (`components/*/README.md`, `components/index.d.ts` for props), design-system README, font files.
 - `customer/` — mobile screens, 390px wide.
