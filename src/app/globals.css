@@ -33,6 +33,8 @@
   --color-delft: #2e5476;
   --color-delft-soft: #dce5ee;
   --color-focus: var(--color-delft);
+  /* Not in tokens.json: the Ready button's hover in design/system/components/bundle.css. */
+  --color-sage-deep: #2f5530;
 
   /* 4px base: p-1 … p-12 are space-1 … space-12. */
   --spacing: 4px;
@@ -64,22 +66,65 @@
   --spacing-control: var(--control-h);
   --spacing-tap: var(--tap-min);
   --spacing-action: var(--action-h);
+  --spacing-control-x: var(--control-pad-x);
+  --spacing-badge: var(--badge-h);
+  --spacing-toggle-w: var(--toggle-w);
+  --spacing-toggle-h: var(--toggle-h);
+
+  /* Component text sizes that grow under data-context="admin". */
+  --text-control: var(--control-text);
+  --text-control--line-height: var(--control-leading);
+  --text-label: var(--label-text);
+  --text-label--line-height: 1.3;
+  --text-hint: var(--hint-text);
+  --text-hint--line-height: 1.4;
+  --text-badge: var(--badge-text);
+  --text-badge--line-height: 1;
 }
 
+/* admin:… applies inside data-context="admin", for one-off layout changes. */
+@custom-variant admin (&:where([data-context="admin"] *));
+
 @layer base {
+  /* Component sizes, from design/system/components/bundle.css. */
   :root {
     color-scheme: light;
     --control-h: 48px;
     --tap-min: 48px;
     --action-h: 48px;
+    --control-border: 1.5px;
+    --control-text: 16px;
+    --control-leading: 24px;
+    --control-pad-x: 16px;
+    --label-text: 16px;
+    --hint-text: 14px;
+    --badge-h: 28px;
+    --badge-text: 14px;
+    --toggle-w: 52px;
+    --toggle-h: 30px;
   }
 
   [data-context="admin"] {
     --control-h: 64px;
     --tap-min: 64px;
     --action-h: 72px;
+    --control-border: 2px;
+    --control-text: 20px;
+    --control-leading: 28px;
+    --control-pad-x: 24px;
+    --label-text: 18px;
+    --hint-text: 16px;
+    --badge-h: 36px;
+    --badge-text: 17px;
+    --toggle-w: 72px;
+    --toggle-h: 40px;
     font-size: 20px;
     line-height: 28px;
+  }
+
+  /* No page scroll behind an open Sheet or Dialog. */
+  :root:has(dialog[data-modal][open]) {
+    overflow: hidden;
   }
 
   body {
