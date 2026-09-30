@@ -72,7 +72,7 @@ export function ChoiceGroup({
               "has-focus-visible:shadow-focus-ring",
               on
                 ? "border-crust bg-crust-soft shadow-[inset_0_0_0_1px_var(--color-crust)]"
-                : "border-line-strong bg-flour-raised",
+                : cx("bg-flour-raised", error ? "border-brick" : "border-line-strong"),
             )}
           >
             <input

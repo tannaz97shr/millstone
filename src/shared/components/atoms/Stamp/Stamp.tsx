@@ -45,7 +45,7 @@ export function Stamp({
         className,
       )}
     >
-      <Icon name={icon} className="size-[1.05em]" />
+      <Icon name={icon} sizeClassName="size-[1.05em]" />
       {children}
     </span>
   );

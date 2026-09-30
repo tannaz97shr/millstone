@@ -67,11 +67,13 @@ const shapes: Record<IconName, React.ReactNode> = {
 
 export interface IconProps {
   name: IconName;
+  /** A size class; 1em of the surrounding text by default. Replaces the default, so the two never compete. */
+  sizeClassName?: string;
   className?: string;
 }
 
 /** Decorative only: every icon sits next to a word, so it is hidden from screen readers. */
-export function Icon({ name, className }: IconProps) {
+export function Icon({ name, sizeClassName = "size-[1em]", className }: IconProps) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -82,7 +84,7 @@ export function Icon({ name, className }: IconProps) {
       strokeWidth={2.25}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={cx("size-[1em] shrink-0", className)}
+      className={cx("shrink-0", sizeClassName, className)}
     >
       {shapes[name]}
     </svg>

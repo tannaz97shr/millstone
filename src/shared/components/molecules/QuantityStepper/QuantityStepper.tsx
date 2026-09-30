@@ -20,7 +20,7 @@ const content = componentsContent.quantityStepper;
 
 // The group clips its corners, so focus is drawn inside the button.
 const stepButton =
-  "flex w-tap cursor-pointer items-center justify-center text-[calc(var(--control-text)+4px)] text-crust " +
+  "flex w-tap shrink-0 cursor-pointer items-center justify-center text-[calc(var(--control-text)+4px)] text-crust " +
   "enabled:hover:bg-crust-soft focus-visible:shadow-[inset_0_0_0_3px_var(--color-delft)] " +
   "disabled:cursor-not-allowed disabled:text-line-strong";
 
@@ -42,7 +42,8 @@ export function QuantityStepper({
       role="group"
       aria-label={content.group(label)}
       className={cx(
-        "inline-flex h-control items-stretch overflow-hidden rounded-md border-(length:--control-border) border-line-strong bg-flour-raised",
+        // box-content: the edge sits outside, so the buttons keep the full control height.
+        "box-content inline-flex h-control items-stretch overflow-hidden rounded-md border-(length:--control-border) border-line-strong bg-flour-raised",
         className,
       )}
     >

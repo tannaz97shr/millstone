@@ -1,5 +1,9 @@
+"use client";
+
+import { useRef } from "react";
 import { componentsContent } from "@/shared/content/components";
 import { cx } from "@/shared/utils/cx";
+import { focusWithoutTabStop, nextFocusableAfter } from "@/shared/utils/focusable";
 import { Button } from "../../atoms/Button/Button";
 import { Icon, type IconName } from "../../atoms/Icon/Icon";
 
@@ -11,7 +15,8 @@ export interface NoticeProps {
    * success: sage, e.g. "MS-1043 collected" with Undo.
    * warning: wheat, generation notes and cautions.
    * error: brick, announced as an alert.
-   * info: delft, a rule to know (admin product form).
+   * info: a rule to know (admin product form). Plain flour with a line-strong
+   *   edge: delft stays reserved for Recurring and focus.
    */
   tone?: NoticeTone;
   title?: React.ReactNode;
@@ -22,6 +27,11 @@ export interface NoticeProps {
   action?: React.ReactNode;
   /** Shows an "OK" button that dismisses the message. */
   onDismiss?: () => void;
+  /**
+   * Where focus goes when the message is dismissed. Without it, focus moves to
+   * the next focusable element after the notice, or to the notice's parent.
+   */
+  focusAfterDismiss?: React.RefObject<HTMLElement | null>;
   /** Defaults to alert for error, status otherwise. */
   role?: "status" | "alert" | "note";
   className?: string;
@@ -32,7 +42,7 @@ const toneClasses: Record<NoticeTone, string> = {
   success: "bg-sage-soft border-sage text-ink",
   warning: "bg-wheat-soft border-wheat text-wheat-ink",
   error: "bg-brick-soft border-brick text-ink",
-  info: "bg-delft-soft border-delft text-ink",
+  info: "bg-flour border-line-strong text-ink",
 };
 
 const iconToneClasses: Record<NoticeTone, string> = {
@@ -40,7 +50,7 @@ const iconToneClasses: Record<NoticeTone, string> = {
   success: "text-sage",
   warning: "text-wheat-ink",
   error: "text-brick",
-  info: "text-delft",
+  info: "text-ink",
 };
 
 const titleToneClasses: Record<NoticeTone, string> = {
@@ -59,6 +69,7 @@ export function Notice({
   icon,
   action,
   onDismiss,
+  focusAfterDismiss,
   role,
   className,
 }: NoticeProps) {
@@ -66,8 +77,21 @@ export function Notice({
   // A plain notice with a check (e.g. "Your account is set up") shows it in sage.
   const iconColour = tone === "neutral" && iconName === "check" ? "text-sage" : iconToneClasses[tone];
 
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // The OK button is about to disappear with the notice. Move focus first, so
+  // it never falls back to the top of the page.
+  const dismiss = () => {
+    const root = rootRef.current;
+    const target = focusAfterDismiss?.current ?? (root ? nextFocusableAfter(root) : null);
+    if (target) target.focus();
+    else if (root?.parentElement) focusWithoutTabStop(root.parentElement);
+    onDismiss?.();
+  };
+
   return (
     <div
+      ref={rootRef}
       role={role ?? (tone === "error" ? "alert" : "status")}
       className={cx(
         "flex items-center gap-3 rounded-md border-(length:--control-border) py-3 pr-3 pl-4 admin:py-4 admin:pr-4 admin:pl-5",
@@ -93,7 +117,7 @@ export function Notice({
       {onDismiss && (
         <Button
           variant="quiet"
-          onClick={onDismiss}
+          onClick={dismiss}
           aria-label={componentsContent.notice.dismissLabel}
           className="shrink-0"
         >
