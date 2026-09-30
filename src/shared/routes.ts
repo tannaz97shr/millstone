@@ -8,5 +8,6 @@ export const routes = {
   },
   dev: {
     tokens: "/dev/tokens",
+    components: "/dev/components",
   },
 } as const;

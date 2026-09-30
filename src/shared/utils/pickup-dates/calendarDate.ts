@@ -60,3 +60,26 @@ export function addDays(date: IsoDate, days: number): IsoDate {
 export function weekdayOf(date: IsoDate): Weekday {
   return isoDateToUtc(date).getUTCDay() as Weekday;
 }
+
+/** The first day of the date's month. */
+export function startOfMonth(date: IsoDate): IsoDate {
+  return toIsoDate(`${date.slice(0, 7)}-01`);
+}
+
+export function daysInMonth(date: IsoDate): number {
+  const [y, m] = date.split("-").map(Number);
+  // Day 0 of the next month is the last day of this one.
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+
+export function dayOfMonth(date: IsoDate): number {
+  return Number(date.slice(8, 10));
+}
+
+/** Same day in another month; a day the target month doesn't have becomes its last day (31 Jan + 1 → 28 Feb). */
+export function addMonths(date: IsoDate, months: number): IsoDate {
+  const [y, m] = date.split("-").map(Number);
+  const first = utcToIsoDate(new Date(Date.UTC(y, m - 1 + months, 1)));
+  const day = Math.min(dayOfMonth(date), daysInMonth(first));
+  return toIsoDate(`${first.slice(0, 8)}${String(day).padStart(2, "0")}`);
+}
