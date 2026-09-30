@@ -129,6 +129,11 @@ uses no real name, branding, people, numbers or addresses.
 - No committed automated test suite. Verification is live: ad hoc
   Playwright scripts per feature, run against a real local dev/build
   server, screenshots inspected directly, then deleted.
+- **Exception:** the pickup-date rules (`src/shared/utils/pickup-dates/`)
+  have committed `bun test` unit tests (`bun run test`). They cover the
+  cutoff, closed days, Melbourne midnight and daylight-saving edges. Keep
+  them passing, and extend them when those rules change. Test files are
+  excluded from `tsconfig.json` because `@types/bun` isn't installed.
 - Customer screens are checked at 390px wide, admin screens at 1180px.
 - Security-critical flows (auth, permissions, payments): test **every**
   branch, not just the happy path. E.g. "customer blocked from admin" AND

@@ -4,11 +4,14 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
 
 ## Undeployed infra steps
 
-_None yet._
+- **No real Firebase project yet.** Local dev runs on the emulator (`demo-millstone`). Before deploying: create the Blaze project, run `firebase deploy --only firestore:rules,firestore:indexes,storage`, and set `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY` in the host's env.
+- **Emulator needs a JDK (21+)** installed locally (`brew install --cask temurin@21`).
 
 ## Deferred features
 
-_None yet._
+- **Admin free-text search (AC-A3).** Firestore can't do substring search on name or phone. The admin step needs a lowercased search field (or prefix tokens) on orders, plus an index for it.
+- **Category display order.** Products store `category` as a free-text name ("Breads"). Nothing yet says Breads → Pastries → Bagels. The menu step needs an order (e.g. a small categories config or a `sortOrder` field).
+- **Phone display formatting.** Phones are stored as digits (`0491570156`, `0370102140`). A formatter for "0491 570 156" / "(03) 7010 2140" belongs with the first UI that shows them.
 
 ## Investigated but unreproduced bugs
 
@@ -17,6 +20,12 @@ _None yet._
 ## Un-applied migration scripts
 
 _None yet._
+
+## Data model notes
+
+- **Deviations from spec section 5 (by design):** money is stored as integer cents (`priceCents`, `totalCents`, …), not decimals. Order items and recurring-order items/skips are embedded arrays, so `OrderItem.id` / `order_id` don't exist. Email uniqueness is enforced with `customerEmails` / `staffEmails` lock docs.
+- **Fruit loaf is Northcote-only in the seed.** No design has a branch-only product, so the seed also switches Fruit loaf off at Brunswick. The admin Products canvas shows "At 2 of 3 branches · not Fitzroy" for it.
+- **Seed sold-out dates follow the real clock.** They're set to each branch's earliest (and second) pickup date at seed time. A rerun on a later day moves them forward, and the designs' fixed dates (sold out Wed 30 Sep) won't match literally.
 
 ## Known UX gaps
 
