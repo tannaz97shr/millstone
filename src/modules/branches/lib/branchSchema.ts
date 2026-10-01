@@ -14,4 +14,5 @@ export const branchDocSchema = z.object({
     .max(6, "a branch must be open at least one day")
     .refine((days) => new Set(days).size === days.length, "closed days must be unique"),
   notificationsEnabled: z.boolean(),
+  displayOrder: z.number().int().nonnegative(),
 });

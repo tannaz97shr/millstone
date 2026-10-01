@@ -1,5 +1,6 @@
-import type { IsoDate, Weekday } from "@/shared/domain";
-import { addDays, isoDateToUtc, toIsoDate } from "./calendarDate";
+import type { IsoDate, TimeOfDay, Weekday } from "@/shared/domain";
+import { listNames } from "../listNames";
+import { addDays, isoDateToUtc, timeOfDayParts, toIsoDate } from "./calendarDate";
 
 // Weekday and month names for the date components. Every name comes from Intl
 // and a real date; nothing here is a hardcoded name string. en-US is used for
@@ -41,6 +42,21 @@ export function formatLongDay(date: IsoDate): string {
 export function formatMonthTitle(date: IsoDate): string {
   const part = partsOf(monthTitleFormatter, date);
   return `${part("month")} ${part("year")}`;
+}
+
+/** "Mondays" or "Sundays and Mondays", in week order from Sunday. */
+export function formatWeekdayList(weekdays: readonly Weekday[]): string {
+  const sorted = [...new Set(weekdays)].sort((a, b) => a - b);
+  return listNames(sorted.map((day) => `${weekdayName(day, "long")}s`));
+}
+
+/** "2pm", "7:30am", "12pm" (noon), "12am" (midnight). */
+export function formatTimeOfDay(time: TimeOfDay): string {
+  const { hour, minute } = timeOfDayParts(time);
+  const suffix = hour < 12 ? "am" : "pm";
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  const minutes = minute === 0 ? "" : `:${String(minute).padStart(2, "0")}`;
+  return `${hour12}${minutes}${suffix}`;
 }
 
 /** "Sep". */

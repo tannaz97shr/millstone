@@ -54,6 +54,7 @@ export const devComponentsContent = {
     card: "Card",
     productGrid: "Two-column grid: add, in the order, sold out for a day, sold out, with a photo",
     rowLayout: "Row layout",
+    withDetails: "Name opens the product detail (C3)",
     everyStatus: "Every status and payment combination",
     sheet: "Bottom sheet",
     customerDialog: "Warning that needs an answer (alertdialog)",
@@ -166,6 +167,7 @@ export const devComponentsContent = {
       bagel: { name: "Plain bagel", priceCents: 280, description: "Boiled, then baked." },
     },
     soldOutFor: (day: string) => `Sold out for ${day}`,
+    detailsOpened: "Details opened",
     // The sample image is a generated colour swatch, not a product photo.
     imageAlt: "",
   },

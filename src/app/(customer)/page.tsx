@@ -1,12 +1,18 @@
-import { shellContent } from "@/shared/content/shell";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { connection } from "next/server";
+import { prefetchBranches } from "@/modules/branches/lib/prefetchBranches";
+import { HomeScreen } from "@/modules/home/components/HomeScreen";
+import { getQueryClient } from "@/shared/lib/query/getQueryClient";
 
-const content = shellContent.placeholders.customerHome;
+// C1. Rendered per request: pickup dates depend on the time of day.
+export default async function HomePage() {
+  await connection();
+  const queryClient = getQueryClient();
+  await prefetchBranches(queryClient, new Date());
 
-export default function HomePage() {
   return (
-    <section className="flex flex-col gap-2">
-      <h1 className="page-title">{content.title}</h1>
-      <p className="text-ink-muted">{content.body}</p>
-    </section>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <HomeScreen />
+    </HydrationBoundary>
   );
 }

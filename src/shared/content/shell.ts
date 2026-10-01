@@ -13,11 +13,12 @@ export const shellContent = {
     body: "Try again. If it still won't load, call your branch and we'll sort your order out.",
     retry: "Try again",
   },
+  notFound: {
+    title: "We couldn't find that page",
+    body: "The link may be old, or the branch may have moved. Start again from our branches.",
+    home: "See our branches",
+  },
   placeholders: {
-    customerHome: {
-      title: "Order ahead, pick up at the counter",
-      body: "Ordering is being built. This page is a placeholder.",
-    },
     adminHome: {
       title: "Orders",
       body: "The order list is being built. This page is a placeholder.",

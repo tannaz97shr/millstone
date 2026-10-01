@@ -12,6 +12,8 @@
     "seed": "bun --conditions=react-server scripts/seed/index.ts"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.104.0",
+    "axios": "^1.20.0",
     "firebase-admin": "^14.5.0",
     "next": "16.3.7",
     "react": "19.3.0",

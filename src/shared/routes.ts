@@ -3,6 +3,12 @@
 
 export const routes = {
   home: "/",
+  /** C2: a branch's menu, optionally for a pickup date ("YYYY-MM-DD"). */
+  menu: (branchId: string, date?: string | null) => {
+    const path = `/menu/${encodeURIComponent(branchId)}`;
+    return date ? `${path}?${new URLSearchParams({ date })}` : path;
+  },
+  cart: "/cart",
   admin: {
     home: "/admin",
   },
