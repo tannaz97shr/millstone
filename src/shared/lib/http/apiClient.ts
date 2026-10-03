@@ -1,6 +1,5 @@
 import axios, { isAxiosError } from "axios";
-import type { IsoDate } from "@/shared/domain";
-import type { ApiErrorBody, ApiErrorCode } from "@/shared/lib/api/apiError";
+import type { ApiErrorBody, ApiErrorCode, ApiErrorDetails } from "@/shared/lib/api/apiError";
 
 // The browser's one HTTP client. Paths always come from api-routes.ts.
 
@@ -11,11 +10,10 @@ export const apiClient = axios.create({
   headers: { Accept: "application/json" },
 });
 
-export interface ApiFailure {
+export interface ApiFailure extends ApiErrorDetails {
   /** 0 when the request never got a response (offline, timeout). */
   status: number;
   code: ApiErrorCode | "network_error";
-  earliest?: IsoDate;
 }
 
 function isApiErrorBody(data: unknown): data is ApiErrorBody {
@@ -33,7 +31,8 @@ export function toApiFailure(error: unknown): ApiFailure {
     const status = error.response?.status ?? 0;
     const data: unknown = error.response?.data;
     if (isApiErrorBody(data)) {
-      return { status, code: data.error.code, earliest: data.error.earliest };
+      const { code, earliest, fields, items, totalCents } = data.error;
+      return { status, code, earliest, fields, items, totalCents };
     }
     return { status, code: status === 0 ? "network_error" : "server_error" };
   }

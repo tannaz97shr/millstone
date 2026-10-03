@@ -34,6 +34,29 @@ export function routeHandler<Context>(
   };
 }
 
+/**
+ * Reads and validates a JSON body. Bad JSON or a schema mismatch is a 400
+ * `invalid_body` whose `fields` lists the failing paths, e.g. "contact.phone".
+ */
+export async function parseBody<Schema extends z.ZodType>(
+  schema: Schema,
+  request: Request,
+): Promise<z.output<Schema>> {
+  let input: unknown;
+  try {
+    input = await request.json();
+  } catch (error) {
+    logError(error, "parseBody", { level: "warn" });
+    throw new ApiError(400, "invalid_body", "Body is not valid JSON", { fields: [] });
+  }
+  const result = schema.safeParse(input);
+  if (!result.success) {
+    const fields = [...new Set(result.error.issues.map((issue) => issue.path.join(".") || "body"))];
+    throw new ApiError(400, "invalid_body", `Invalid ${fields.join(", ")}`, { fields });
+  }
+  return result.data;
+}
+
 /** Validates route params or search params; a mismatch is a 400 that names the fields. */
 export function parseParams<Schema extends z.ZodType>(schema: Schema, input: unknown): z.output<Schema> {
   const result = schema.safeParse(input);

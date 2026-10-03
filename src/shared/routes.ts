@@ -10,11 +10,20 @@ export const routes = {
   },
   cart: "/cart",
   checkout: "/checkout",
+  /** C7: one order's confirmation, by its unguessable ID. */
+  orderConfirmation: (orderId: string) => `/orders/${encodeURIComponent(orderId)}`,
   admin: {
     home: "/admin",
   },
   dev: {
     tokens: "/dev/tokens",
     components: "/dev/components",
+    /** Confirmation emails written in development, newest first. */
+    emails: "/dev/emails",
+    /** One email, shown at a phone (390) or desktop-client (600) width. */
+    email: (emailId: string, width?: number) => {
+      const path = `/dev/emails/${encodeURIComponent(emailId)}`;
+      return width ? `${path}?${new URLSearchParams({ width: String(width) })}` : path;
+    },
   },
 } as const;

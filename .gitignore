@@ -42,3 +42,6 @@ pubsub-debug.log
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# confirmation emails written in development (/dev/emails)
+/.dev-emails/
