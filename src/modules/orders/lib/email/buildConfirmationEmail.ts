@@ -224,7 +224,7 @@ export function buildConfirmationEmail(order: OrderConfirmation): ConfirmationEm
   const d = details(order);
   const preheader = d.paid
     ? content.email.preheader.paid(order.branch.name)
-    : content.email.preheader.unpaid(d.total);
+    : content.email.preheader.unpaid(order.branch.name, d.total);
   return {
     fromName: content.email.fromName(order.branch.name),
     subject: content.email.subject(order.orderNumber, d.day),

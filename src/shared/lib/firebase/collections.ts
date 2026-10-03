@@ -17,6 +17,8 @@ export const COLLECTIONS = {
   orders: "orders",
   recurringOrders: "recurringOrders",
   counters: "counters",
+  /** signInThrottle/{sha256(normalizedEmail)}: failed staff sign-ins (A1). */
+  signInThrottle: "signInThrottle",
   settings: "settings",
 } as const;
 
@@ -39,5 +41,6 @@ export const staffEmailsRef = () => getDb().collection(COLLECTIONS.staffEmails);
 export const ordersRef = () => getDb().collection(COLLECTIONS.orders);
 export const recurringOrdersRef = () => getDb().collection(COLLECTIONS.recurringOrders);
 export const countersRef = () => getDb().collection(COLLECTIONS.counters);
+export const signInThrottleRef = () => getDb().collection(COLLECTIONS.signInThrottle);
 export const catalogSettingsRef = () =>
   getDb().collection(COLLECTIONS.settings).doc(SETTINGS_IDS.catalog);

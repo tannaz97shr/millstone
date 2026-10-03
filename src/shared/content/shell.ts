@@ -1,5 +1,4 @@
-// Copy for the app shell: brand, metadata, error boundaries and the
-// placeholder pages that later steps replace.
+// Copy for the app shell: brand, metadata and error boundaries.
 
 export const shellContent = {
   brandName: "Millstone",
@@ -17,11 +16,5 @@ export const shellContent = {
     title: "We couldn't find that page",
     body: "The link may be old, or the branch may have moved. Start again from our branches.",
     home: "See our branches",
-  },
-  placeholders: {
-    adminHome: {
-      title: "Orders",
-      body: "The order list is being built. This page is a placeholder.",
-    },
   },
 } as const;

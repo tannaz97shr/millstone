@@ -24,6 +24,14 @@ export type ApiErrorCode =
    */
   | "checkout_key_mismatch"
   | "not_found"
+  /** No session, or it has expired (401). */
+  | "unauthenticated"
+  /** Signed in, but not allowed: not staff, or an owner-only route (403). */
+  | "forbidden"
+  /** Staff sign-in: the email and password don't match; never says which (401). */
+  | "invalid_credentials"
+  /** Staff sign-in: too many failed tries for this email; locked for a while (429). */
+  | "too_many_attempts"
   /** Firestore didn't answer in time (503). */
   | "unavailable"
   | "server_error";

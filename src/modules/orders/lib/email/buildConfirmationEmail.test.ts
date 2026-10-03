@@ -31,10 +31,10 @@ describe("buildConfirmationEmail", () => {
     const email = buildConfirmationEmail(order);
     expect(email.subject).toBe("Your Millstone order MS-1048 for Wed 30 Sep");
     expect(email.fromName).toBe("Millstone Northcote");
-    expect(email.preheader).toBe("Pay $20.70 when you collect.");
+    expect(email.preheader).toBe("Pickup at Northcote. Pay $20.70 when you collect.");
   });
 
-  test("a paid order's preview names the branch", () => {
+  test("a paid order's preview says nothing is owed", () => {
     const email = buildConfirmationEmail({ ...order, paymentMethod: "online", paymentStatus: "paid" });
     expect(email.preheader).toBe("Pickup at Northcote. Paid online, nothing to pay at the counter.");
     expect(email.html).toContain(">Paid<");
@@ -68,7 +68,7 @@ describe("buildConfirmationEmail", () => {
     expect(html).not.toContain("<style");
     expect(html).not.toContain("display: flex");
     expect(html).toContain('role="presentation"');
-    expect(html).toMatch(/display: none[^"]*">Pay \$20\.70 when you collect\./);
+    expect(html).toMatch(/display: none[^"]*">Pickup at Northcote\. Pay \$20\.70 when you collect\./);
     expect(html).toContain("MS-1048");
     expect(html).toContain('href="tel:0370102140"');
     expect(html).toContain(">03 7010 2140</a>");

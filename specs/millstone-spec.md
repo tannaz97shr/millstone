@@ -282,7 +282,7 @@ Staff can also go straight from `placed` to `collected` (see transitions table).
 
 **AC-C11 Confirmation email (C13)**
 - Subject: "Your Millstone order MS-XXXX for [day date]".
-- Preview text depends on payment: paid → "Pickup at [branch]. Paid online, nothing to pay at the counter."; pay at pickup → "Pay $[total] when you collect."
+- Preview text depends on payment: paid → "Pickup at [branch]. Paid online, nothing to pay at the counter."; pay at pickup → "Pickup at [branch]. Pay $[total] when you collect."
 - Content follows C7: order number (large, "Say this number at the counter"), pickup day, branch, address with directions link, items, total, payment label, a "Need to change or cancel?" box with the branch phone, and a "Create an account" link for guests.
 - Built as table-based HTML with inline styles; fonts fall back to Georgia and Arial.
 
