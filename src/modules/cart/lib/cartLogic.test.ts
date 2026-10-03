@@ -14,6 +14,7 @@ import {
   previewBranchChange,
   previewRemovesItems,
   reconcileCart,
+  removeItems,
   resolvePickupDate,
   setQuantity,
 } from "./cartLogic";
@@ -320,5 +321,20 @@ describe("parseStoredCart", () => {
     expect(
       parseStoredCart(JSON.stringify({ ...good, items: { rye: { quantity: 0, name: "Rye" } } })).ok,
     ).toBe(false);
+  });
+});
+
+describe("removeItems", () => {
+  const cart = setQuantity(setQuantity(emptyCart(NORTHCOTE, WED), RYE, 1), BAGEL, 4);
+
+  test("takes out the named products and keeps the rest", () => {
+    const result = removeItems(cart, [RYE.id]);
+    expect(Object.keys(result.items)).toEqual([BAGEL.id]);
+    expect(result.items[BAGEL.id]).toEqual({ quantity: 4, name: "Plain bagel" });
+  });
+
+  test("returns the same cart when none of them are in it", () => {
+    expect(removeItems(cart, [SEEDED.id])).toBe(cart);
+    expect(removeItems(cart, [])).toBe(cart);
   });
 });

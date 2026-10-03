@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { formatPhone } from "./phone";
+import { formatPhone, parseAuMobile } from "./phone";
 
 describe("formatPhone", () => {
   test("mobiles read 0491 570 156", () => {
@@ -21,5 +21,27 @@ describe("formatPhone", () => {
     expect(formatPhone("049157015")).toBe("049157015");
     expect(formatPhone("1370102140")).toBe("1370102140");
     expect(formatPhone("")).toBe("");
+  });
+});
+
+describe("parseAuMobile", () => {
+  test("a mobile typed with spaces, dashes or brackets is stored as digits", () => {
+    expect(parseAuMobile("0491 570 156")).toBe("0491570156");
+    expect(parseAuMobile(" 0491-570-156 ")).toBe("0491570156");
+    expect(parseAuMobile("(0491) 570.156")).toBe("0491570156");
+  });
+
+  test("+61 and 61 become a leading 0", () => {
+    expect(parseAuMobile("+61 491 570 156")).toBe("0491570156");
+    expect(parseAuMobile("61491570156")).toBe("0491570156");
+  });
+
+  test("landlines, short or long numbers, and letters are refused", () => {
+    expect(parseAuMobile("03 7010 2140")).toBeNull();
+    expect(parseAuMobile("+61 3 7010 2140")).toBeNull();
+    expect(parseAuMobile("0491 570")).toBeNull();
+    expect(parseAuMobile("0491 570 1566")).toBeNull();
+    expect(parseAuMobile("0491 570 15a")).toBeNull();
+    expect(parseAuMobile("")).toBeNull();
   });
 });

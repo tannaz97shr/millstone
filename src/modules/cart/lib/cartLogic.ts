@@ -51,6 +51,14 @@ export function setQuantity(
   return { ...cart, items };
 }
 
+/** Takes products out of the cart, e.g. the ones checkout was told it can't sell. */
+export function removeItems(cart: Cart, productIds: readonly ProductId[]): Cart {
+  if (!productIds.some((id) => cart.items[id])) return cart;
+  const items = { ...cart.items };
+  for (const id of productIds) delete items[id];
+  return { ...cart, items };
+}
+
 export function cartCount(cart: Cart | null): number {
   if (!cart) return 0;
   return lineEntries(cart).reduce((sum, [, line]) => sum + line.quantity, 0);

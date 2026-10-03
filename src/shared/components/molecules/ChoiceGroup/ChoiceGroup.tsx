@@ -25,6 +25,11 @@ export interface ChoiceGroupProps {
   /** A sentence that says what to do, e.g. "Choose how you'd like to pay." */
   error?: React.ReactNode;
   className?: string;
+  /**
+   * Attached to the chosen radio, else the first, so focus can be moved to the
+   * group (React Hook Form's focus on the first error).
+   */
+  ref?: React.Ref<HTMLInputElement>;
 }
 
 /**
@@ -40,6 +45,7 @@ export function ChoiceGroup({
   name,
   error,
   className,
+  ref,
 }: ChoiceGroupProps) {
   const id = useId();
   const errorId = `${id}-error`;
@@ -72,8 +78,9 @@ export function ChoiceGroup({
           {label}
         </FieldLabel>
       )}
-      {options.map((option) => {
+      {options.map((option, index) => {
         const on = option.value === selected;
+        const focusTarget = on || (index === 0 && !options.some((o) => o.value === selected));
         return (
           <label
             key={option.value}
@@ -86,6 +93,7 @@ export function ChoiceGroup({
             )}
           >
             <input
+              ref={focusTarget ? ref : undefined}
               type="radio"
               name={name ?? id}
               value={option.value}
