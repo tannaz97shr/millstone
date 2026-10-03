@@ -1,16 +1,19 @@
 import { branchToDoc } from "@/modules/branches/lib/toBranch";
 import { branchProductToDoc } from "@/modules/catalog/lib/toBranchProduct";
+import { catalogSettingsToDoc } from "@/modules/catalog/lib/toCatalogSettings";
 import { productToDoc } from "@/modules/catalog/lib/toProduct";
 import { FIRST_ORDER_NUMBER, orderCounterRef, orderCounterToDoc } from "@/modules/orders/lib/orderIds";
 import {
   branchProductsRef,
   branchesRef,
+  catalogSettingsRef,
   COLLECTIONS,
   productsRef,
 } from "@/shared/lib/firebase/collections";
 import { availablePickupDates } from "@/shared/utils/pickup-dates";
 import { seedAvailability, type SoldOutSlot } from "../data/availability";
 import { seedBranches } from "../data/branches";
+import { seedCatalogSettings } from "../data/catalogSettings";
 import { seedProducts } from "../data/products";
 import { upsertDoc, type WriteTally } from "./upsert";
 
@@ -26,6 +29,11 @@ export async function seedBranchesAndCatalog(now: Date, tally: WriteTally): Prom
     const { id, ...fields } = product;
     tally.record(COLLECTIONS.products, await upsertDoc(productsRef().doc(id), productToDoc(fields)));
   }
+
+  tally.record(
+    COLLECTIONS.settings,
+    await upsertDoc(catalogSettingsRef(), catalogSettingsToDoc(seedCatalogSettings)),
+  );
 
   // Every branch × product row is written explicitly, even the defaults.
   for (const branch of seedBranches) {

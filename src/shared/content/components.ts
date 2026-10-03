@@ -46,6 +46,8 @@ export const componentsContent = {
   productCard: {
     add: "Add",
     addLabel: (name: string) => `Add ${name} to order`,
+    // Starts with the visible name, so voice control users can say it.
+    detailsLabel: (name: string) => `${name}, details`,
     soldOut: "Sold out",
   },
   datePicker: {

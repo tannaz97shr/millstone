@@ -12,6 +12,8 @@ export interface Branch {
   opensAt: TimeOfDay;
   closedDays: Weekday[];
   notificationsEnabled: boolean;
+  /** Where the branch appears in customer and admin lists, lowest first. */
+  displayOrder: number;
 }
 
 /** The parts of a branch the pickup-date rules need. */

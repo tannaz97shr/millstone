@@ -17,10 +17,15 @@ export const COLLECTIONS = {
   orders: "orders",
   recurringOrders: "recurringOrders",
   counters: "counters",
+  settings: "settings",
 } as const;
 
 export const COUNTER_IDS = {
   orders: "orders",
+} as const;
+
+export const SETTINGS_IDS = {
+  catalog: "catalog",
 } as const;
 
 export const branchesRef = () => getDb().collection(COLLECTIONS.branches);
@@ -34,3 +39,5 @@ export const staffEmailsRef = () => getDb().collection(COLLECTIONS.staffEmails);
 export const ordersRef = () => getDb().collection(COLLECTIONS.orders);
 export const recurringOrdersRef = () => getDb().collection(COLLECTIONS.recurringOrders);
 export const countersRef = () => getDb().collection(COLLECTIONS.counters);
+export const catalogSettingsRef = () =>
+  getDb().collection(COLLECTIONS.settings).doc(SETTINGS_IDS.catalog);

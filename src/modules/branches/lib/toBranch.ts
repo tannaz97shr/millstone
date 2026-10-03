@@ -16,6 +16,7 @@ export function toBranch(snapshot: DocumentSnapshot): Branch {
     opensAt: doc.opensAt,
     closedDays: doc.closedDays,
     notificationsEnabled: doc.notificationsEnabled,
+    displayOrder: doc.displayOrder,
   };
 }
 
@@ -28,5 +29,6 @@ export function branchToDoc(branch: Omit<Branch, "id">): BranchDoc {
     opensAt: branch.opensAt,
     closedDays: branch.closedDays,
     notificationsEnabled: branch.notificationsEnabled,
+    displayOrder: branch.displayOrder,
   };
 }

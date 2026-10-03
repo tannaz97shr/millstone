@@ -4,7 +4,7 @@ import { formatPickupDay } from "@/shared/utils/pickup-dates";
 import samplePhoto from "../../assets/sample-photo.png";
 import { devComponentsContent } from "../../content/devComponents";
 import type { SampleDates } from "../../lib/sampleData";
-import { ProductCardDemo } from "../demos/ProductCardDemos";
+import { ProductCardDemo, ProductCardDetailsDemo } from "../demos/ProductCardDemos";
 import { Demo, PreviewSection } from "../PreviewSection";
 
 const content = devComponentsContent;
@@ -33,6 +33,22 @@ export function ProductCardSection({ dates }: ProductCardSectionProps) {
           />
           <ProductCard {...copy.products.croissant} soldOut />
           <ProductCardDemo product="scroll" image={samplePhoto} imageAlt={copy.imageAlt} />
+        </div>
+      </Demo>
+      <Demo caption={content.captions.stackedFooter} stack>
+        <div className="grid grid-cols-2 gap-3 admin:grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
+          <ProductCardDemo product="rye" footer="stacked" />
+          <ProductCardDemo product="bagel" initialQuantity={2} footer="stacked" />
+          <ProductCard
+            {...copy.products.seeded}
+            footer="stacked"
+            soldOut={copy.soldOutFor(formatPickupDay(dates.soldOutDay))}
+          />
+        </div>
+      </Demo>
+      <Demo caption={content.captions.withDetails} stack>
+        <div className="grid max-w-80 grid-cols-1 gap-3">
+          <ProductCardDetailsDemo product="rye" />
         </div>
       </Demo>
       <Demo caption={content.captions.rowLayout} stack>

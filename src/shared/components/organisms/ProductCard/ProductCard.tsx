@@ -26,6 +26,10 @@ export interface ProductCardProps {
   soldOut?: boolean | string;
   /** row: for the cart and narrow lists. */
   layout?: "card" | "row";
+  /** stacked: price on its own line, Add or the stepper full width (the menu grid). */
+  footer?: "inline" | "stacked";
+  /** Opens the product detail (C3). The name becomes a button; the picture is a mouse-only shortcut to it. */
+  onOpenDetails?: () => void;
   className?: string;
 }
 
@@ -43,10 +47,13 @@ export function ProductCard({
   onAdd,
   soldOut = false,
   layout = "card",
+  footer = "inline",
+  onOpenDetails,
   className,
 }: ProductCardProps) {
   const isSoldOut = Boolean(soldOut);
   const isRow = layout === "row";
+  const stacked = footer === "stacked";
   const showStepper = !isSoldOut && quantity > 0 && Boolean(onQuantityChange);
 
   // Add and the stepper replace each other, so the button that was pressed
@@ -69,6 +76,7 @@ export function ProductCard({
     onQuantityChange?.(n);
   };
   const faded = isSoldOut && "opacity-45 grayscale-60";
+  const MediaElement = onOpenDetails ? "button" : "div";
 
   return (
     <article
@@ -78,10 +86,18 @@ export function ProductCard({
         className,
       )}
     >
-      <div
+      <MediaElement
+        // The name button is the keyboard and screen-reader way in; this is a bigger mouse target.
+        {...(onOpenDetails && {
+          type: "button" as const,
+          tabIndex: -1,
+          "aria-hidden": true,
+          onClick: onOpenDetails,
+        })}
         className={cx(
           "relative flex items-center justify-center overflow-hidden bg-flour-sunk",
           isRow ? "w-28 shrink-0" : "aspect-4/3",
+          onOpenDetails && "cursor-pointer",
         )}
       >
         {image ? (
@@ -100,14 +116,30 @@ export function ProductCard({
             {name.charAt(0)}
           </span>
         )}
-      </div>
+      </MediaElement>
       <div className="flex min-w-0 flex-1 flex-col gap-1 px-4 pt-3 pb-4">
-        <h3 className="product-name">{name}</h3>
+        <h3 className="product-name">
+          {onOpenDetails ? (
+            <button
+              type="button"
+              onClick={onOpenDetails}
+              aria-label={content.detailsLabel(name)}
+              className="cursor-pointer rounded-sm text-left underline-offset-3 hover:text-crust hover:underline"
+            >
+              {name}
+            </button>
+          ) : (
+            name
+          )}
+        </h3>
         {description && <p className="caption text-ink-muted">{description}</p>}
-        {/* Wraps, so the stepper keeps full-size buttons on a narrow two-column card. */}
+        {/* Inline wraps, so the stepper keeps full-size buttons on a narrow two-column card. */}
         <div
           ref={actions}
-          className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-2"
+          className={cx(
+            "mt-auto flex gap-2 pt-2",
+            stacked ? "flex-col items-stretch" : "flex-wrap items-center justify-between",
+          )}
         >
           <span className={cx("price", isSoldOut && "text-ink-muted line-through")}>
             {formatCents(priceCents)}
@@ -117,9 +149,20 @@ export function ProductCard({
               {typeof soldOut === "string" ? soldOut : content.soldOut}
             </span>
           ) : showStepper ? (
-            <QuantityStepper value={quantity} onChange={changeQuantity} label={name} />
+            <QuantityStepper
+              value={quantity}
+              onChange={changeQuantity}
+              label={name}
+              block={stacked}
+            />
           ) : (
-            <Button variant="primary" icon="plus" onClick={add} aria-label={content.addLabel(name)}>
+            <Button
+              variant="primary"
+              icon="plus"
+              block={stacked}
+              onClick={add}
+              aria-label={content.addLabel(name)}
+            >
               {content.add}
             </Button>
           )}

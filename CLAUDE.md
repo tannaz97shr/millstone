@@ -103,7 +103,7 @@ uses no real name, branding, people, numbers or addresses.
   URLs or `makePublic()`. Server-side magic-byte validation of uploads.
   Products without an image show the letter placeholder from the design.
 - **Sample/seed data:** follow spec section 4. Phones are ACMA fictional numbers
-  (mobiles 0491 570 xxx, landlines (03) 7010 xxxx or (03) 5550 xxxx), emails use
+  (mobiles 0491 570 xxx, landlines 03 7010 xxxx or 03 5550 xxxx), emails use
   example.com, no real bakery names, people or addresses.
 - **Error handling:** `logError(error, context, { level: "error" | "warn" })`
   wrapper. Every `catch` block logs AND sets visible UI state; no bare
@@ -126,14 +126,16 @@ uses no real name, branding, people, numbers or addresses.
 
 ## Verification
 
-- No committed automated test suite. Verification is live: ad hoc
+- **Pure logic gets committed unit tests.** Code with no UI and no
+  Firestore (date rules, formatters, cart logic) has committed `bun test`
+  unit tests (`bun run test`), e.g. the pickup-date rules in
+  `src/shared/utils/pickup-dates/` (cutoff, closed days, Melbourne
+  midnight, daylight-saving edges). Add tests when writing such logic,
+  keep them passing, and extend them when the rules change. Test files
+  are excluded from `tsconfig.json` because `@types/bun` isn't installed.
+- **Everything else is verified live**, not with a committed suite: ad hoc
   Playwright scripts per feature, run against a real local dev/build
   server, screenshots inspected directly, then deleted.
-- **Exception:** the pickup-date rules (`src/shared/utils/pickup-dates/`)
-  have committed `bun test` unit tests (`bun run test`). They cover the
-  cutoff, closed days, Melbourne midnight and daylight-saving edges. Keep
-  them passing, and extend them when those rules change. Test files are
-  excluded from `tsconfig.json` because `@types/bun` isn't installed.
 - Customer screens are checked at 390px wide, admin screens at 1180px.
 - Security-critical flows (auth, permissions, payments): test **every**
   branch, not just the happy path. E.g. "customer blocked from admin" AND
@@ -169,3 +171,13 @@ uses no real name, branding, people, numbers or addresses.
 Track in `specs/known-issues.md` (the one file in `specs/` Claude Code maintains):
 undeployed infra steps, deferred features, investigated-but-unreproduced bugs,
 un-applied migration scripts, known UX gaps.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

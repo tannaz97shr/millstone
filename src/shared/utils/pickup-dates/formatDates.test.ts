@@ -8,9 +8,12 @@ import {
   formatLongDay,
   formatMonthTitle,
   formatPickupDay,
+  formatTimeOfDay,
+  formatWeekdayList,
   monthShortName,
   startOfMonth,
   toIsoDate,
+  toTimeOfDay,
   weekdayName,
   weekdayOf,
 } from ".";
@@ -44,6 +47,40 @@ describe("formatting", () => {
     expect(formatMonthTitle(d("2026-09-30"))).toBe("September 2026");
     expect(formatMonthTitle(d("2027-01-01"))).toBe("January 2027");
     expect(monthShortName(d("2026-09-30"))).toBe("Sep");
+  });
+});
+
+describe("formatTimeOfDay", () => {
+  const t = (value: string) => toTimeOfDay(value);
+
+  test("whole hours drop the minutes", () => {
+    expect(formatTimeOfDay(t("14:00"))).toBe("2pm");
+    expect(formatTimeOfDay(t("07:00"))).toBe("7am");
+  });
+
+  test("minutes are kept with two digits", () => {
+    expect(formatTimeOfDay(t("07:30"))).toBe("7:30am");
+    expect(formatTimeOfDay(t("13:05"))).toBe("1:05pm");
+  });
+
+  test("noon and midnight", () => {
+    expect(formatTimeOfDay(t("12:00"))).toBe("12pm");
+    expect(formatTimeOfDay(t("00:00"))).toBe("12am");
+    expect(formatTimeOfDay(t("23:59"))).toBe("11:59pm");
+  });
+});
+
+describe("formatWeekdayList", () => {
+  test("one day is plural", () => {
+    expect(formatWeekdayList([1])).toBe("Mondays");
+  });
+
+  test("several days in week order, without duplicates", () => {
+    expect(formatWeekdayList([2, 0, 1, 2])).toBe("Sundays, Mondays and Tuesdays");
+  });
+
+  test("no closed days is an empty string", () => {
+    expect(formatWeekdayList([])).toBe("");
   });
 });
 

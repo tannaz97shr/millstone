@@ -13,6 +13,8 @@ export interface QuantityStepperProps {
   max?: number;
   /** The product name, for labels like "One more Plain bagel". */
   label?: string;
+  /** Full width, with the count taking the space between the buttons. */
+  block?: boolean;
   className?: string;
 }
 
@@ -32,6 +34,7 @@ export function QuantityStepper({
   min = 0,
   max = 99,
   label,
+  block = false,
   className,
 }: QuantityStepperProps) {
   const [count, setCount] = useControllableState({ value, defaultValue, onChange });
@@ -43,7 +46,8 @@ export function QuantityStepper({
       aria-label={content.group(label)}
       className={cx(
         // box-content: the edge sits outside, so the buttons keep the full control height.
-        "box-content inline-flex h-control items-stretch overflow-hidden rounded-md border-(length:--control-border) border-line-strong bg-flour-raised",
+        "box-content h-control items-stretch overflow-hidden rounded-md border-(length:--control-border) border-line-strong bg-flour-raised",
+        block ? "flex" : "inline-flex",
         className,
       )}
     >
@@ -58,7 +62,10 @@ export function QuantityStepper({
       </button>
       <output
         aria-live="polite"
-        className="flex min-w-[2.2em] items-center justify-center border-x border-line text-control font-bold tabular-nums"
+        className={cx(
+          "flex min-w-[2.2em] items-center justify-center border-x border-line text-control font-bold tabular-nums",
+          block && "flex-1",
+        )}
       >
         {count}
       </output>
