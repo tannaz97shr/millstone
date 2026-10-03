@@ -6,6 +6,7 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
 
 - **No real Firebase project yet.** Local dev runs on the emulator (`demo-millstone`). Before deploying: create the Blaze project, run `firebase deploy --only firestore:rules,firestore:indexes,storage`, and set `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY` in the host's env.
 - **Emulator needs a JDK (21+)** installed locally (`brew install --cask temurin@21`).
+- **Emulator data is kept between runs (3 Oct 2026).** `bun run emulators` imports from the gitignored `.emulator-data/` on start and exports to it on exit. The export only happens on a clean stop (one Ctrl-C, then wait for "Export complete"); a second Ctrl-C or a killed terminal skips it and loses that session's changes. The first run with an empty folder logs "Could not find import/export metadata file, skipping data import!", which is expected. `bun run seed` still works on top (it's idempotent, and `--reset` still wipes). For a clean start, stop the emulator and delete `.emulator-data/`.
 
 ## Deferred features
 
@@ -44,7 +45,7 @@ _None yet._
   - The month grid starts the week on Sunday (as in the design bundle) while WeekdayPicker starts on Monday (as its README says). Left as designed.
   - On a 390px phone the month grid's day cells are 48px high but about 44px wide: seven 48px columns don't fit. The strip (the customer's main picker) is unaffected. Only C11's start/end dates use the month grid on a phone.
   - OrderRow's "Details" link is 64px high (the admin tap size), not the 48px in the design bundle.
-  - ProductCard lets the price and the stepper wrap onto two lines on a narrow two-column card, so the stepper buttons stay 48px wide. In the design bundle they shrink instead.
+  - ProductCard lets the price and the stepper wrap onto two lines on a narrow two-column card, so the stepper buttons stay 48px wide. In the design bundle they shrink instead. The C2 menu grid uses `footer="stacked"` instead (3 Oct 2026, as in `Menu.dc.html`'s `.ms-card-foot` overrides): the price on its own line, and Add or the stepper across the card. The default inline footer stays as the design system shows it, and the cart's row layout uses it.
   - Admin WeekdayPicker drops to 4 columns below about 500px wide: seven 64px tiles don't fit. The admin is tablet-only (designed at 1180px), so this is left as is.
   - OrderRow's two half-width buttons (Ready/Collected and Details) are tight at 390px for the same reason: admin tap sizes on a phone-width screen. Left as is.
   - Dialog action rows on the admin never shrink a button below its label. If a dialog is ever too narrow for the row, the secondary button drops to its own line.
@@ -62,7 +63,7 @@ _None yet._
   - **At 1180px the customer side stays a 640px column**, so the C2 order bar is 640px wide and the menu keeps two columns.
   - **The C1 notice, C2 notices and C3 sheet use the shared components** (`Notice`, `Sheet`) rather than the canvas's inline styles. For example, the C2 notices show the Notice's "OK" with the accessible name "OK, dismiss message".
   - **C1 → C2 navigation** from the bottom bar and "Back to the … menu" uses real links (`ButtonLink`), so they open in a new tab and announce as links.
-- **A branch chosen before the page has hydrated isn't picked up.** On a slow connection, a customer who taps a C1 branch before the scripts load sees the radio checked, but the bottom bar stays on "Choose a branch first" until they tap again. Found in the keyboard QA run against `next dev`, where hydration is slow. A fix would read the checked radio on mount.
+- **A Firestore outage takes about 10s to show on a fresh page load.** Every Firestore read has a 5s deadline (`firestoreRead`), so the API answers 503 `unavailable` in about 5s. On a full page load, the server prefetch waits its 5s first, then the browser asks once more (a 503 `unavailable` isn't retried), and only then does the error notice show. Sending the server's failure to the browser (dehydrating the failed query) would halve this. Not done, since it only affects an outage.
 - **The first server render can't see the cart.** The server prefetches the URL's date (or the earliest). Internal links always carry the cart's date, so this only matters for a hand-typed `/menu/{branch}` URL: the browser then moves to the cart's date and fetches that menu.
 - **Server prefetch bypasses Axios.** Pages prefetch through the same service functions the API routes use (`getBranchesResponse`, `getBranchMenu`) into TanStack Query. Every fetch in the browser goes through Axios and the `/api` routes.
 - **Wrong weekday in design-system docs.** `design/system/README.md` ("Pickup Tue 30 Sep at Northcote"), the `admin-title` sample in `tokens.json` ("Today · Tue 30 Sep") and the ProductCard docs ("Sold out for Tue 30 Sep") say Tuesday. 30 Sep 2026 is a Wednesday. The code always derives weekday names from the date.

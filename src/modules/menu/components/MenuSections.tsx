@@ -53,6 +53,7 @@ export function MenuSections({
               onAdd={() => onQuantityChange(product, 1)}
               onQuantityChange={(n) => onQuantityChange(product, n)}
               onOpenDetails={() => onOpenDetails(product)}
+              footer="stacked"
             />
           ))}
         </div>

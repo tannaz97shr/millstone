@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useEffect, useEffectEvent, useId, useRef } from "react";
 import { useControllableState } from "@/shared/hooks/useControllableState";
 import { cx } from "@/shared/utils/cx";
 import { FieldError } from "../../atoms/Field/FieldError";
@@ -52,8 +52,18 @@ export function ChoiceGroup({
     onChange?.(next);
   };
 
+  // A radio tapped before the scripts loaded is checked in the page but not
+  // in state. Pick it up once React takes over.
+  const fieldset = useRef<HTMLFieldSetElement>(null);
+  const adoptEarlyChoice = useEffectEvent(() => {
+    const checked = fieldset.current?.querySelector<HTMLInputElement>("input[type=radio]:checked");
+    if (checked && checked.value !== selected) choose(checked.value);
+  });
+  useEffect(() => adoptEarlyChoice(), []);
+
   return (
     <fieldset
+      ref={fieldset}
       aria-describedby={error ? errorId : undefined}
       className={cx("m-0 flex min-w-0 flex-col gap-2 border-0 p-0", className)}
     >

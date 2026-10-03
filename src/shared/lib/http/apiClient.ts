@@ -4,8 +4,10 @@ import type { ApiErrorBody, ApiErrorCode } from "@/shared/lib/api/apiError";
 
 // The browser's one HTTP client. Paths always come from api-routes.ts.
 
+// The server gives Firestore 5s (FIRESTORE_READ_DEADLINE_MS) before it answers
+// 503; the rest is headroom for a slow network or a first compile in dev.
 export const apiClient = axios.create({
-  timeout: 15_000,
+  timeout: 10_000,
   headers: { Accept: "application/json" },
 });
 
@@ -38,8 +40,13 @@ export function toApiFailure(error: unknown): ApiFailure {
   return { status: 0, code: "network_error" };
 }
 
-/** Retry network trouble and 5xx a couple of times; a 4xx won't change by asking again. */
+/**
+ * Retry network trouble and 5xx a couple of times; a 4xx won't change by
+ * asking again. Nor is "unavailable" retried: the server already waited its
+ * full Firestore deadline, so the screen shows the error and its Try again.
+ */
 export function shouldRetry(failureCount: number, error: unknown): boolean {
-  const { status } = toApiFailure(error);
+  const { status, code } = toApiFailure(error);
+  if (code === "unavailable") return false;
   return failureCount < 2 && (status === 0 || status >= 500);
 }

@@ -2,18 +2,19 @@ import "server-only";
 import type { Branch, BranchId } from "@/shared/domain";
 import { ApiError } from "@/shared/lib/api/apiError";
 import { branchesRef } from "@/shared/lib/firebase/collections";
+import { firestoreRead } from "@/shared/lib/firebase/firestoreRead";
 import { pickupCalendar } from "@/shared/utils/pickup-dates";
 import type { BranchesResponse, BranchSummary } from "../types/branchSummary";
 import { toBranch } from "./toBranch";
 
 export async function listBranches(): Promise<Branch[]> {
-  const snapshot = await branchesRef().get();
+  const snapshot = await firestoreRead(branchesRef().get(), "branches");
   return snapshot.docs.map(toBranch).sort((a, b) => a.displayOrder - b.displayOrder);
 }
 
 /** The branch, or a 404 ApiError for an ID that doesn't exist. */
 export async function getBranchOrThrow(branchId: BranchId): Promise<Branch> {
-  const snapshot = await branchesRef().doc(branchId).get();
+  const snapshot = await firestoreRead(branchesRef().doc(branchId).get(), `branches/${branchId}`);
   if (!snapshot.exists) {
     throw new ApiError(404, "unknown_branch", `No branch "${branchId}"`);
   }

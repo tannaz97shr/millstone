@@ -10,6 +10,7 @@ import {
   catalogSettingsRef,
   productsRef,
 } from "@/shared/lib/firebase/collections";
+import { firestoreRead } from "@/shared/lib/firebase/firestoreRead";
 import { logError } from "@/shared/utils/logError";
 import { pickupCalendar, pickupDateProblem } from "@/shared/utils/pickup-dates";
 import type { BranchMenu } from "../types/menu";
@@ -22,7 +23,7 @@ const DATE_MESSAGES = {
 } as const;
 
 async function readCategoryOrder(): Promise<string[]> {
-  const snapshot = await catalogSettingsRef().get();
+  const snapshot = await firestoreRead(catalogSettingsRef().get(), "settings/catalog");
   if (!snapshot.exists) {
     logError(new Error("settings/catalog is missing; categories fall back to A–Z"), "getBranchMenu", {
       level: "warn",
@@ -47,8 +48,8 @@ export async function getBranchMenu(branchId: BranchId, date: IsoDate, now: Date
   }
 
   const [productsSnapshot, branchProductsSnapshot, categoryOrder] = await Promise.all([
-    productsRef().where("isActive", "==", true).get(),
-    branchProductsRef(branchId).get(),
+    firestoreRead(productsRef().where("isActive", "==", true).get(), "active products"),
+    firestoreRead(branchProductsRef(branchId).get(), `branches/${branchId}/products`),
     readCategoryOrder(),
   ]);
 

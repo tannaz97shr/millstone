@@ -13,6 +13,7 @@ export interface ProductCardDemoProps {
   product: keyof typeof products;
   initialQuantity?: number;
   layout?: "card" | "row";
+  footer?: ProductCardProps["footer"];
   image?: ProductCardProps["image"];
   imageAlt?: string;
 }
@@ -22,6 +23,7 @@ export function ProductCardDemo({
   product,
   initialQuantity = 0,
   layout,
+  footer,
   image,
   imageAlt,
 }: ProductCardDemoProps) {
@@ -30,6 +32,7 @@ export function ProductCardDemo({
     <ProductCard
       {...products[product]}
       layout={layout}
+      footer={footer}
       image={image}
       imageAlt={imageAlt}
       quantity={quantity}

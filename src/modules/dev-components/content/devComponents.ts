@@ -53,6 +53,7 @@ export const devComponentsContent = {
     month: "Month (admin filter, recurring dates)",
     card: "Card",
     productGrid: "Two-column grid: add, in the order, sold out for a day, sold out, with a photo",
+    stackedFooter: "Stacked footer (the menu grid): price on its own line, Add or the stepper full width",
     rowLayout: "Row layout",
     withDetails: "Name opens the product detail (C3)",
     everyStatus: "Every status and payment combination",

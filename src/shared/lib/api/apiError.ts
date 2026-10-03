@@ -10,6 +10,8 @@ export type ApiErrorCode =
   | "closed_day"
   | "past_cutoff"
   | "out_of_range"
+  /** Firestore didn't answer in time (503). */
+  | "unavailable"
   | "server_error";
 
 export interface ApiErrorBody {

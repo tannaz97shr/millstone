@@ -35,6 +35,17 @@ export function ProductCardSection({ dates }: ProductCardSectionProps) {
           <ProductCardDemo product="scroll" image={samplePhoto} imageAlt={copy.imageAlt} />
         </div>
       </Demo>
+      <Demo caption={content.captions.stackedFooter} stack>
+        <div className="grid grid-cols-2 gap-3 admin:grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
+          <ProductCardDemo product="rye" footer="stacked" />
+          <ProductCardDemo product="bagel" initialQuantity={2} footer="stacked" />
+          <ProductCard
+            {...copy.products.seeded}
+            footer="stacked"
+            soldOut={copy.soldOutFor(formatPickupDay(dates.soldOutDay))}
+          />
+        </div>
+      </Demo>
       <Demo caption={content.captions.withDetails} stack>
         <div className="grid max-w-80 grid-cols-1 gap-3">
           <ProductCardDetailsDemo product="rye" />

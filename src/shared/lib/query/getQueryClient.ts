@@ -13,7 +13,9 @@ function makeQueryClient(): QueryClient {
         // short enough, with refetch on focus, that a passed cutoff shows up.
         staleTime: 60_000,
         refetchOnWindowFocus: true,
-        retry: shouldRetry,
+        // A failed server prefetch isn't retried: the browser asks again
+        // anyway, so retrying here would only hold up the page.
+        retry: isServer ? false : shouldRetry,
       },
     },
     // Every failed query is logged once, here. Screens show the error state.
