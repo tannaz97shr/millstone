@@ -5,11 +5,14 @@ import type { BranchMenu, MenuProduct } from "@/modules/menu/types/menu";
 import type { Cart } from "../types/cart";
 import {
   cartCount,
+  cartLines,
   cartSummary,
   emptyCart,
   hasRemovals,
   MAX_QUANTITY,
   moveCart,
+  previewBranchChange,
+  previewRemovesItems,
   reconcileCart,
   resolvePickupDate,
   setQuantity,
@@ -105,6 +108,77 @@ describe("cartCount and cartSummary", () => {
   test("no cart or no menu is zero", () => {
     expect(cartCount(null)).toBe(0);
     expect(cartSummary(null, undefined)).toEqual({ count: 0, totalCents: 0 });
+  });
+});
+
+describe("cartLines", () => {
+  const twoCategories = (products: { breads: MenuProduct[]; bagels: MenuProduct[] }): BranchMenu => ({
+    branchId: NORTHCOTE,
+    date: WED,
+    categories: [
+      { name: "Breads", slug: "breads", products: products.breads },
+      { name: "Bagels", slug: "bagels", products: products.bagels },
+    ],
+  });
+
+  test("lines in menu order with the live price and line total", () => {
+    // Added bagel first, rye second: the menu's order wins.
+    let cart = setQuantity(emptyCart(NORTHCOTE, WED), BAGEL, 4);
+    cart = setQuantity(cart, RYE, 2);
+    const lines = cartLines(cart, twoCategories({ breads: [RYE, SEEDED], bagels: [BAGEL] }));
+    expect(lines.map((l) => [l.product.id, l.quantity, l.lineTotalCents])).toEqual([
+      [RYE.id, 2, 1900],
+      [BAGEL.id, 4, 1120],
+    ]);
+  });
+
+  test("a price change shows on the next menu", () => {
+    const cart = checkedCart();
+    const lines = cartLines(cart, menu(NORTHCOTE, WED, [{ ...RYE, priceCents: 1000 }, BAGEL]));
+    expect(lines[0]).toMatchObject({ quantity: 1, lineTotalCents: 1000 });
+  });
+
+  test("missing and sold-out items have no line", () => {
+    const lines = cartLines(checkedCart(), menu(NORTHCOTE, WED, [{ ...BAGEL, soldOut: true }]));
+    expect(lines).toEqual([]);
+  });
+
+  test("no cart or no menu is no lines", () => {
+    expect(cartLines(null, menu(NORTHCOTE, WED, [RYE]))).toEqual([]);
+    expect(cartLines(checkedCart(), undefined)).toEqual([]);
+  });
+});
+
+describe("previewBranchChange", () => {
+  test("AC-C2: names what the new branch doesn't make, with quantities", () => {
+    const preview = previewBranchChange(checkedCart(), menu(FITZROY, WED, [BAGEL, SEEDED]));
+    expect(preview).toEqual({
+      notMadeHere: [{ id: RYE.id, name: "Sourdough rye loaf", quantity: 1 }],
+      soldOut: [],
+    });
+    expect(previewRemovesItems(preview)).toBe(true);
+  });
+
+  test("also names what the new branch has sold out that day", () => {
+    const preview = previewBranchChange(checkedCart(), menu(FITZROY, WED, [{ ...BAGEL, soldOut: true }]));
+    expect(preview.notMadeHere.map((l) => l.name)).toEqual(["Sourdough rye loaf"]);
+    expect(preview.soldOut).toEqual([{ id: BAGEL.id, name: "Plain bagel", quantity: 4 }]);
+  });
+
+  test("nothing to take out", () => {
+    const preview = previewBranchChange(checkedCart(), menu(FITZROY, WED, [RYE, BAGEL]));
+    expect(previewRemovesItems(preview)).toBe(false);
+  });
+
+  test("agrees with the change itself, including a moved day", () => {
+    // Fitzroy can't do Wed, so the cart would move to Thu, where bagels are sold out.
+    const target = menu(FITZROY, THU, [{ ...BAGEL, soldOut: true }, SEEDED]);
+    const preview = previewBranchChange(checkedCart(), target);
+    const result = reconcileCart(moveCart(checkedCart(), { branchId: FITZROY, pickupDate: THU }), target);
+    expect(result.removed.notMadeHere).toEqual(preview.notMadeHere.map((l) => l.name));
+    expect(result.removed.soldOut).toEqual(preview.soldOut.map((l) => l.name));
+    expect(result.removed.noLongerOffered).toEqual([]);
+    expect(cartCount(result.cart)).toBe(0);
   });
 });
 

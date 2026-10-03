@@ -15,7 +15,7 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
 - **C1 header Sign in and "For cafes and regulars" (step 3).** Both are in `design/customer/Home.dc.html` and left out until the accounts and recurring-order steps. The C2 header Sign in is left out for the same reason.
 - ~~**Phone display formatting.**~~ Resolved 30 Sep 2026 (step 2): `formatPhone` in `src/shared/utils/phone.ts` ("0491 570 156", "03 7010 2140"; landlines changed from "(03) 7010 2140" on 1 Oct 2026 to match spec section 4's branch table and the designs), used by OrderRow. Later screens that show a phone should use it too.
 
-- **Shared patterns not built yet (step 2).** These repeat across screens but belong with their features: the admin side panel (A3 order detail, A5 product form), admin nav, admin filter buttons with a pressed ink fill (A2/A4), empty-state boxes, admin uppercase section headings and the order-detail items table. ProductCard photos will need `images.remotePatterns` for Firebase Storage once uploads exist. Built in step 3: the link styled as a Button (`atoms/ButtonLink`) and the sticky bottom bar (`organisms/BottomBar`, used by C1 and the C2 order bar); C4's bar should use `BottomBar` too.
+- **Shared patterns not built yet (step 2).** These repeat across screens but belong with their features: the admin side panel (A3 order detail, A5 product form), admin nav, admin filter buttons with a pressed ink fill (A2/A4), empty-state boxes, admin uppercase section headings and the order-detail items table. ProductCard photos will need `images.remotePatterns` for Firebase Storage once uploads exist. Built in step 3: the link styled as a Button (`atoms/ButtonLink`) and the sticky bottom bar (`organisms/BottomBar`, used by C1, the C2 order bar and the C4 total bar).
 
 ## Investigated but unreproduced bugs
 
@@ -29,7 +29,8 @@ _None yet._
 
 - **Deviations from spec section 5 (by design):** money is stored as integer cents (`priceCents`, `totalCents`, …), not decimals. Order items and recurring-order items/skips are embedded arrays, so `OrderItem.id` / `order_id` don't exist. Email uniqueness is enforced with `customerEmails` / `staffEmails` lock docs.
 - **Fruit loaf is Northcote-only in the seed.** No design has a branch-only product, so the seed also switches Fruit loaf off at Brunswick. The admin Products canvas shows "At 2 of 3 branches · not Fitzroy" for it.
-- **Seed sold-out dates follow the real clock.** They're set to each branch's earliest (and second) pickup date at seed time. A rerun on a later day moves them forward, and the designs' fixed dates (sold out Wed 30 Sep) won't match literally.
+- **Seed sold-out dates follow the real clock.** They're set to each branch's earliest (and second) pickup date at seed time. A rerun on a later day moves them forward, and the designs' fixed dates (sold out Wed 30 Sep) won't match literally. Seeding before the 2pm cutoff and testing after it puts the "first" sold-out date on a day that can no longer be ordered. That happened in step 4: Fitzroy's Cinnamon scroll was sold out for Sun 4 Oct. To QA the C4 warning, rerun `bun run seed` on the day.
+- **All seeded branches close on Mondays.** The "new branch is closed on the cart's day" path in C4 can't be reached with the seed as is. Step 4 tested it by giving Fitzroy a second closed day on the emulator for one run, then putting it back.
 - **Additions in step 3 (not in spec section 5).**
   - `Branch.displayOrder` (Northcote 1, Fitzroy 2, Brunswick 3): C1 lists the branches in that order, which is neither A–Z nor doc-ID order.
   - `settings/catalog` `{ categoryOrder }`: see Deferred features.
@@ -63,6 +64,28 @@ _None yet._
   - **At 1180px the customer side stays a 640px column**, so the C2 order bar is 640px wide and the menu keeps two columns.
   - **The C1 notice, C2 notices and C3 sheet use the shared components** (`Notice`, `Sheet`) rather than the canvas's inline styles. For example, the C2 notices show the Notice's "OK" with the accessible name "OK, dismiss message".
   - **C1 → C2 navigation** from the bottom bar and "Back to the … menu" uses real links (`ButtonLink`), so they open in a new tab and announce as links.
+- **Cart (step 4): decisions and deliberate differences from the designs.**
+  - **The change-branch warning also lists items sold out at the new branch** on the day the cart would move to (decided 3 Oct 2026). `CartBranchWarning.dc.html` only lists items the branch doesn't make. AC-C2 and "nothing changes until confirmed" mean a sold-out item shouldn't vanish without a warning. The dialog adds a second sentence and list for these.
+  - **Undesigned copy.**
+    - The warning's sold-out line: "This is sold out at Fitzroy for Tue 6 Oct, so we'll take it out too:".
+    - The new branch closed on the cart's day: "Fitzroy is closed on Tue 6 Oct, so your pickup is now Wed 7 Oct." (A passed cutoff reuses step 3's "Orders for … have closed…".)
+    - The sheet while it checks the new branch ("Checking Fitzroy…") and when that fails ("We couldn't check the Fitzroy menu…").
+    - C4 loading and failure: "Loading your order…", "Checking prices for Wed 7 Oct…" and "We couldn't load your order's prices…" with Try again.
+    - No cart at all, or its branch is gone: "Your order is empty", "Choose a branch to start an order." and "See our branches".
+    - The C5 placeholder page (`/checkout`).
+  - **The shared site header stays above C4.** The design has only the "Menu" back link in the header. Here it sits at the top of the content, under the wordmark, and the title sits lower than in the canvas.
+  - **Lines are in menu order** (category order, then A–Z), not the canvas's catalogue order.
+  - **Focus after a change.**
+    - A removed line moves focus to the next line's name (else the previous, else "Your order is empty").
+    - A confirmed branch change that removed items or moved the day focuses the notices.
+    - A quiet branch change leaves focus on the branch Change button.
+  - **Notices belong to one screen.** Cart messages are scoped per screen and branch (`cartMessageScope.menu/cart`), so C4's "We took … out" doesn't show again on C2 after "Add more items", and C2's notices don't repeat on C4.
+  - **Stale prices.**
+    - While C4's prices reload, the lines stay visible but `inert`, and the total bar is hidden.
+    - If the reload fails, the old prices are dropped and only the error with Try again shows. TanStack keeps placeholder data only while a query is pending.
+    - The same applies to C2.
+  - **Totals on C4 are for display.** They come from the latest menu prices. The order total is calculated on the server in C5 (AC-C8).
+  - **At 1180px the C4 total bar is 640px wide**, like the C2 order bar.
 - **A Firestore outage takes about 10s to show on a fresh page load.** Every Firestore read has a 5s deadline (`firestoreRead`), so the API answers 503 `unavailable` in about 5s. On a full page load, the server prefetch waits its 5s first, then the browser asks once more (a 503 `unavailable` isn't retried), and only then does the error notice show. Sending the server's failure to the browser (dehydrating the failed query) would halve this. Not done, since it only affects an outage.
 - **The first server render can't see the cart.** The server prefetches the URL's date (or the earliest). Internal links always carry the cart's date, so this only matters for a hand-typed `/menu/{branch}` URL: the browser then moves to the cart's date and fetches that menu.
 - **Server prefetch bypasses Axios.** Pages prefetch through the same service functions the API routes use (`getBranchesResponse`, `getBranchMenu`) into TanStack Query. Every fetch in the browser goes through Axios and the `/api` routes.

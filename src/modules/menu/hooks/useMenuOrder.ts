@@ -6,17 +6,13 @@ import type { BranchSummary } from "@/modules/branches/types/branchSummary";
 import { cartContent } from "@/modules/cart/content/cartContent";
 import { dismissCartProblem, updateCart, useCart } from "@/modules/cart/hooks/useCart";
 import {
+  cartMessageScope,
   clearCartMessages,
   pushCartMessage,
   useCartMessages,
 } from "@/modules/cart/hooks/useCartMessages";
-import {
-  moveCart,
-  reconcileCart,
-  resolvePickupDate,
-  setQuantity,
-} from "@/modules/cart/lib/cartLogic";
-import type { CartRemovals } from "@/modules/cart/types/cart";
+import { useCheckCart } from "@/modules/cart/hooks/useCheckCart";
+import { moveCart, resolvePickupDate, setQuantity } from "@/modules/cart/lib/cartLogic";
 import type { BranchId, IsoDate } from "@/shared/domain";
 import { routes } from "@/shared/routes";
 import { formatPickupDay, isIsoDate } from "@/shared/utils/pickup-dates";
@@ -49,7 +45,8 @@ export function useMenuOrder(branchId: BranchId, branch: BranchSummary | undefin
   const cartState = useCart();
   const cartReady = cartState.status === "ready";
   const cart = cartReady ? cartState.cart : null;
-  const messages = useCartMessages(branchId);
+  const messageScope = cartMessageScope.menu(branchId);
+  const messages = useCartMessages(messageScope);
 
   // Until the browser has read the cart, resolve as the server did (no cart),
   // so the first render matches the prefetched menu.
@@ -65,9 +62,9 @@ export function useMenuOrder(branchId: BranchId, branch: BranchSummary | undefin
     if (date !== urlDate) replaceMenuUrl(branchId, date);
     updateCart((current) => moveCart(current, { branchId, pickupDate: date }));
     if (movedFrom) {
-      pushCartMessage(branchId, cartContent.dateMoved(formatPickupDay(movedFrom), formatPickupDay(date)));
+      pushCartMessage(messageScope, cartContent.dateMoved(formatPickupDay(movedFrom), formatPickupDay(date)));
     }
-  }, [cartReady, branchId, date, urlDate, movedFrom]);
+  }, [cartReady, branchId, date, urlDate, movedFrom, messageScope]);
 
   const menuQuery = useBranchMenuQuery(branchId, date);
   const menu = menuQuery.data;
@@ -75,24 +72,7 @@ export function useMenuOrder(branchId: BranchId, branch: BranchSummary | undefin
   const menuIsCurrent = Boolean(menu) && !menuQuery.isPlaceholderData && menu?.date === date;
 
   // Check the cart against the menu for its branch and date.
-  const cartBranchId = cart?.branchId;
-  const cartDate = cart?.pickupDate;
-  useEffect(() => {
-    if (!cartReady || !branch || !menu || !menuIsCurrent) return;
-    const outcome: { removed: CartRemovals | null } = { removed: null };
-    updateCart((current) => {
-      if (!current) return current;
-      const result = reconcileCart(current, menu);
-      outcome.removed = result.removed;
-      return result.cart;
-    });
-    if (!outcome.removed) return;
-    const { notMadeHere, soldOut, noLongerOffered } = outcome.removed;
-    const say = (message: string) => pushCartMessage(branch.id, message);
-    if (notMadeHere.length) say(cartContent.removed.notMadeHere(notMadeHere, branch.name));
-    if (soldOut.length) say(cartContent.removed.soldOut(soldOut, formatPickupDay(menu.date)));
-    if (noLongerOffered.length) say(cartContent.removed.noLongerOffered(noLongerOffered, branch.name));
-  }, [cartReady, branch, menu, menuIsCurrent, cartBranchId, cartDate]);
+  useCheckCart({ cartReady, cart, branch, menu, menuIsCurrent, scope: messageScope });
 
   const pickDate = useCallback(
     (next: IsoDate) => {

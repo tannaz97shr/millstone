@@ -60,17 +60,34 @@ export function menuProducts(menu: BranchMenu): Map<ProductId, MenuProduct> {
   return new Map(menu.categories.flatMap((c) => c.products.map((p) => [p.id, p] as const)));
 }
 
+export interface CartLineView {
+  product: MenuProduct;
+  quantity: number;
+  lineTotalCents: Cents;
+}
+
+/**
+ * The cart's lines priced from the live menu, in menu order. Items the menu
+ * can't sell (missing or sold out) are left out until a check removes them.
+ */
+export function cartLines(cart: Cart | null, menu: BranchMenu | undefined): CartLineView[] {
+  if (!cart || !menu) return [];
+  return menu.categories.flatMap((category) =>
+    category.products.flatMap((product) => {
+      const quantity = quantityOf(cart, product.id);
+      if (quantity === 0 || product.soldOut) return [];
+      return [{ product, quantity, lineTotalCents: quantity * product.priceCents }];
+    }),
+  );
+}
+
 /** Count and total from the live menu's prices. Items the menu can't sell are left out. */
 export function cartSummary(cart: Cart | null, menu: BranchMenu | undefined) {
-  if (!cart || !menu) return { count: 0, totalCents: 0 as Cents };
-  const products = menuProducts(menu);
   let count = 0;
   let totalCents: Cents = 0;
-  for (const [id, line] of lineEntries(cart)) {
-    const product = products.get(id);
-    if (!product || product.soldOut) continue;
+  for (const line of cartLines(cart, menu)) {
     count += line.quantity;
-    totalCents += line.quantity * product.priceCents;
+    totalCents += line.lineTotalCents;
   }
   return { count, totalCents };
 }
@@ -124,6 +141,38 @@ export function reconcileCart(cart: Cart, menu: BranchMenu): ReconcileResult {
   }
   return { cart: { ...cart, items, checkedAgainst: place }, removed, changed: true };
 }
+
+export interface RemovedLine {
+  id: ProductId;
+  name: string;
+  quantity: number;
+}
+
+export interface BranchChangePreview {
+  /** Lines the new branch doesn't make. */
+  notMadeHere: RemovedLine[];
+  /** Lines the new branch makes but has sold out on the (new) pickup date. */
+  soldOut: RemovedLine[];
+}
+
+/**
+ * What a branch change would take out of the cart (AC-C2), worked out against
+ * the new branch's menu for the date the cart would move to. Agrees with
+ * reconcileCart(moveCart(cart, place), menu), which makes the change.
+ */
+export function previewBranchChange(cart: Cart, targetMenu: BranchMenu): BranchChangePreview {
+  const products = menuProducts(targetMenu);
+  const preview: BranchChangePreview = { notMadeHere: [], soldOut: [] };
+  for (const [id, line] of lineEntries(cart)) {
+    const product = products.get(id);
+    if (!product) preview.notMadeHere.push({ id, name: line.name, quantity: line.quantity });
+    else if (product.soldOut) preview.soldOut.push({ id, name: product.name, quantity: line.quantity });
+  }
+  return preview;
+}
+
+export const previewRemovesItems = (preview: BranchChangePreview) =>
+  preview.notMadeHere.length + preview.soldOut.length > 0;
 
 export interface ResolvedPickupDate {
   date: IsoDate;

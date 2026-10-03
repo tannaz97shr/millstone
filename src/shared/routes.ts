@@ -9,6 +9,7 @@ export const routes = {
     return date ? `${path}?${new URLSearchParams({ date })}` : path;
   },
   cart: "/cart",
+  checkout: "/checkout",
   admin: {
     home: "/admin",
   },
