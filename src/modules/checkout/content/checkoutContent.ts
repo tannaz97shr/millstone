@@ -1,10 +1,70 @@
 // C5 Checkout, from design/customer/Checkout.dc.html and CheckoutErrors.dc.html.
 
 export const checkoutContent = {
-  placeholder: {
+  page: {
+    back: "Your order",
     title: "Checkout",
-    body: "Checkout is being built. This page is a placeholder.",
-    back: "Back to your order",
+    /** Not designed, as on C4. */
+    loading: "Loading your order…",
+    checking: (day: string) => `Checking prices for ${day}…`,
+    /** Not designed: the moment between Place order succeeding and C7 opening. */
+    opening: "Your order is placed. Opening your confirmation…",
+    loadError: "We couldn't load your order's prices. Check your connection and try again.",
+    retry: "Try again",
+  },
+
+  summary: {
+    title: (day: string, branch: string) => `Pickup ${day} at ${branch}`,
+    edit: "Edit",
+    editLabel: "Edit your order",
+    line: (quantity: number, name: string) => `${quantity} × ${name}`,
+  },
+
+  details: {
+    title: "Your details",
+    guestNote: "No account needed. We'll only use these to reach you about this order.",
+    name: { label: "Name" },
+    phone: { label: "Mobile number", hint: "So we can call if something changes." },
+    email: { label: "Email", hint: "We'll send your confirmation here." },
+    notes: { label: "Notes for the bakery", hint: "Like “Sliced, please”." },
+  },
+
+  payment: {
+    regionLabel: "Payment",
+    question: "How would you like to pay?",
+    online: {
+      label: "Pay online now",
+      hint: "Pay by card on a secure payment page, then come back here.",
+    },
+    atPickup: { label: "Pay at pickup", hint: "Pay at the counter when you collect your order." },
+  },
+
+  bar: {
+    label: "Place your order",
+    total: "Total",
+    place: "Place order",
+    continueToPayment: "Continue to payment",
+    /** Not designed. */
+    placing: "Placing your order…",
+    errorSummary: (count: number) =>
+      count === 1 ? "Fix the 1 thing marked above." : `Fix the ${count} things marked above.`,
+  },
+
+  /** What the server said after Place order. None of these are designed. */
+  outcome: {
+    priceChanged: (total: string) =>
+      `Some prices have changed since you started. Your total is now ${total}. Check your order, then place it again.`,
+    failed: {
+      title: "We couldn't place your order",
+      body: "Check your connection and try again. Everything you've typed is still here.",
+      retry: "Try again",
+    },
+    keyMismatch: {
+      title: (orderNumber: string) => `Your earlier order ${orderNumber} was already placed`,
+      body: "It went through before you changed your order. See that order, or place what's in your order now as a new one.",
+      see: (orderNumber: string) => `See order ${orderNumber}`,
+      placeNew: "Place as a new order",
+    },
   },
 
   /** Field errors, shared by the form and the server's schema. Each says how to fix it. */

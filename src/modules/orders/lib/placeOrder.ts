@@ -22,6 +22,7 @@ import type { OrderConfirmation } from "../types/orderConfirmation";
 import { allocateOrderNumber } from "./orderIds";
 import { orderToDoc, toOrder } from "./toOrder";
 import { priceOrder } from "./priceOrder";
+import { isSameCheckout } from "./sameCheckout";
 import { toOrderConfirmation } from "./toOrderConfirmation";
 
 /** Longer than a read's 5s: a transaction makes several round trips and may retry on contention. */
@@ -38,8 +39,8 @@ export type PlaceOrderResult =
  * customer, and writes the order as placed and unpaid.
  *
  * The checkout key is the order's ID, so a second request with it returns the
- * first order instead of placing another. Problems throw 4xx ApiErrors and
- * write nothing.
+ * first order instead of placing another, or a 409 when it asks for a
+ * different order. Problems throw 4xx ApiErrors and write nothing.
  */
 export async function placeOrder(request: ParsedPlaceOrderRequest): Promise<PlaceOrderResult> {
   if (request.paymentMethod !== "at_pickup") {
@@ -55,6 +56,14 @@ export async function placeOrder(request: ParsedPlaceOrderRequest): Promise<Plac
     const existing = await tx.get(orderRef);
     if (existing.exists) {
       const order = toOrder(existing);
+      if (!isSameCheckout(order, request)) {
+        throw new ApiError(
+          409,
+          "checkout_key_mismatch",
+          `Checkout key already placed ${order.orderNumber}, a different order`,
+          { existingOrder: { orderId: order.id, orderNumber: order.orderNumber } },
+        );
+      }
       return { created: false, orderId: order.id, orderNumber: order.orderNumber };
     }
 

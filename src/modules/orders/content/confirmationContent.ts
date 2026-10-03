@@ -2,12 +2,21 @@
 // design/customer/Confirmation.dc.html (ConfGuestPickup) and Email.dc.html.
 
 export const confirmationContent = {
+  page: {
+    /** Not designed: C7 loading in the browser, or failing to. */
+    loading: "Loading your order…",
+    loadError: "We couldn't load your order. Check your connection and try again.",
+    retry: "Try again",
+    notFound: "We couldn't find that order. Check the link in your confirmation email.",
+  },
+
   title: "Your order is in",
   /** "Ready from" (spec 13) isn't in the canvases; it joins the design's sentence. */
   intro: (firstName: string, branch: string, readyFrom: string, day: string) =>
     `Thanks, ${firstName}. We'll have it ready at ${branch} from ${readyFrom} on ${day}.`,
 
   orderNumber: {
+    regionLabel: "Order number",
     label: "Order number",
     hint: "Say this number at the counter when you pick up.",
   },
@@ -40,6 +49,7 @@ export const confirmationContent = {
   },
 
   emailed: "We've emailed these details to ",
+  backToMenu: "Back to the menu",
 
   email: {
     fromName: (branch: string) => `Millstone ${branch}`,

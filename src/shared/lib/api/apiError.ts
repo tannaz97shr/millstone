@@ -1,4 +1,4 @@
-import type { Cents, IsoDate, ProductId } from "@/shared/domain";
+import type { Cents, IsoDate, OrderId, ProductId } from "@/shared/domain";
 
 // The error shape every API route returns, shared by the route handlers and
 // the browser's API client. Messages are for developers; screens show their
@@ -18,6 +18,11 @@ export type ApiErrorCode =
   | "price_changed"
   /** Checkout: a payment method that isn't offered (422). */
   | "payment_method_unavailable"
+  /**
+   * Checkout: this checkout key already placed a different order (409), e.g.
+   * the response was lost and the cart was edited. Carries that order.
+   */
+  | "checkout_key_mismatch"
   | "not_found"
   /** Firestore didn't answer in time (503). */
   | "unavailable"
@@ -45,6 +50,8 @@ export interface ApiErrorBody {
     items?: UnavailableItem[];
     /** On price_changed: the total the server would charge. */
     totalCents?: Cents;
+    /** On checkout_key_mismatch: the order the key already placed. */
+    existingOrder?: { orderId: OrderId; orderNumber: string };
   };
 }
 

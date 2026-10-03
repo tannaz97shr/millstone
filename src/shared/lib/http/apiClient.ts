@@ -31,8 +31,8 @@ export function toApiFailure(error: unknown): ApiFailure {
     const status = error.response?.status ?? 0;
     const data: unknown = error.response?.data;
     if (isApiErrorBody(data)) {
-      const { code, earliest, fields, items, totalCents } = data.error;
-      return { status, code, earliest, fields, items, totalCents };
+      const { code, earliest, fields, items, totalCents, existingOrder } = data.error;
+      return { status, code, earliest, fields, items, totalCents, existingOrder };
     }
     return { status, code: status === 0 ? "network_error" : "server_error" };
   }

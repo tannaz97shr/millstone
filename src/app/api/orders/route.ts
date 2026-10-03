@@ -7,7 +7,8 @@ import { jsonResponse, parseBody, routeHandler } from "@/shared/lib/api/routeHan
 
 // Public: guests check out without a session. The body never carries a price.
 // 201 placed, 200 the checkout key already placed this order, 400 invalid body,
-// 404 unknown branch, 409 items unavailable or price changed, 422 the day
+// 404 unknown branch, 409 items unavailable, price changed or the key placed
+// a different order, 422 the day
 // can't be ordered or the payment method isn't offered, 503 Firestore too slow.
 export const POST = routeHandler("POST /api/orders", async (request) => {
   const body = await parseBody(placeOrderRequestSchema, request);
