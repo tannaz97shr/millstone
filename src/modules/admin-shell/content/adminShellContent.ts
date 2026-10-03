@@ -1,0 +1,36 @@
+// The admin's header and the pages later steps fill in.
+
+export const adminShellContent = {
+  nav: {
+    label: "Admin",
+    orders: "Orders",
+    availability: "Availability",
+    products: "Products",
+  },
+  user: {
+    allBranches: "All branches",
+    owner: "Signed in as owner",
+    staff: (branchName: string) => `Staff · ${branchName}`,
+  },
+  signOut: "Sign out",
+  signOutFailed: "We couldn't sign you out. Check the connection and try again.",
+  placeholders: {
+    orders: {
+      title: "Orders",
+      body: "The order list is being built. This page is a placeholder.",
+    },
+    availability: {
+      title: "Availability",
+      body: "Switching products on and off, and sold out for a day, come in a later step.",
+    },
+    products: {
+      title: "Products",
+      body: "Adding and editing products comes in a later step.",
+    },
+  },
+  ownerOnly: {
+    title: "This page is for the owner",
+    body: "Only the owner can add or change products. Ask them if something needs changing.",
+    back: "Back to orders",
+  },
+} as const;

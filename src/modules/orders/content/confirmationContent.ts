@@ -55,10 +55,10 @@ export const confirmationContent = {
     fromName: (branch: string) => `Millstone ${branch}`,
     /** AC-C11. */
     subject: (orderNumber: string, day: string) => `Your Millstone order ${orderNumber} for ${day}`,
-    /** AC-C11's wording; Email.dc.html also starts the unpaid one with "Pickup at …". */
+    /** AC-C11's wording, as in Email.dc.html. */
     preheader: {
       paid: (branch: string) => `Pickup at ${branch}. Paid online, nothing to pay at the counter.`,
-      unpaid: (total: string) => `Pay ${total} when you collect.`,
+      unpaid: (branch: string, total: string) => `Pickup at ${branch}. Pay ${total} when you collect.`,
     },
     wordmark: "Millstone",
     footer: {

@@ -10,6 +10,9 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
 - **No email provider (step 5).** Emails go through `sendEmail` (`src/shared/lib/email/`). In development, and in builds with `DEV_PAGES=true`, each one is saved to the gitignored `.dev-emails/` folder, logged to the console, and listed at `/dev/emails`. Anywhere else it is logged as unsent (warn) and nobody receives it. A provider and a sender address are needed before launch.
 - **Emulator data is kept between runs (3 Oct 2026).** `bun run emulators` imports from the gitignored `.emulator-data/` on start and exports to it on exit. The export only happens on a clean stop (one Ctrl-C, then wait for "Export complete"); a second Ctrl-C or a killed terminal skips it and loses that session's changes. The first run with an empty folder logs "Could not find import/export metadata file, skipping data import!", which is expected. `bun run seed` still works on top (it's idempotent, and `--reset` still wipes). For a clean start, stop the emulator and delete `.emulator-data/`.
 
+- **Auth env on the host (step 6).** `AUTH_SECRET` must be set wherever the app runs; without it Auth.js refuses every sign-in (the API answers 500). `AUTH_TRUST_HOST=true` is needed for `next start` and any self-hosted deploy. Set `AUTH_URL` too if the host can't work out its own URL. Production also serves the cookie as `__Secure-authjs.session-token` over HTTPS.
+- **Sign-in has no IP rate limit (step 6).** Repeated guessing is slowed per email only: 5 failures in 15 minutes lock that email for 15 minutes, counted in `signInThrottle/{sha256(email)}`. Left for later: per-IP or edge rate limiting, a bot check, and pruning old throttle docs (each is deleted on a successful sign-in; failures for unknown emails stay). Someone who knows a staff email can keep that person locked out by guessing wrong every 15 minutes.
+
 ## Deferred features
 
 - **Admin free-text search (AC-A3).** Firestore can't do substring search on name or phone. The admin step needs a lowercased search field (or prefix tokens) on orders, plus an index for it.
@@ -21,6 +24,8 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
   - Left out of the email: the guest "Create an account" box (AC-C11).
   - These belong to the accounts step.
   - "Pay online now" is behind the server-only switch `ONLINE_PAYMENTS_ENABLED` (off). `POST /api/orders` refuses `online` with 422 `payment_method_unavailable` whatever the switch says, until the payment-provider step.
+- **Staff accounts (step 6).** Staff can't reset or change a password, and the owner has no screen to add, remove or move staff. Passwords come from the seed (`SEED_STAFF_PASSWORD`). A1 says "Forgotten your password? Ask the owner to reset it."
+- **No audit trail of who did what (step 6).** Orders record when they changed, not which staff member changed them.
 - ~~**Phone display formatting.**~~ Resolved 30 Sep 2026 (step 2): `formatPhone` in `src/shared/utils/phone.ts` ("0491 570 156", "03 7010 2140"; landlines changed from "(03) 7010 2140" on 1 Oct 2026 to match spec section 4's branch table and the designs), used by OrderRow. Later screens that show a phone should use it too.
 
 - **Shared patterns not built yet (step 2).** These repeat across screens but belong with their features: the admin side panel (A3 order detail, A5 product form), admin nav, admin filter buttons with a pressed ink fill (A2/A4), empty-state boxes, admin uppercase section headings and the order-detail items table. ProductCard photos will need `images.remotePatterns` for Firebase Storage once uploads exist. Built in step 3: the link styled as a Button (`atoms/ButtonLink`) and the sticky bottom bar (`organisms/BottomBar`, used by C1, the C2 order bar and the C4 total bar).
@@ -48,7 +53,7 @@ _None yet._
   - The order's doc ID is the browser's checkout key (a v4 UUID). A retry with the same key and the same order returns the first order (200) and sends no second email. "Same" means the branch, pickup date, payment method, and items with their quantities. Contact details and notes don't count.
   - **A key reused for a different order** is refused with 409 `checkout_key_mismatch`, carrying the existing order's ID and number, and nothing is saved. This happens when an order went through but its response was lost, and the customer then edited the cart. C5 says that order (MS-XXXX) was already placed, links to its confirmation, and offers to place the current cart as a new order with a fresh key.
   - Every order transaction reads and writes `counters/orders`, so placing orders is serialised. That's fine at a bakery's volume.
-- **Test orders on the emulator (3 Oct 2026).** Batch A's API checks left orders MS-1001 to MS-1005 and guest customers `ben.okafor@example.com` and `tap.twice@example.com` on the emulator. `bun run seed --reset` clears them.
+- **Test orders on the emulator (3 Oct 2026).** Step 5's API checks left orders MS-1001 to MS-1005 and guest customers `ben.okafor@example.com` and `tap.twice@example.com` on the emulator. Step 6's Batch A checks added two "Test Batch A" pay-at-pickup orders (one at Fitzroy, one at Northcote) and the guest `batch.a@example.com`. `bun run seed --reset` clears them.
 
 ## Privacy and security notes
 
@@ -59,6 +64,16 @@ _None yet._
   - Later: expire the page some days after pickup, or limit it to the placing browser session and the customer's account.
 - **C5 keeps what's typed in sessionStorage (step 5).** The key is `millstone:checkout:guest`, holding name, mobile, email, notes, payment choice and the checkout key. It lets the details survive a trip to C4 and back. Personal details stay in that tab's storage until the order is placed or the tab is closed.
 - **Any checkout links the order to whoever owns that email (step 5).** A guest who types an existing customer's email adds the order to that customer's record and history. That includes a customer with a password. The customer's own details are never changed. This is spec 5's "guest = customer with no password" model.
+
+- **Staff sessions (step 6).**
+  - A session lasts 12 hours from sign-in and doesn't slide: one sign-in per shift, and a tablet left on overnight asks again the next morning (`sessionPolicy.ts`).
+  - Every admin API re-reads `staffUsers/{id}`, so removing someone or moving them to another branch applies on their next request, not when the token expires. Pages do the same through the `(staff)` layout.
+  - The session token is a JWT. Signing out clears that browser's cookie only; there's no server-side list of sessions to revoke.
+  - Customer sessions don't exist yet. The session's `principal` has a `kind`, and every staff check refuses anything that isn't `kind: "staff"` (403). The accounts step adds `kind: "customer"`.
+- **Auth.js is a beta (`next-auth@5.0.0-beta.32`, step 6).**
+  - Under `next dev`, server-side `signIn()` returns the error page URL for a wrong password instead of throwing. With no `AUTH_SECRET` it returns its own callback URL. `signInStaff` handles both: a sign-in only counts when Auth.js redirects to the page that was asked for.
+  - The `/api/auth/[...nextauth]` catch-all isn't mounted, so Auth.js's built-in pages and endpoints aren't reachable. Sign-in and sign-out go through `/api/admin/sign-in` and `/api/admin/sign-out`.
+- **Another branch's order is a 404 for staff (step 6),** the same answer as a missing order, so a guessed ID can't confirm an order exists. Owner-only APIs answer 403. Staff asking the list for another branch get 403 (branch IDs are public).
 
 ## Known UX gaps
 
@@ -134,7 +149,6 @@ _None yet._
     - C5 loading. C7 loading, load error and not-found.
     - The `/dev/emails` pages.
 - **Confirmation email (C13, step 5): decisions and deliberate differences.**
-  - The pay-at-pickup preview text is AC-C11's "Pay $20.70 when you collect.". `Email.dc.html` starts it with "Pickup at Northcote. " as well.
   - "Ready from 7am" (spec 13) isn't in the C7 or C13 canvases. It joins the intro: "We'll have it ready at Northcote from 7am on Tue 6 Oct." C7 will use the same sentence.
   - Order notes aren't in the email (nor in the C7 design).
   - "Get directions" opens a Google Maps search for the branch address.
@@ -143,6 +157,13 @@ _None yet._
 - **The first server render can't see the cart.** The server prefetches the URL's date (or the earliest). Internal links always carry the cart's date, so this only matters for a hand-typed `/menu/{branch}` URL: the browser then moves to the cart's date and fetches that menu.
 - **Server prefetch bypasses Axios.** Pages prefetch through the same service functions the API routes use (`getBranchesResponse`, `getBranchMenu`) into TanStack Query. Every fetch in the browser goes through Axios and the `/api` routes.
 - **Wrong weekday in design-system docs.** `design/system/README.md` ("Pickup Tue 30 Sep at Northcote"), the `admin-title` sample in `tokens.json` ("Today · Tue 30 Sep") and the ProductCard docs ("Sold out for Tue 30 Sep") say Tuesday. 30 Sep 2026 is a Wednesday. The code always derives weekday names from the date.
+
+- **Admin shell (step 6): decisions and deliberate differences.**
+  - **A1 wasn't designed** (spec 13). It's C8's sign-in at admin size in a 560px column: no "Create an account", "Forgot your password?" button or "Continue as a guest". Undesigned copy: the intro "Sign in with your staff email to see your branch's orders.", "Forgotten your password? Ask the owner to reset it.", the lock message "Too many tries. Wait 15 minutes and try again, or ask the owner." and "We couldn't sign you in just now…". The C8 refusal drops "or reset your password".
+  - **Staff opening `/admin/products` by URL** see "This page is for the owner" with "Back to orders" (status 200). The real guard is the owner-only API.
+  - **The A1 wordmark links to `/admin`**, which sends anyone signed out straight back to A1.
+  - **When a session ends mid-service,** the tablet goes to A1 and back to the same URL. Anything typed in an open dialog (a cancel reason, for example) is lost.
+  - "We couldn't sign you out…" under the header is undesigned.
 
 ## Tooling and housekeeping
 

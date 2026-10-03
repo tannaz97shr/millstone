@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import { SiteHeader } from "@/shared/components/organisms/SiteHeader/SiteHeader";
 import { shellContent } from "@/shared/content/shell";
-import { routes } from "@/shared/routes";
 
 export const metadata: Metadata = {
   title: shellContent.metadata.adminTitle,
 };
 
-// Staff admin: tablet-first, counter sizes via data-context="admin", space-8 gutter.
+// Staff admin: tablet-first, counter sizes via data-context="admin". The
+// signed-in pages add the header in (staff)/layout.tsx; A1 has its own.
 export default function AdminLayout({
   children,
 }: Readonly<{
@@ -15,8 +14,7 @@ export default function AdminLayout({
 }>) {
   return (
     <div data-context="admin" className="flex min-h-dvh flex-col">
-      <SiteHeader variant="admin" homeHref={routes.admin.home} />
-      <main className="flex flex-1 flex-col gap-8 px-8 py-8">{children}</main>
+      {children}
     </div>
   );
 }
