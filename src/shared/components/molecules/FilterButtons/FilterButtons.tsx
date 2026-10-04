@@ -8,6 +8,8 @@ import { FieldLabel } from "../../atoms/Field/FieldLabel";
 export interface FilterOption<Value extends string> {
   value: Value;
   label: React.ReactNode;
+  /** On the button, so a screen can move focus to it. */
+  id?: string;
   /** Defaults to `value === selected`; set it for an option that opens something, e.g. "Choose date". */
   pressed?: boolean;
 }
@@ -46,6 +48,7 @@ export function FilterButtons<Value extends string>({
         {options.map((option) => (
           <Button
             key={option.value}
+            id={option.id}
             variant="secondary"
             aria-pressed={option.pressed ?? option.value === value}
             onClick={() => onChange(option.value)}

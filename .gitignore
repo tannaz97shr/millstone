@@ -45,3 +45,4 @@ next-env.d.ts
 
 # confirmation emails written in development (/dev/emails)
 /.dev-emails/
+firebase-export-*/

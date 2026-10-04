@@ -124,6 +124,11 @@
     line-height: 28px;
   }
 
+  /* The admin header sticks at the top: keep focused or scrolled-to items out from under it. */
+  :root:has([data-admin-header]) {
+    scroll-padding-top: 80px;
+  }
+
   /* No page scroll behind an open Sheet or Dialog. */
   :root:has(dialog[data-modal][open]) {
     overflow: hidden;

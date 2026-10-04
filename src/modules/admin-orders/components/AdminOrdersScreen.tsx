@@ -18,7 +18,7 @@ import { type AdminOrderFilters, filtersToQuery, isSearching, rowFitsFilters } f
 import type { AdminOrderList, AdminOrderRow } from "../types/adminOrder";
 import { CancelOrderDialog } from "./CancelOrderDialog";
 import { ConfirmPaymentDialog } from "./ConfirmPaymentDialog";
-import { OrderFilters } from "./OrderFilters";
+import { ALL_DATES_BUTTON_ID, focusFilter, OrderFilters, SEARCH_FIELD_ID } from "./OrderFilters";
 import { OrderGroups } from "./OrderGroups";
 import { ORDER_PANEL_ID, OrderPanel, PANEL_MESSAGE_ID } from "./OrderPanel";
 import { OrdersEmpty } from "./OrdersEmpty";
@@ -179,8 +179,14 @@ export function AdminOrdersScreen({ owner }: AdminOrdersScreenProps) {
           <OrdersEmpty
             filters={filters}
             where={where}
-            onClearSearch={() => changeFilters({ q: "" })}
-            onShowAllDates={() => changeFilters({ date: "all" })}
+            onClearSearch={() => {
+              changeFilters({ q: "" });
+              focusFilter(SEARCH_FIELD_ID);
+            }}
+            onShowAllDates={() => {
+              changeFilters({ date: "all" });
+              focusFilter(ALL_DATES_BUTTON_ID);
+            }}
           />
         ) : (
           <>

@@ -26,6 +26,15 @@ const SEARCH_DEBOUNCE_MS = 300;
 type DateChoice = (typeof DATE_PRESETS)[number] | "custom";
 const ALL_BRANCHES = "all";
 
+/** Focus targets for controls that remove themselves: Clear search and Show all dates. */
+export const SEARCH_FIELD_ID = "order-search";
+export const ALL_DATES_BUTTON_ID = "order-dates-all";
+
+/** Focus the search field or the "All dates" button, which stay on screen. */
+export function focusFilter(id: typeof SEARCH_FIELD_ID | typeof ALL_DATES_BUTTON_ID) {
+  document.getElementById(id)?.focus();
+}
+
 export interface OrderFiltersProps {
   filters: AdminOrderFilters;
   onChange: (changes: Partial<AdminOrderFilters>) => void;
@@ -68,7 +77,7 @@ export function OrderFilters({ filters, onChange, owner, today, branches, counts
   const custom = !(DATE_PRESETS as readonly string[]).includes(filters.date);
   const customDate = custom ? (filters.date as IsoDate) : null;
   const dateOptions: FilterOption<DateChoice>[] = [
-    { value: "all", label: content.dates.all, pressed: filters.date === "all" },
+    { value: "all", id: ALL_DATES_BUTTON_ID, label: content.dates.all, pressed: filters.date === "all" },
     { value: "today", label: content.dates.today, pressed: filters.date === "today" },
     { value: "tomorrow", label: content.dates.tomorrow, pressed: filters.date === "tomorrow" },
     { value: "custom", label: customDate ? formatPickupDay(customDate) : content.dates.custom, pressed: custom },
@@ -89,6 +98,7 @@ export function OrderFilters({ filters, onChange, owner, today, branches, counts
   const clearSearch = () => {
     setText("");
     onChange({ q: "" });
+    focusFilter(SEARCH_FIELD_ID);
   };
 
   return (
@@ -98,6 +108,7 @@ export function OrderFilters({ filters, onChange, owner, today, branches, counts
     >
       <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
         <TextField
+          id={SEARCH_FIELD_ID}
           className="min-w-90 grow basis-90"
           label={content.searchLabel}
           placeholder={content.searchPlaceholder}
