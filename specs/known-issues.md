@@ -15,7 +15,7 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
 
 ## Deferred features
 
-- **Admin free-text search (AC-A3).** Firestore can't do substring search on name or phone. The admin step needs a lowercased search field (or prefix tokens) on orders, plus an index for it.
+- ~~**Admin free-text search (AC-A3).**~~ Resolved 4 Oct 2026 (step 6, Batch B): orders store `searchTokens` (see Data model notes), searched with `array-contains` plus two composite indexes.
 - ~~**Category display order.**~~ Resolved 1 Oct 2026 (step 3): `settings/catalog` holds `categoryOrder` (seeded Breads, Pastries, Bagels). Categories not listed go last, A–Z. When A5 lets the owner type a new category, it should append it to this list.
 - **C1 header Sign in and "For cafes and regulars" (step 3).** Both are in `design/customer/Home.dc.html` and left out until the accounts and recurring-order steps. The C2 header Sign in is left out for the same reason.
 - **Checkout: accounts and online payment (step 5).**
@@ -26,9 +26,10 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
   - "Pay online now" is behind the server-only switch `ONLINE_PAYMENTS_ENABLED` (off). `POST /api/orders` refuses `online` with 422 `payment_method_unavailable` whatever the switch says, until the payment-provider step.
 - **Staff accounts (step 6).** Staff can't reset or change a password, and the owner has no screen to add, remove or move staff. Passwords come from the seed (`SEED_STAFF_PASSWORD`). A1 says "Forgotten your password? Ask the owner to reset it."
 - **No audit trail of who did what (step 6).** Orders record when they changed, not which staff member changed them.
+- **`awaiting_payment` orders never expire yet (step 6, Batch B).** Spec 6 says they expire after about an hour. There's no job for it until the payment-provider step. The seed's MS-1028 stays `awaiting_payment`; staff never see it either way.
 - ~~**Phone display formatting.**~~ Resolved 30 Sep 2026 (step 2): `formatPhone` in `src/shared/utils/phone.ts` ("0491 570 156", "03 7010 2140"; landlines changed from "(03) 7010 2140" on 1 Oct 2026 to match spec section 4's branch table and the designs), used by OrderRow. Later screens that show a phone should use it too.
 
-- **Shared patterns not built yet (step 2).** These repeat across screens but belong with their features: the admin side panel (A3 order detail, A5 product form), admin nav, admin filter buttons with a pressed ink fill (A2/A4), empty-state boxes, admin uppercase section headings and the order-detail items table. ProductCard photos will need `images.remotePatterns` for Firebase Storage once uploads exist. Built in step 3: the link styled as a Button (`atoms/ButtonLink`) and the sticky bottom bar (`organisms/BottomBar`, used by C1, the C2 order bar and the C4 total bar).
+- **Shared patterns not built yet (step 2).** These repeat across screens but belong with their features: ~~the admin side panel (A3 order detail, A5 product form)~~, admin nav, ~~admin filter buttons with a pressed ink fill (A2/A4)~~, empty-state boxes, ~~admin uppercase section headings~~ and the order-detail items table. Step 6 Batch B built `organisms/SidePanel`, `molecules/FilterButtons` and `atoms/SectionLabel` for A5 and A4 to reuse; the items table stays inside A3. ProductCard photos will need `images.remotePatterns` for Firebase Storage once uploads exist. Built in step 3: the link styled as a Button (`atoms/ButtonLink`) and the sticky bottom bar (`organisms/BottomBar`, used by C1, the C2 order bar and the C4 total bar).
 
 ## Investigated but unreproduced bugs
 
@@ -36,7 +37,7 @@ _None yet._
 
 ## Un-applied migration scripts
 
-_None yet._
+- **`bun run migrate:orders`** (`scripts/migrations/2026-10-order-admin-fields.ts`, step 6 Batch B). Adds `searchTokens`, `cancellationNote` and `collectUndo` to orders saved before them. It also turns a free-text `cancellationReason` into a code: "Not collected" and "Customer request" map to their codes, and anything else becomes `other` with the old text as its note. The order schema requires these fields, so older orders fail to load until it has run. It's idempotent and has the seed's safety rules (the emulator, or `--project=<id>`). Applied to the local emulator on 4 Oct 2026; run it against any real project before this code is deployed, together with `firebase deploy --only firestore:indexes` for the new search and list indexes.
 
 ## Data model notes
 
@@ -53,7 +54,18 @@ _None yet._
   - The order's doc ID is the browser's checkout key (a v4 UUID). A retry with the same key and the same order returns the first order (200) and sends no second email. "Same" means the branch, pickup date, payment method, and items with their quantities. Contact details and notes don't count.
   - **A key reused for a different order** is refused with 409 `checkout_key_mismatch`, carrying the existing order's ID and number, and nothing is saved. This happens when an order went through but its response was lost, and the customer then edited the cart. C5 says that order (MS-XXXX) was already placed, links to its confirmation, and offers to place the current cart as a new order with a fresh key.
   - Every order transaction reads and writes `counters/orders`, so placing orders is serialised. That's fine at a bakery's volume.
+- **Admin fields on orders (step 6, Batch B).**
+  - `searchTokens: string[]`: order number digits and `ms` + digits; every name word's prefixes from 2 letters; phone suffixes from 3 digits and prefixes from 4. Written by `orderToDoc`, so every writer keeps it up to date; never read back into `Order`. A query ("MS-1042", "0491 570 156", "+61…", "priya nair") becomes the same tokens. Firestore matches the longest, and the server checks the rest. Searches return at most 100 orders, newest pickup date first. Staff search only their own branch.
+  - `cancellationReason` is now a code (`not_collected` | `customer_request` | `other`), not free text. `cancellationNote` holds staff's words for `other` (200 characters at most). The words shown come from content.
+  - `collectUndo: { previousStatus, until } | null`: set by a one-tap Collected on a paid order. The browser shows Undo for 5s; the server accepts it for 10s after the collect is saved, to allow for two slow round trips. After that the order is final (spec 7). Collected through "Yes, paid · Collected" has no Undo.
+  - Every action sends the status the staff member saw. If the order has moved on, the answer is 409 `order_changed` with the order's status now, and nothing is written (`not_allowed` when the order's state never allows the action). The admin says "MS-1042 was already changed on another screen. It's now Ready." and refetches.
+- **Seed orders (step 6, Batch B).**
+  - The admin canvases' orders, MS-1029 to MS-1046, plus MS-1027 (`expired`) and MS-1028 (`awaiting_payment`) to show they stay hidden. Doc IDs are `seed-ms-NNNN`. MS-1042 is generated from `recurringOrders/seed-corner-cup` with the ID `seed-corner-cup_{date}`.
+  - Days follow the clock per branch: D0 is today, or the next open day; then the two open days after it, and the open day before. Times are fixed Melbourne times on those days, so a rerun on the same day changes nothing, and a rerun puts every seed order back to its seeded state. A seed run before about 8:30am gives some of D0's ready/collected times in the future. Seeding on a closed day (Monday, for every seeded branch) puts D0 on the next open day, so some history times are in the future too (e.g. MS-1037 cancelled 8:30am Tue and refunded earlier). Seed data only; left as is.
+  - The seed raises `counters/orders.next` to at least 1047, and refuses to run if a non-seed order holds a number from 1027 to 1046 (`bun run seed --reset` clears that). A generated MS-1042 from an earlier day's run is deleted.
+  - The seed's guests (Priya Nair, Tom Walsh and others) are customers without passwords, as checkout creates them. Corner Cup Cafe has an account, since a recurring order needs one. Names, phones and the `cornercup.example.com`-style emails are from the canvases.
 - **Test orders on the emulator (3 Oct 2026).** Step 5's API checks left orders MS-1001 to MS-1005 and guest customers `ben.okafor@example.com` and `tap.twice@example.com` on the emulator. Step 6's Batch A checks added two "Test Batch A" pay-at-pickup orders (one at Fitzroy, one at Northcote) and the guest `batch.a@example.com`. `bun run seed --reset` clears them.
+- **Batch B QA orders (4 Oct 2026).** The emulator had no orders when Batch B started. QA placed MS-1047 to MS-1050 through checkout (guest `ben.okafor@example.com`) and then deleted them, so the counter is at 1052. The guest record stays.
 
 ## Privacy and security notes
 
@@ -164,6 +176,34 @@ _None yet._
   - **The A1 wordmark links to `/admin`**, which sends anyone signed out straight back to A1.
   - **When a session ends mid-service,** the tablet goes to A1 and back to the same URL. Anything typed in an open dialog (a cancel reason, for example) is lost.
   - "We couldn't sign you out…" under the header is undesigned.
+
+- **A2 order list and A3 panel (step 6, Batch B): decisions and deliberate differences.**
+  - **Collected and Cancelled on All dates reach back 14 days** (pickup dates from 13 days ago on; decided 4 Oct 2026). The summary says "… in the last 2 weeks" (undesigned). A chosen date and search reach any order.
+  - **Collected on a paid order in the panel closes the panel** and moves focus to Undo (decided 4 Oct 2026). The panel is modal, so the design's Undo message would sit behind it.
+  - **The last message also shows in the panel** while it's open ("MS-1046 cancelled. Refund it…", errors), because the status line is behind it. Opening an order clears the previous message.
+  - **Focus after each action:**
+    - Ready → that row's Collected.
+    - Paid Collected → Undo.
+    - Undo → the row's Collected.
+    - Undo running out while focused → the status line.
+    - Payment dialog → the status line (row) or the panel's message (panel).
+    - Cancel and Mark refunded → the panel's message.
+  - **Rows someone is touching stay put.** Rows are sorted by date, branch, then number, so a refresh never moves one and new orders land at the end of their group. A row with focus in it, or open in the panel, stays in its slot when a refresh (or another screen's change) takes it off the list. Its data comes from its own detail, until focus moves elsewhere or the panel closes.
+  - **"MS-1047 just came in"** names orders placed since the last refresh that this screen hasn't seen under the same filters. It shows until a refresh brings none. Up to three numbers, then "N new orders just came in" (undesigned). Only this part is an `aria-live` region; "Updated 9:41am" isn't, so a screen reader doesn't announce every refresh.
+  - **The list refreshes every 30s**, also while the tab is in the background. Each refresh is one list query plus four `count()` queries for the status buttons; the open order refreshes with it.
+  - **History is in time order**, so a pay-at-pickup order reads Placed, Ready, Paid, Collected. The canvas lists a fixed order (Placed, Paid, Ready…).
+  - **The page scrolls as a whole**; the canvas scrolls only the list under a fixed filter band. The panel is a native modal `<dialog>` under the 80px header, which sticks to the top of the viewport on every signed-in admin page.
+  - **The cancel dialog's main button** reads "Choose a reason first" / "Say what happened first" and looks unavailable, as designed. It stays focusable (`aria-disabled`), and a tap shows the error under the field.
+  - **A screen-reader-only "Orders" `<h1>`.** The canvas has no visible page title.
+  - **Undesigned copy:**
+    - "MS-1042 was already changed on another screen. It's now Ready. The list is up to date."
+    - "Too late to undo. MS-1043 stays collected."
+    - "That didn't go through…", "The orders didn't answer in time…"
+    - "Couldn't refresh since 9:41am…"
+    - "Showing the latest 100…"
+    - "Loading orders…", "We couldn't load the orders…", "Loading the order…", "This order isn't on your list…"
+    - The cancel form's field errors.
+  - **The 409s are logged by the browser** as failed requests in the console. That's expected for a refused action; the app itself logs them as warnings.
 
 ## Tooling and housekeeping
 

@@ -2,6 +2,7 @@ import "server-only";
 import { Timestamp, type DocumentSnapshot } from "firebase-admin/firestore";
 import type {
   BranchId,
+  CollectUndo,
   CustomerId,
   IsoInstant,
   Order,
@@ -12,8 +13,9 @@ import type {
 } from "@/shared/domain";
 import { optionalTimestampToIso, timestampToIso } from "@/shared/lib/firebase/fieldSchemas";
 import { parseDoc } from "@/shared/lib/firebase/parseDoc";
-import type { OrderDoc, OrderItemDoc } from "../types/orderDocs";
+import type { CollectUndoDoc, OrderDoc, OrderItemDoc } from "../types/orderDocs";
 import { orderDocSchema } from "./orderSchema";
+import { buildSearchTokens } from "./search/orderSearch";
 
 function toOrderItem(item: OrderItemDoc): OrderItem {
   return {
@@ -23,6 +25,10 @@ function toOrderItem(item: OrderItemDoc): OrderItem {
     quantity: item.quantity,
     lineTotalCents: item.lineTotalCents,
   };
+}
+
+function toCollectUndo(undo: CollectUndoDoc): CollectUndo {
+  return { previousStatus: undo.previousStatus, until: timestampToIso(undo.until) };
 }
 
 export function toOrder(snapshot: DocumentSnapshot): Order {
@@ -47,6 +53,8 @@ export function toOrder(snapshot: DocumentSnapshot): Order {
     recurringOrderId: doc.recurringOrderId as RecurringOrderId | null,
     generationNote: doc.generationNote,
     cancellationReason: doc.cancellationReason,
+    cancellationNote: doc.cancellationNote,
+    collectUndo: doc.collectUndo ? toCollectUndo(doc.collectUndo) : null,
     createdAt: timestampToIso(doc.createdAt),
     paidAt: optionalTimestampToIso(doc.paidAt),
     refundedAt: optionalTimestampToIso(doc.refundedAt),
@@ -58,6 +66,10 @@ export function toOrder(snapshot: DocumentSnapshot): Order {
 
 const toTimestamp = (iso: IsoInstant) => Timestamp.fromDate(new Date(iso));
 const toOptionalTimestamp = (iso: IsoInstant | null) => (iso ? toTimestamp(iso) : null);
+
+export function collectUndoToDoc(undo: CollectUndo): CollectUndoDoc {
+  return { previousStatus: undo.previousStatus, until: toTimestamp(undo.until) };
+}
 
 function orderItemToDoc(item: OrderItem): OrderItemDoc {
   return {
@@ -89,6 +101,9 @@ export function orderToDoc(order: Omit<Order, "id">): OrderDoc {
     recurringOrderId: order.recurringOrderId,
     generationNote: order.generationNote,
     cancellationReason: order.cancellationReason,
+    cancellationNote: order.cancellationNote,
+    collectUndo: order.collectUndo ? collectUndoToDoc(order.collectUndo) : null,
+    searchTokens: buildSearchTokens(order),
     createdAt: toTimestamp(order.createdAt),
     paidAt: toOptionalTimestamp(order.paidAt),
     refundedAt: toOptionalTimestamp(order.refundedAt),

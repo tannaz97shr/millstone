@@ -33,7 +33,8 @@ function isCurrent(pathname: string, href: string, homeHref: string): boolean {
 /**
  * The admin's top bar (A2 design): wordmark, nav with the current page
  * underlined in crust, who is signed in, and Sign out. Every item is a
- * visible word; nothing hides in a menu.
+ * visible word; nothing hides in a menu. It sticks to the top of the
+ * viewport, so the side panel (80px down) always sits right under it.
  */
 export function AdminHeader({
   homeHref,
@@ -47,7 +48,10 @@ export function AdminHeader({
 }: AdminHeaderProps) {
   const pathname = usePathname();
   return (
-    <header className="flex h-20 shrink-0 items-center gap-6 border-b-2 border-line bg-flour-raised px-8">
+    <header
+      data-admin-header
+      className="sticky top-0 z-20 flex h-20 shrink-0 items-center gap-6 border-b-2 border-line bg-flour-raised px-8"
+    >
       <Link href={homeHref} className="brand-name rounded-sm no-underline">
         {shellContent.brandName}
       </Link>

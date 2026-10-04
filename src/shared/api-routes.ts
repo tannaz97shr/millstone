@@ -14,8 +14,15 @@ export const apiRoutes = {
     signIn: "/api/admin/sign-in",
     /** POST: ends the session. */
     signOut: "/api/admin/sign-out",
+    /** GET: the A2 list. `query` comes from filtersToQuery (defaults left out). */
+    orders: (query: Record<string, string> = {}) => {
+      const search = new URLSearchParams(query).toString();
+      return search ? `/api/admin/orders?${search}` : "/api/admin/orders";
+    },
     /** GET: one order for the A3 panel, scoped to the staff member's branch. */
     order: (orderId: string) => `/api/admin/orders/${encodeURIComponent(orderId)}`,
+    /** POST: ready, collect, undo, cancel or mark refunded. */
+    orderAction: (orderId: string) => `/api/admin/orders/${encodeURIComponent(orderId)}/actions`,
     /** GET: the product catalogue (owner only). */
     products: "/api/admin/products",
   },

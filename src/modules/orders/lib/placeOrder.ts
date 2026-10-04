@@ -126,6 +126,8 @@ export async function placeOrder(request: ParsedPlaceOrderRequest): Promise<Plac
       recurringOrderId: null,
       generationNote: null,
       cancellationReason: null,
+      cancellationNote: null,
+      collectUndo: null,
       createdAt: now.toISOString() as IsoInstant,
       paidAt: null,
       refundedAt: null,

@@ -15,10 +15,6 @@ export const adminShellContent = {
   signOut: "Sign out",
   signOutFailed: "We couldn't sign you out. Check the connection and try again.",
   placeholders: {
-    orders: {
-      title: "Orders",
-      body: "The order list is being built. This page is a placeholder.",
-    },
     availability: {
       title: "Availability",
       body: "Switching products on and off, and sold out for a day, come in a later step.",

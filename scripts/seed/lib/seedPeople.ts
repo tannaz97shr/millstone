@@ -65,12 +65,13 @@ export async function seedStaffUser(
   tally.record(COLLECTIONS.staffEmails, "created");
 }
 
+/** Creates or updates the customer; returns their ID for orders to link to. */
 export async function seedCustomer(
   customer: SeedCustomer,
   password: string,
   now: Date,
   tally: WriteTally,
-): Promise<void> {
+): Promise<CustomerId> {
   const email = normalizeEmail(customer.email);
   const lockRef = customerEmailsRef().doc(email);
   const lockSnapshot = await lockRef.get();
@@ -83,12 +84,14 @@ export async function seedCustomer(
       name: customer.name,
       email,
       phone: normalizePhone(customer.phone),
-      passwordHash: await passwordHashFor(password, existing?.passwordHash ?? null),
+      passwordHash: customer.hasAccount
+        ? await passwordHashFor(password, existing?.passwordHash ?? null)
+        : null,
       createdAt: existing?.createdAt ?? (now.toISOString() as IsoInstant),
     });
     tally.record(COLLECTIONS.customers, await upsertDoc(customerRef, doc));
     tally.record(COLLECTIONS.customerEmails, "unchanged");
-    return;
+    return customerRef.id as CustomerId;
   }
 
   const customerRef = customersRef().doc();
@@ -96,7 +99,7 @@ export async function seedCustomer(
     name: customer.name,
     email,
     phone: normalizePhone(customer.phone),
-    passwordHash: await hashPassword(password),
+    passwordHash: customer.hasAccount ? await hashPassword(password) : null,
     createdAt: now.toISOString() as IsoInstant,
   });
   const batch = getDb().batch();
@@ -105,4 +108,5 @@ export async function seedCustomer(
   await batch.commit();
   tally.record(COLLECTIONS.customers, "created");
   tally.record(COLLECTIONS.customerEmails, "created");
+  return customerRef.id as CustomerId;
 }

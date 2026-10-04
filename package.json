@@ -9,7 +9,8 @@
     "lint": "eslint . --max-warnings=0",
     "test": "bun test",
     "emulators": "mkdir -p .emulator-data && firebase emulators:start --only firestore,storage --import=.emulator-data --export-on-exit=.emulator-data",
-    "seed": "bun --conditions=react-server scripts/seed/index.ts"
+    "seed": "bun --conditions=react-server scripts/seed/index.ts",
+    "migrate:orders": "bun --conditions=react-server scripts/migrations/2026-10-order-admin-fields.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

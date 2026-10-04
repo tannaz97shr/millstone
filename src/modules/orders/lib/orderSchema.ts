@@ -1,6 +1,13 @@
 import "server-only";
 import { z } from "zod";
-import { ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES } from "@/shared/domain";
+import {
+  CANCELLATION_NOTE_MAX,
+  CANCELLATION_REASONS,
+  ORDER_STATUSES,
+  PAYMENT_METHODS,
+  PAYMENT_STATUSES,
+  UNDOABLE_STATUSES,
+} from "@/shared/domain";
 import {
   centsField,
   emailField,
@@ -21,6 +28,11 @@ export const orderItemDocSchema = z
     message: "line total must equal unit price × quantity",
     path: ["lineTotalCents"],
   });
+
+export const collectUndoDocSchema = z.object({
+  previousStatus: z.enum(UNDOABLE_STATUSES),
+  until: timestampField,
+});
 
 /**
  * Stored shape of orders/{orderId}. Items are embedded and snapshotted.
@@ -46,7 +58,11 @@ export const orderDocSchema = z
     processedStripeEventIds: z.array(z.string().min(1)),
     recurringOrderId: z.string().min(1).nullable(),
     generationNote: z.string().min(1).nullable(),
-    cancellationReason: z.string().min(1).nullable(),
+    cancellationReason: z.enum(CANCELLATION_REASONS).nullable(),
+    cancellationNote: z.string().min(1).max(CANCELLATION_NOTE_MAX).nullable(),
+    collectUndo: collectUndoDocSchema.nullable(),
+    // Derived from number, name and phone in orderToDoc; never read back.
+    searchTokens: z.array(z.string().min(1)),
     createdAt: timestampField,
     paidAt: timestampField.nullable(),
     refundedAt: timestampField.nullable(),
@@ -58,7 +74,11 @@ export const orderDocSchema = z
     (order) =>
       order.totalCents === order.items.reduce((sum, item) => sum + item.lineTotalCents, 0),
     { message: "total must equal the sum of line totals", path: ["totalCents"] },
-  );
+  )
+  .refine((order) => (order.cancellationNote !== null) === (order.cancellationReason === "other"), {
+    message: "a note goes with the reason \"other\", and only with it",
+    path: ["cancellationNote"],
+  });
 
 /** counters/orders: the next number to hand out. */
 export const orderCounterDocSchema = z.object({

@@ -17,7 +17,8 @@ export default async function StaffLayout({
     <>
       <StaffHeader role={actor.role} branchName={branch?.name ?? null} />
       <AdminSessionGuard />
-      <main className="flex flex-1 flex-col gap-8 px-8 py-8">{children}</main>
+      {/* Each page sets its own padding: A2's filter band runs edge to edge. */}
+      <main className="flex flex-1 flex-col">{children}</main>
     </>
   );
 }

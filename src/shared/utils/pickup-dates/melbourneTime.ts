@@ -1,5 +1,5 @@
 import type { IsoDate, TimeOfDay } from "@/shared/domain";
-import { timeOfDayParts, toIsoDate } from "./calendarDate";
+import { timeOfDayParts, toIsoDate, toTimeOfDay } from "./calendarDate";
 
 // Converting between instants and Melbourne wall-clock time with Intl only.
 // Melbourne's UTC offset changes with daylight saving (+10 AEST / +11 AEDT),
@@ -62,6 +62,12 @@ export function melbourneDateOf(instant: Date): IsoDate {
   const { year, month, day } = melbourneWallClock(instant);
   const pad = (n: number) => String(n).padStart(2, "0");
   return toIsoDate(`${year}-${pad(month)}-${pad(day)}`);
+}
+
+/** The Melbourne wall-clock time at the given instant, "HH:mm" (seconds dropped). */
+export function melbourneTimeOfDayOf(instant: Date): TimeOfDay {
+  const { hour, minute } = melbourneWallClock(instant);
+  return toTimeOfDay(`${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`);
 }
 
 /** The instant when Melbourne clocks show `time` on `date`. */
