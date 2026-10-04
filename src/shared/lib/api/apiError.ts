@@ -1,4 +1,11 @@
-import type { Cents, IsoDate, OrderId, ProductId, VisibleOrderStatus } from "@/shared/domain";
+import type {
+  AvailabilityState,
+  Cents,
+  IsoDate,
+  OrderId,
+  ProductId,
+  VisibleOrderStatus,
+} from "@/shared/domain";
 
 // The error shape every API route returns, shared by the route handlers and
 // the browser's API client. Messages are for developers; screens show their
@@ -43,6 +50,11 @@ export type ApiErrorCode =
   | "undo_expired"
   /** Admin: Collected on an unpaid order without "Yes, paid" (409). */
   | "payment_unconfirmed"
+  /**
+   * Admin (A4): the product's row at this branch isn't what the staff member
+   * saw, because it was changed on another screen (409). Carries the row now.
+   */
+  | "availability_changed"
   /** Firestore didn't answer in time (503). */
   | "unavailable"
   | "server_error";
@@ -74,6 +86,8 @@ export interface ApiErrorBody {
     /** On the admin's order action errors: which order, and its status now. */
     orderNumber?: string;
     currentStatus?: VisibleOrderStatus;
+    /** On availability_changed: the product's row at the branch now. */
+    currentAvailability?: AvailabilityState;
   };
 }
 

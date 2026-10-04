@@ -27,8 +27,14 @@ export const routes = {
     /** A1. `returnTo` is where to go after signing in (checked by safeAdminReturnPath). */
     signIn: (returnTo?: string | null) =>
       returnTo ? `/admin/sign-in?${new URLSearchParams({ returnTo })}` : "/admin/sign-in",
-    /** A4 (placeholder until the availability step). */
-    availability: "/admin/availability",
+    /**
+     * A4. `query` comes from availabilityViewToQuery: the owner's branch and
+     * the "Mark sold out for" date, both left out when they're the default.
+     */
+    availability: (query: Record<string, string> = {}) => {
+      const search = new URLSearchParams(query).toString();
+      return search ? `/admin/availability?${search}` : "/admin/availability";
+    },
     /** A5, owner only (placeholder until the products step). */
     products: "/admin/products",
   },

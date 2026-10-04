@@ -205,6 +205,36 @@ _None yet._
     - The cancel form's field errors.
   - **The 409s are logged by the browser** as failed requests in the console. That's expected for a refused action; the app itself logs them as warnings.
 
+- **A4 branch availability (step 7, Batch A): decisions and deliberate differences.**
+  - **Orders that already include the product (decided 5 Oct 2026).** The change saves at once, as on the canvas. If open orders (Placed or Ready) already include the product, the message turns wheat and names them.
+    - Sold out for a day counts that day's orders. Switching off counts every order from today on.
+    - It names the first 5 numbers, then "and N more".
+    - Those orders never change: they keep their items and prices. Awaiting-payment orders aren't counted, since staff never see them.
+    - If that check fails, the change still stands and the message says the orders couldn't be checked.
+  - **One sold-out day per product, per branch** (spec 5's single `sold_out_on`). As on the canvas, a product sold out for one day only offers "Back on sale"; it has to go back on sale before it's marked for another day.
+    - Switching a product off keeps its sold-out date, so switching it back on the same day still shows it.
+    - A sold-out date stops showing from that day itself (Melbourne midnight), as on the canvas (`> TODAY`). By then that day can't be ordered anyway.
+  - **Writing a row creates it**, and a row that ends up back at the default (on, not sold out) is kept rather than deleted. It reads the same as a missing row.
+  - **The status line sticks under the admin header** (A2's doesn't). On the canvas it sits in a fixed band above a scrolling list. Without it, a warning about a row far down the list would be out of view. Pages with it get 200px of scroll padding.
+  - **The picker shows 7 days from the earliest**, with closed days struck through. Marking a day that can no longer be ordered is a 422 with the earliest date.
+  - **The owner's branch and the chosen day live in the URL** (`?branch=&date=`), as A2's filters do.
+    - The owner starts on the first branch in C1's order.
+    - An unknown branch in the URL redirects to the default.
+    - A day the picker can't mark falls back to the earliest.
+  - **The list refreshes every 60s.** A tap on a row changed elsewhere since gets a 409 (`availability_changed`, carrying the row now), and the row updates.
+  - **The customer menu is fresh on every load.** The API is `no-store` and C2 renders per request. In an open tab, TanStack keeps a menu for 60s and refetches on focus (decided 5 Oct 2026: kept). Checkout rechecks on the server anyway.
+  - **The messages mention recurring orders** ("Recurring orders will leave it out…"), as on the canvas. Generating recurring orders isn't built yet.
+  - **Undesigned copy:**
+    - The picker note after the cutoff ("…because orders closed at 2pm today") and when tomorrow is closed ("Earliest pickup is Wed 7 Oct.").
+    - The orders lines: "3 orders for Tue 6 Oct already have it: MS-1040, MS-1042 and MS-1044. Those orders stay as placed, so call the customers if you can't make it." and "… still to collect already have it …".
+    - "We couldn't check for orders that already have it. Look on Orders before the day."
+    - "… was already changed on another screen. It's now off the menu. The list is up to date."
+    - "… was hidden on another screen, so it's no longer on this list."
+    - "Orders for … have closed, so nothing can be marked sold out for it. The earliest is now …".
+    - "The menu didn't answer in time…", "That didn't go through…".
+    - Loading and failure: "Loading the menu…", "Loading Fitzroy…", "Fitzroy didn't load.", "We couldn't load this branch's menu…".
+    - "There are no products on the menus yet."
+
 ## Tooling and housekeeping
 
 - ~~**`/dev/tokens` is publicly reachable.**~~ Resolved 30 Sep 2026 (step 2): every `/dev/*` page (`/dev/tokens`, `/dev/components`) is gated by `src/app/dev/layout.tsx` and returns 404 in production builds. Setting the server-only env var `DEV_PAGES=true` for both `bun run build` and `bun run start` turns them back on, for QA against a production build (`/dev/components` is rendered per request, so it needs the variable at start as well).

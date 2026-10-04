@@ -23,6 +23,12 @@ export const apiRoutes = {
     order: (orderId: string) => `/api/admin/orders/${encodeURIComponent(orderId)}`,
     /** POST: ready, collect, undo, cancel or mark refunded. */
     orderAction: (orderId: string) => `/api/admin/orders/${encodeURIComponent(orderId)}/actions`,
+    /** GET: A4, every active product with its row at one branch. */
+    branchAvailability: (branchId: string) =>
+      `/api/admin/branches/${encodeURIComponent(branchId)}/availability`,
+    /** POST: switch on or off, mark sold out for a date, or back on sale. */
+    branchAvailabilityAction: (branchId: string) =>
+      `/api/admin/branches/${encodeURIComponent(branchId)}/availability/actions`,
     /** GET: the product catalogue (owner only). */
     products: "/api/admin/products",
   },
