@@ -4,12 +4,10 @@ import type { BranchId, IsoDate, OrderStatus, ProductId } from "@/shared/domain"
 import { ordersRef } from "@/shared/lib/firebase/collections";
 import { firestoreRead } from "@/shared/lib/firebase/firestoreRead";
 import type { AffectedOrders } from "../types/availability";
+import { summariseAffectedOrders } from "./affectedOrders";
 
 /** Orders still to be collected. Awaiting-payment orders aren't confirmed, and staff never see them. */
 const OPEN_STATUSES: OrderStatus[] = ["placed", "ready"];
-
-/** How many order numbers the message names. */
-export const AFFECTED_ORDERS_NAMED = 5;
 
 export type AffectedDays = { date: IsoDate } | { from: IsoDate };
 
@@ -28,13 +26,5 @@ export async function findOrdersIncluding(
     "date" in days ? base.where("pickupDate", "==", days.date) : base.where("pickupDate", ">=", days.from);
   const snapshot = await firestoreRead(query.get(), `orders including ${productId}`);
 
-  const orders = snapshot.docs
-    .map(toOrder)
-    .filter((order) => order.items.some((item) => item.productId === productId))
-    .sort((a, b) => a.pickupDate.localeCompare(b.pickupDate) || a.orderNumber.localeCompare(b.orderNumber));
-
-  return {
-    count: orders.length,
-    orderNumbers: orders.slice(0, AFFECTED_ORDERS_NAMED).map((order) => order.orderNumber),
-  };
+  return summariseAffectedOrders(snapshot.docs.map(toOrder), productId);
 }

@@ -130,6 +130,10 @@ describe("categorySlug", () => {
     expect(categorySlug("  Gluten-free!  ")).toBe("gluten-free");
   });
 
+  test("accents are dropped, not turned into dashes", () => {
+    expect(categorySlug("Crème tarts")).toBe("creme-tarts");
+  });
+
   test("a name with no letters or digits still gets a slug", () => {
     expect(categorySlug("&&")).toBe("category");
   });

@@ -15,6 +15,7 @@ export function toProduct(snapshot: DocumentSnapshot): Product {
     priceCents: doc.priceCents,
     image: doc.image ? { path: doc.image.path, url: doc.image.url } : null,
     isActive: doc.isActive,
+    version: doc.version,
   };
 }
 
@@ -26,5 +27,6 @@ export function productToDoc(product: Omit<Product, "id">): ProductDoc {
     priceCents: product.priceCents,
     image: product.image ? { path: product.image.path, url: product.image.url } : null,
     isActive: product.isActive,
+    version: product.version,
   };
 }

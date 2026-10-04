@@ -41,6 +41,7 @@ export function toApiFailure(error: unknown): ApiFailure {
         orderNumber,
         currentStatus,
         currentAvailability,
+        currentVersion,
       } = data.error;
       return {
         status,
@@ -53,6 +54,7 @@ export function toApiFailure(error: unknown): ApiFailure {
         orderNumber,
         currentStatus,
         currentAvailability,
+        currentVersion,
       };
     }
     return { status, code: status === 0 ? "network_error" : "server_error" };

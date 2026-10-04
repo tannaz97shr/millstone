@@ -55,6 +55,17 @@ export type ApiErrorCode =
    * saw, because it was changed on another screen (409). Carries the row now.
    */
   | "availability_changed"
+  /**
+   * Admin (A5): the product was saved on another screen since the form read
+   * it (409). Carries the version now; nothing is written.
+   */
+  | "product_changed"
+  /** Admin (A5): a photo over the size limit, refused before it's read in full (413). */
+  | "file_too_large"
+  /** Admin (A5): the file's bytes aren't a JPEG, PNG or WebP, whatever its name says (415). */
+  | "unsupported_image"
+  /** Admin (A5): a photo smaller than the minimum size (422). */
+  | "image_too_small"
   /** Firestore didn't answer in time (503). */
   | "unavailable"
   | "server_error";
@@ -88,6 +99,8 @@ export interface ApiErrorBody {
     currentStatus?: VisibleOrderStatus;
     /** On availability_changed: the product's row at the branch now. */
     currentAvailability?: AvailabilityState;
+    /** On product_changed: the product's version now. */
+    currentVersion?: number;
   };
 }
 

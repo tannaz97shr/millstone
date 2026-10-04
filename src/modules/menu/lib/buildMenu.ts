@@ -14,11 +14,12 @@ export interface BuildMenuInput {
   categoryOrder: readonly string[];
 }
 
-/** "Breads" → "breads", "Cakes & tarts" → "cakes-tarts". */
+/** "Breads" → "breads", "Cakes & tarts" → "cakes-tarts", "Crème tarts" → "creme-tarts". */
 export function categorySlug(name: string): string {
   const slug = name
-    .toLowerCase()
     .normalize("NFKD")
+    .replace(/\p{M}/gu, "") // accents split off by NFKD: "è" → "e"
+    .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
   return slug || "category";

@@ -19,6 +19,7 @@ const product = (
   priceCents,
   image: null,
   isActive,
+  version: 0,
 });
 
 export const PRODUCT_IDS = {

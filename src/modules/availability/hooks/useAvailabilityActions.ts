@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
+import type { StatusMessage } from "@/shared/components/molecules/StatusLine/StatusLine";
 import type { AvailabilityState, BranchId, ProductId } from "@/shared/domain";
 import { toApiFailure } from "@/shared/lib/http/apiClient";
 import { logError } from "@/shared/utils/logError";
@@ -18,10 +19,7 @@ export type AvailabilityFocusRequest =
   | { kind: "row-action"; productId: ProductId; action: "sold-out" | "back-on-sale" }
   | { kind: "status" };
 
-export interface AvailabilityMessage {
-  tone: "success" | "warning" | "error";
-  text: string;
-}
+export type AvailabilityMessage = StatusMessage;
 
 const stateWords = (state: AvailabilityState) =>
   !state.isAvailable

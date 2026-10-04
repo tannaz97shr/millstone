@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect } from "react";
 import { LoadErrorNotice, LoadingMessage } from "@/shared/components/molecules/LoadState/LoadState";
+import { StatusLine } from "@/shared/components/molecules/StatusLine/StatusLine";
 import type { BranchId, IsoDate } from "@/shared/domain";
 import { availabilityContent } from "../content/availabilityContent";
 import { type AvailabilityFocusRequest, useAvailabilityActions } from "../hooks/useAvailabilityActions";
@@ -11,9 +12,10 @@ import { allProducts, availabilityCounts } from "../lib/availabilityRules";
 import { soldOutDateFor } from "../lib/availabilityView";
 import { AvailabilityGroups } from "./AvailabilityGroups";
 import { AvailabilityHeader } from "./AvailabilityHeader";
-import { AVAILABILITY_STATUS_ID, AvailabilityStatusBar } from "./AvailabilityStatusBar";
 
 const content = availabilityContent;
+
+const AVAILABILITY_STATUS_ID = "availability-status";
 
 export interface AvailabilityScreenProps {
   owner: boolean;
@@ -103,7 +105,8 @@ export function AvailabilityScreen({ owner, defaultBranchId }: AvailabilityScree
         date={date}
         onDateChange={changeDate}
       />
-      <AvailabilityStatusBar
+      <StatusLine
+        id={AVAILABILITY_STATUS_ID}
         message={switching ? null : actions.message}
         onDismissMessage={clearMessage}
         summary={summary}

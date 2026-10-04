@@ -105,7 +105,8 @@ export function ProductCard({
             src={image}
             alt={imageAlt}
             fill
-            sizes={isRow ? "112px" : "(min-width: 768px) 25vw, 50vw"}
+            // Two columns in the customer column, which stops at 640px: about 300px a card.
+            sizes={isRow ? "112px" : "(min-width: 640px) 304px, 50vw"}
             className={cx("object-cover", faded)}
           />
         ) : (

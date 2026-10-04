@@ -11,6 +11,11 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
 - **Emulator data is kept between runs (3 Oct 2026).** `bun run emulators` imports from the gitignored `.emulator-data/` on start and exports to it on exit. The export only happens on a clean stop (one Ctrl-C, then wait for "Export complete"); a second Ctrl-C or a killed terminal skips it and loses that session's changes. The first run with an empty folder logs "Could not find import/export metadata file, skipping data import!", which is expected. `bun run seed` still works on top (it's idempotent, and `--reset` still wipes). For a clean start, stop the emulator and delete `.emulator-data/`.
 
 - **Auth env on the host (step 6).** `AUTH_SECRET` must be set wherever the app runs; without it Auth.js refuses every sign-in (the API answers 500). `AUTH_TRUST_HOST=true` is needed for `next start` and any self-hosted deploy. Set `AUTH_URL` too if the host can't work out its own URL. Production also serves the cookie as `__Secure-authjs.session-token` over HTTPS.
+- **Product photos on a real bucket (step 7).** Only the Storage emulator has been tested. Before deploying:
+  - Set `FIREBASE_STORAGE_BUCKET` wherever `next build` runs. `next.config.mjs` reads it to allow `https://firebasestorage.googleapis.com/v0/b/<bucket>/o/**` for `next/image`.
+  - Make sure `FIREBASE_STORAGE_EMULATOR_HOST` is **not** set in production. It also turns on `images.dangerouslyAllowLocalIP`, which is only for the emulator.
+  - Deploy `storage.rules` (closed to clients, unchanged). Download URLs carry their own token and don't need any rule.
+  - The upload route reads up to about 10 MB per request. If the host caps request bodies lower, raise that cap for `/api/admin/products/*/photo`.
 - **Sign-in has no IP rate limit (step 6).** Repeated guessing is slowed per email only: 5 failures in 15 minutes lock that email for 15 minutes, counted in `signInThrottle/{sha256(email)}`. Left for later: per-IP or edge rate limiting, a bot check, and pruning old throttle docs (each is deleted on a successful sign-in; failures for unknown emails stay). Someone who knows a staff email can keep that person locked out by guessing wrong every 15 minutes.
 
 ## Deferred features
@@ -29,7 +34,7 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
 - **`awaiting_payment` orders never expire yet (step 6, Batch B).** Spec 6 says they expire after about an hour. There's no job for it until the payment-provider step. The seed's MS-1028 stays `awaiting_payment`; staff never see it either way.
 - ~~**Phone display formatting.**~~ Resolved 30 Sep 2026 (step 2): `formatPhone` in `src/shared/utils/phone.ts` ("0491 570 156", "03 7010 2140"; landlines changed from "(03) 7010 2140" on 1 Oct 2026 to match spec section 4's branch table and the designs), used by OrderRow. Later screens that show a phone should use it too.
 
-- **Shared patterns not built yet (step 2).** These repeat across screens but belong with their features: ~~the admin side panel (A3 order detail, A5 product form)~~, admin nav, ~~admin filter buttons with a pressed ink fill (A2/A4)~~, empty-state boxes, ~~admin uppercase section headings~~ and the order-detail items table. Step 6 Batch B built `organisms/SidePanel`, `molecules/FilterButtons` and `atoms/SectionLabel` for A5 and A4 to reuse; the items table stays inside A3. ProductCard photos will need `images.remotePatterns` for Firebase Storage once uploads exist. Built in step 3: the link styled as a Button (`atoms/ButtonLink`) and the sticky bottom bar (`organisms/BottomBar`, used by C1, the C2 order bar and the C4 total bar).
+- **Shared patterns not built yet (step 2).** These repeat across screens but belong with their features: ~~the admin side panel (A3 order detail, A5 product form)~~, admin nav, ~~admin filter buttons with a pressed ink fill (A2/A4)~~, empty-state boxes, ~~admin uppercase section headings~~ and the order-detail items table. Step 6 Batch B built `organisms/SidePanel`, `molecules/FilterButtons` and `atoms/SectionLabel` for A5 and A4 to reuse; the items table stays inside A3. ~~ProductCard photos will need `images.remotePatterns` for Firebase Storage once uploads exist.~~ Done in step 7 (see Undeployed infra). Step 7 also added `molecules/StatusLine`, the sticky message/summary line A4 and A5 share. Built in step 3: the link styled as a Button (`atoms/ButtonLink`) and the sticky bottom bar (`organisms/BottomBar`, used by C1, the C2 order bar and the C4 total bar).
 
 ## Investigated but unreproduced bugs
 
@@ -59,6 +64,11 @@ _None yet._
   - `cancellationReason` is now a code (`not_collected` | `customer_request` | `other`), not free text. `cancellationNote` holds staff's words for `other` (200 characters at most). The words shown come from content.
   - `collectUndo: { previousStatus, until } | null`: set by a one-tap Collected on a paid order. The browser shows Undo for 5s; the server accepts it for 10s after the collect is saved, to allow for two slow round trips. After that the order is final (spec 7). Collected through "Yes, paid · Collected" has no Undo.
   - Every action sends the status the staff member saw. If the order has moved on, the answer is 409 `order_changed` with the order's status now, and nothing is written (`not_allowed` when the order's state never allows the action). The admin says "MS-1042 was already changed on another screen. It's now Ready." and refetches.
+- **Products (step 7, Batch B).**
+  - `version` (a whole number) goes up by one on every save. A5 sends the version it read, and a different one on the server is a 409 `product_changed` carrying `currentVersion`; nothing is written. Products saved before step 7 have no field and read as 0, so no migration is needed. The seed writes 0, so rerunning it resets the count; that's harmless. After step 7's QA, Fruit loaf and Sourdough rye loaf are at version 11 and 12 on the emulator.
+  - New product IDs are slugs of the name ("olive-fougasse"), with accents dropped. A clash tries "-2" up to "-20", using `create()`, so two saves can't take the same ID. The ID never changes when the product is renamed, and there's no hard delete.
+  - A typed category that matches an existing one, ignoring case and spacing, becomes that one ("savoury" → "Savoury"). A new one is appended to `settings/catalog.categoryOrder` in the same transaction as the product.
+  - `image: { path, url }`: `path` is `products/{productId}/{uuid}.webp`, always built on the server from the stored product's ID. `url` is the Firebase download URL with a random token, set as `firebaseStorageDownloadTokens` on upload. Files are served with a one-year immutable cache, since a new photo always gets a new path.
 - **Seed orders (step 6, Batch B).**
   - The admin canvases' orders, MS-1029 to MS-1046, plus MS-1027 (`expired`) and MS-1028 (`awaiting_payment`) to show they stay hidden. Doc IDs are `seed-ms-NNNN`. MS-1042 is generated from `recurringOrders/seed-corner-cup` with the ID `seed-corner-cup_{date}`.
   - Days follow the clock per branch: D0 is today, or the next open day; then the two open days after it, and the open day before. Times are fixed Melbourne times on those days, so a rerun on the same day changes nothing, and a rerun puts every seed order back to its seeded state. A seed run before about 8:30am gives some of D0's ready/collected times in the future. Seeding on a closed day (Monday, for every seeded branch) puts D0 on the next open day, so some history times are in the future too (e.g. MS-1037 cancelled 8:30am Tue and refunded earlier). Seed data only; left as is.
@@ -108,7 +118,7 @@ _None yet._
     - A pickup day whose cutoff passed, from a stored cart or an old link: "Orders for Thu 1 Oct have closed, so your pickup is now Fri 2 Oct."
     - A product switched off or retired while in the cart: "…because it's no longer on the Northcote menu."
     - An empty menu, the 404 page, a failed load with "Try again", and a cart `localStorage` can't read or write.
-  - **Products within a category are listed A–Z.** The canvas order (rye, seeded, white, fruit) isn't stored anywhere. A product sort order would need A5 to manage it.
+  - **Products within a category are listed A–Z.** The canvas order (rye, seeded, white, fruit) isn't stored anywhere. A product sort order would need A5 to manage it, and A5's canvases have no way to reorder (checked in step 7). So C2, A4 and A5 all stay A–Z.
   - **The day strip always starts tomorrow** (as in `AfterCutoff.dc.html`), so after the cutoff the missed day shows struck through. Before the cutoff, tomorrow is the earliest day, as in `Menu.dc.html`.
   - **C1 → C2 switching has no confirmation**, as designed (HomeReturn warns in advance). An old link to another branch's menu also switches the cart's branch and names what was removed, without asking first. C4's change-branch sheet (next step) asks first, as designed.
   - **The C2 Change button is a link back to C1**, as in the design's flow (`Main.dc.html`), not a sheet.
@@ -208,7 +218,7 @@ _None yet._
 - **A4 branch availability (step 7, Batch A): decisions and deliberate differences.**
   - **Orders that already include the product (decided 5 Oct 2026).** The change saves at once, as on the canvas. If open orders (Placed or Ready) already include the product, the message turns wheat and names them.
     - Sold out for a day counts that day's orders. Switching off counts every order from today on.
-    - It names the first 5 numbers, then "and N more".
+    - It names the first 5 numbers (earliest day, then number order), then "and N more": "12 orders for Tue 6 Oct already have it: MS-1040, MS-1041, MS-1042, MS-1043, MS-1044 and 7 more." The server sends only those 5 and the count (`summariseAffectedOrders`, unit-tested).
     - Those orders never change: they keep their items and prices. Awaiting-payment orders aren't counted, since staff never see them.
     - If that check fails, the change still stands and the message says the orders couldn't be checked.
   - **One sold-out day per product, per branch** (spec 5's single `sold_out_on`). As on the canvas, a product sold out for one day only offers "Back on sale"; it has to go back on sale before it's marked for another day.
@@ -226,7 +236,7 @@ _None yet._
   - **The messages mention recurring orders** ("Recurring orders will leave it out…"), as on the canvas. Generating recurring orders isn't built yet.
   - **Undesigned copy:**
     - The picker note after the cutoff ("…because orders closed at 2pm today") and when tomorrow is closed ("Earliest pickup is Wed 7 Oct.").
-    - The orders lines: "3 orders for Tue 6 Oct already have it: MS-1040, MS-1042 and MS-1044. Those orders stay as placed, so call the customers if you can't make it." and "… still to collect already have it …".
+    - The orders lines: "3 orders for Tue 6 Oct already have it: MS-1040, MS-1042 and MS-1044. Those orders stay as placed, so call the customers if you can't make it." and "… still to collect already have it …", with "… and 7 more" past five.
     - "We couldn't check for orders that already have it. Look on Orders before the day."
     - "… was already changed on another screen. It's now off the menu. The list is up to date."
     - "… was hidden on another screen, so it's no longer on this list."
@@ -234,6 +244,44 @@ _None yet._
     - "The menu didn't answer in time…", "That didn't go through…".
     - Loading and failure: "Loading the menu…", "Loading Fitzroy…", "Fitzroy didn't load.", "We couldn't load this branch's menu…".
     - "There are no products on the menus yet."
+
+- **A5 products (step 7, Batch B): decisions and deliberate differences.**
+  - **New products: the canvas's note only** (decided 5 Oct 2026). There are no per-branch toggles in the form. A new product is on at every branch, because no branch rows are written, and a branch switches it off in A4.
+  - **Hidden products can be shown again** with the same "Show on menus" toggle, as on the canvas ("It's back on the menus."). Hiding never deletes anything.
+  - **Photos.**
+    - **Type and size:**
+      - The type is decided from the bytes by sharp's decoder, never from the file name or the browser's MIME type. Only JPEG, PNG and WebP are accepted; anything else is 415 `unsupported_image`.
+      - Uploads are capped at 10 MB. The cap is checked against Content-Length first, then while the body streams in, so a bigger or chunked body is refused (413) without being read in full.
+      - Images under 400 × 300 are refused (422 `image_too_small`), and so is anything over about 40 megapixels (413).
+    - **Conversion:**
+      - The photo is turned upright by its EXIF orientation, then cropped to 4:3 around the most interesting part (sharp's `attention`).
+      - It's capped at 1200 × 900, never upscaled, and saved as WebP at quality 80. 1200px is twice C3's 448px sheet.
+      - No metadata is kept: EXIF, GPS, camera details, XMP and the colour profile are all dropped, with colours converted to sRGB. QA checked a photo carrying GPS and camera EXIF; none of it was in the saved file.
+    - **Replacing:**
+      - The new file is uploaded first, then the product is saved in a transaction with its version checked again, and only then is the old file deleted.
+      - If the save fails, the new file is deleted, unless a re-read shows the save did land, or the re-read itself fails. In those cases the file is kept, since an orphaned file is better than a product pointing at nothing.
+      - A failed delete is logged as a warning and never fails the request.
+    - **There's no "Remove photo"** (not designed). Replacing is the only change. Deferred.
+  - **Saving is two requests when a photo is chosen:** the fields first (skipped if unchanged), then the photo with the version that came back. If the photo is refused after the fields saved, the panel stays open and says so. A new product's panel then edits the product just made, so trying again only sends the photo.
+  - **A 409 reloads the form** with the latest saved values, so anything typed is lost. The message says to check the details and save again.
+  - **Categories can't be renamed or removed.** A category that no longer has any products stays in `categoryOrder` and still shows as a button in the form. It doesn't show on any menu, because menus only list categories that have products.
+  - **The status line sticks under the header,** as on A4 (shared `StatusLine`).
+  - **The add and save buttons are primary**, as on the canvas, and the info notes use the plain `info` tone (flour, line-strong edge), not the canvas's delft.
+  - **Product images use `next/image` everywhere:**
+    - The A5 row is 72px and the form preview 160px; a just-chosen file's preview is shown unoptimised from its object URL.
+    - C2 cards now have `sizes` of `(min-width: 640px) 304px, 50vw`, since the customer column stops at 640px. The old value assumed a wider grid.
+  - **Category anchors on C2 drop accents** ("Crème tarts" → `creme-tarts`), now that A5 lets the owner type any category. They used to come out as `cre-me-tarts`.
+  - **The 409, 413 and 415 answers are logged by the browser** as failed requests, as for A2's 409s.
+  - **Undesigned copy:**
+    - "Switched off at every branch".
+    - The field errors past the length limits.
+    - "Choose another photo".
+    - "New photo: x.jpg. It's cropped to 4:3 and saved when you save."
+    - "Saving…".
+    - "… is saved, but the photo didn't upload." followed by "Choose a JPEG, PNG or WebP photo." / "Choose a photo under 10 MB." / "Choose a bigger photo, at least 400 × 300 pixels." / "Try choosing it again."
+    - "… was changed on another screen. The form now shows the latest details: check them, then save again."
+    - "This product isn't in the catalogue any more…", "That didn't save…", "The catalogue didn't answer in time…".
+    - The loading, failure and empty states.
 
 ## Tooling and housekeeping
 

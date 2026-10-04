@@ -35,7 +35,7 @@ export const routes = {
       const search = new URLSearchParams(query).toString();
       return search ? `/admin/availability?${search}` : "/admin/availability";
     },
-    /** A5, owner only (placeholder until the products step). */
+    /** A5, owner only. */
     products: "/admin/products",
   },
   dev: {

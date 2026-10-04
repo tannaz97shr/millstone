@@ -1,4 +1,4 @@
-// The admin's header and the pages later steps fill in.
+// The admin's header, and what staff see on the owner-only page.
 
 export const adminShellContent = {
   nav: {
@@ -14,12 +14,6 @@ export const adminShellContent = {
   },
   signOut: "Sign out",
   signOutFailed: "We couldn't sign you out. Check the connection and try again.",
-  placeholders: {
-    products: {
-      title: "Products",
-      body: "Adding and editing products comes in a later step.",
-    },
-  },
   ownerOnly: {
     title: "This page is for the owner",
     body: "Only the owner can add or change products. Ask them if something needs changing.",
