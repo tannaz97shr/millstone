@@ -13,13 +13,15 @@ export default async function AdminProductsPage() {
   const actor = await getStaffPageSession();
   if (actor.role !== "owner") {
     return (
-      <EmptyState
-        headingLevel="h1"
-        title={content.ownerOnly.title}
-        action={<ButtonLink href={routes.admin.home}>{content.ownerOnly.back}</ButtonLink>}
-      >
-        {content.ownerOnly.body}
-      </EmptyState>
+      <div className="px-8 py-8">
+        <EmptyState
+          headingLevel="h1"
+          title={content.ownerOnly.title}
+          action={<ButtonLink href={routes.admin.home}>{content.ownerOnly.back}</ButtonLink>}
+        >
+          {content.ownerOnly.body}
+        </EmptyState>
+      </div>
     );
   }
   return <AdminPlaceholder {...content.placeholders.products} />;

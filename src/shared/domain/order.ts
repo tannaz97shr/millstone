@@ -1,4 +1,10 @@
-import type { OrderStatus, PaymentMethod, PaymentStatus } from "./enums";
+import type {
+  CancellationReason,
+  OrderStatus,
+  PaymentMethod,
+  PaymentStatus,
+  UndoableStatus,
+} from "./enums";
 import type {
   BranchId,
   Cents,
@@ -17,6 +23,15 @@ export interface OrderItem {
   unitPriceCents: Cents;
   quantity: number;
   lineTotalCents: Cents;
+}
+
+/**
+ * Set by a one-tap Collected on a paid order: the status Undo goes back to,
+ * and the last instant the server still accepts Undo (spec 7).
+ */
+export interface CollectUndo {
+  previousStatus: UndoableStatus;
+  until: IsoInstant;
 }
 
 export interface Order {
@@ -40,7 +55,10 @@ export interface Order {
   processedStripeEventIds: string[];
   recurringOrderId: RecurringOrderId | null;
   generationNote: string | null;
-  cancellationReason: string | null;
+  cancellationReason: CancellationReason | null;
+  /** Staff's own words; set only when the reason is "other". */
+  cancellationNote: string | null;
+  collectUndo: CollectUndo | null;
   createdAt: IsoInstant;
   paidAt: IsoInstant | null;
   refundedAt: IsoInstant | null;

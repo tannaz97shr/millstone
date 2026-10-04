@@ -40,6 +40,7 @@ export function toAdminOrderDetail(
     })),
     paymentRef: order.paymentRef,
     cancellationReason: order.cancellationReason,
+    cancellationNote: order.cancellationNote,
     paidAt: order.paidAt,
     readyAt: order.readyAt,
     collectedAt: order.collectedAt,

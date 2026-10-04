@@ -1,4 +1,4 @@
-import type { Cents, IsoDate, OrderId, ProductId } from "@/shared/domain";
+import type { Cents, IsoDate, OrderId, ProductId, VisibleOrderStatus } from "@/shared/domain";
 
 // The error shape every API route returns, shared by the route handlers and
 // the browser's API client. Messages are for developers; screens show their
@@ -32,6 +32,17 @@ export type ApiErrorCode =
   | "invalid_credentials"
   /** Staff sign-in: too many failed tries for this email; locked for a while (429). */
   | "too_many_attempts"
+  /**
+   * Admin: the order isn't in the state the staff member saw, because it was
+   * changed on another screen (409). Carries the order's number and status now.
+   */
+  | "order_changed"
+  /** Admin: the order's state never allows this, e.g. Ready on a collected order (409). */
+  | "not_allowed"
+  /** Admin: the Undo window after Collected has passed; the order stays collected (409). */
+  | "undo_expired"
+  /** Admin: Collected on an unpaid order without "Yes, paid" (409). */
+  | "payment_unconfirmed"
   /** Firestore didn't answer in time (503). */
   | "unavailable"
   | "server_error";
@@ -60,6 +71,9 @@ export interface ApiErrorBody {
     totalCents?: Cents;
     /** On checkout_key_mismatch: the order the key already placed. */
     existingOrder?: { orderId: OrderId; orderNumber: string };
+    /** On the admin's order action errors: which order, and its status now. */
+    orderNumber?: string;
+    currentStatus?: VisibleOrderStatus;
   };
 }
 

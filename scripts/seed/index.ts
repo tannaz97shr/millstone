@@ -1,8 +1,10 @@
+import type { CustomerId } from "@/shared/domain";
 import { readFirebaseEnv } from "@/shared/lib/firebase/env";
 import { logError } from "@/shared/utils/logError";
 import { seedCustomers, seedStaffUsers } from "./data/people";
 import { resetEmulator, resolveSeedTarget } from "./lib/guard";
 import { seedBranchesAndCatalog, seedOrderCounter } from "./lib/seedCatalog";
+import { seedOrdersAndRecurring } from "./lib/seedOrders";
 import { readSeedEnv } from "./lib/seedEnv";
 import { seedCustomer, seedStaffUser } from "./lib/seedPeople";
 import { printSeedSummary } from "./lib/summary";
@@ -30,9 +32,12 @@ async function main(): Promise<void> {
   for (const user of seedStaffUsers) {
     await seedStaffUser(user, passwords.SEED_STAFF_PASSWORD, tally);
   }
+  const customers = new Map<string, { id: CustomerId; name: string; email: string; phone: string }>();
   for (const customer of seedCustomers) {
-    await seedCustomer(customer, passwords.SEED_CUSTOMER_PASSWORD, now, tally);
+    const id = await seedCustomer(customer, passwords.SEED_CUSTOMER_PASSWORD, now, tally);
+    customers.set(customer.email, { id, name: customer.name, email: customer.email, phone: customer.phone });
   }
+  await seedOrdersAndRecurring(now, customers, tally);
 
   console.log("\nWrites:");
   console.table(tally.rows());

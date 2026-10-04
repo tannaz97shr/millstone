@@ -14,6 +14,16 @@ export const routes = {
   orderConfirmation: (orderId: string) => `/orders/${encodeURIComponent(orderId)}`,
   admin: {
     home: "/admin",
+    /**
+     * A2 with its filters and the order open in A3. `query` comes from
+     * filtersToQuery; `order` is the open order's ID.
+     */
+    orders: (query: Record<string, string> = {}, order?: string | null) => {
+      const params = new URLSearchParams(query);
+      if (order) params.set("order", order);
+      const search = params.toString();
+      return search ? `/admin?${search}` : "/admin";
+    },
     /** A1. `returnTo` is where to go after signing in (checked by safeAdminReturnPath). */
     signIn: (returnTo?: string | null) =>
       returnTo ? `/admin/sign-in?${new URLSearchParams({ returnTo })}` : "/admin/sign-in",

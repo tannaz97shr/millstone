@@ -20,6 +20,7 @@ import {
 } from "@/shared/lib/firebase/collections";
 import { parseDoc } from "@/shared/lib/firebase/parseDoc";
 import { earliestPickupDate, formatPickupDay } from "@/shared/utils/pickup-dates";
+import { isSeedOrderId } from "./seedOrders";
 
 // Reads everything back through the mappers (so bad data fails loudly) and
 // prints counts plus one example per entity. Password hashes are shortened.
@@ -93,9 +94,27 @@ export async function printSeedSummary(now: Date): Promise<void> {
     StaffUser: staffUsers
       .filter((s) => s.role === "staff")
       .map((s) => ({ ...s, passwordHash: redactHash(s.passwordHash) }))[0],
-    Order: orders[0] ?? "none yet (seeded in the admin step)",
-    RecurringOrder: recurringOrders[0] ?? "none yet",
+    Order: orders.find((order) => order.generationNote !== null) ?? orders[0] ?? "none",
+    RecurringOrder: recurringOrders[0] ?? "none",
   };
   console.log("\nOne example per entity:");
   console.log(JSON.stringify(examples, null, 2));
+
+  console.log("\nSeeded orders (awaiting_payment and expired are never shown to staff):");
+  const seeded = orders
+    .filter((order) => isSeedOrderId(order.id))
+    .sort((a, b) => a.orderNumber.localeCompare(b.orderNumber));
+  console.table(
+    seeded.map((order) => ({
+      number: order.orderNumber,
+      branch: order.branchId,
+      pickup: formatPickupDay(order.pickupDate),
+      status: order.status,
+      payment: `${order.paymentMethod}/${order.paymentStatus}`,
+      name: order.contactName,
+      flags: [order.recurringOrderId && "recurring", order.generationNote && "gen note", order.notes && "notes"]
+        .filter(Boolean)
+        .join(", "),
+    })),
+  );
 }

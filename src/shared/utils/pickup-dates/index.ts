@@ -35,4 +35,5 @@ export {
   toTimeOfDay,
   weekdayOf,
 } from "./calendarDate";
-export { BAKERY_TIME_ZONE, melbourneDateOf } from "./melbourneTime";
+export { BAKERY_TIME_ZONE, melbourneDateOf, melbourneWallTimeToInstant } from "./melbourneTime";
+export { formatMelbourneStamp, formatMelbourneTime } from "./formatInstants";
