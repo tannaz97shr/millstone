@@ -9,8 +9,8 @@ import { ApiError, type ApiErrorBody } from "./apiError";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
-export function jsonResponse<T>(body: T, status = 200): NextResponse<T> {
-  return NextResponse.json(body, { status, headers: NO_STORE });
+export function jsonResponse<T>(body: T, status = 200, headers: Record<string, string> = {}): NextResponse<T> {
+  return NextResponse.json(body, { status, headers: { ...headers, ...NO_STORE } });
 }
 
 export function routeHandler<Context>(
@@ -23,7 +23,7 @@ export function routeHandler<Context>(
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status >= 500) logError(error, context);
-        return jsonResponse(error.toBody(), error.status);
+        return jsonResponse(error.toBody(), error.status, error.headers);
       }
       logError(error, context);
       const body: ApiErrorBody = {

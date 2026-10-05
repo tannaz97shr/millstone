@@ -19,6 +19,8 @@ export const COLLECTIONS = {
   counters: "counters",
   /** signInThrottle/{sha256(normalizedEmail)}: failed staff sign-ins (A1). */
   signInThrottle: "signInThrottle",
+  /** rateLimits/{policy}_{hmac(ip)}: per-address request counts (rateLimit.ts). Pruned by a TTL policy on `expiresAt`. */
+  rateLimits: "rateLimits",
   settings: "settings",
 } as const;
 
@@ -42,5 +44,6 @@ export const ordersRef = () => getDb().collection(COLLECTIONS.orders);
 export const recurringOrdersRef = () => getDb().collection(COLLECTIONS.recurringOrders);
 export const countersRef = () => getDb().collection(COLLECTIONS.counters);
 export const signInThrottleRef = () => getDb().collection(COLLECTIONS.signInThrottle);
+export const rateLimitsRef = () => getDb().collection(COLLECTIONS.rateLimits);
 export const catalogSettingsRef = () =>
   getDb().collection(COLLECTIONS.settings).doc(SETTINGS_IDS.catalog);

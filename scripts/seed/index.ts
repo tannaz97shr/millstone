@@ -1,5 +1,6 @@
 import type { CustomerId } from "@/shared/domain";
 import { readFirebaseEnv } from "@/shared/lib/firebase/env";
+import { liveDataWarning } from "@/shared/lib/firebase/firebaseTarget";
 import { logError } from "@/shared/utils/logError";
 import { seedCustomers, seedStaffUsers } from "./data/people";
 import { resolveSeedTarget } from "./lib/guard";
@@ -11,8 +12,8 @@ import { seedCustomer, seedStaffUser } from "./lib/seedPeople";
 import { printSeedSummary } from "./lib/summary";
 import { WriteTally } from "./lib/upsert";
 
-// bun run seed [--reset]            (emulator)
-// bun run seed:staging [-- --reset] (millstone-dc47f, .env.staging.local)
+// bun run seed [--reset]   (emulator)
+// bun run seed:live        (millstone-dc47f, .env.live.local; never --reset)
 // Idempotent: a second run reports no changes.
 
 async function main(): Promise<void> {
@@ -20,8 +21,9 @@ async function main(): Promise<void> {
   const passwords = readSeedEnv();
   const now = new Date();
 
+  if (!target.emulatorHost) console.warn(`\n${liveDataWarning(target.projectId)}\n`);
   console.log(
-    `Seeding ${target.projectId} ${target.emulatorHost ? `(emulator ${target.emulatorHost})` : "(real project)"}`,
+    `Seeding ${target.projectId} ${target.emulatorHost ? `(emulator ${target.emulatorHost})` : "(LIVE project)"}`,
   );
   if (target.reset) await resetTarget(target);
 

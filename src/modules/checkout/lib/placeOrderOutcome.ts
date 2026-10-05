@@ -22,6 +22,8 @@ export type PlaceOrderProblem =
   | { kind: "fields"; fields: (keyof CheckoutFormValues)[] }
   /** The branch is gone: C4 asks for a branch again. */
   | { kind: "branch_gone" }
+  /** Too many orders from this address for now (per-IP limit): say so, with no Try again. */
+  | { kind: "rate_limited" }
   /** Anything else, including no answer: keep everything and offer Try again. */
   | { kind: "failed" };
 
@@ -72,6 +74,9 @@ export function placeOrderProblem(failure: ApiFailure): PlaceOrderProblem {
 
     case "unknown_branch":
       return { kind: "branch_gone" };
+
+    case "rate_limited":
+      return { kind: "rate_limited" };
 
     default:
       return { kind: "failed" };

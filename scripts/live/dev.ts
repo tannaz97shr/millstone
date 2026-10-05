@@ -3,26 +3,28 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   EMULATOR_ENV_VARS,
+  LIVE_MARKER,
+  LIVE_PROJECT_ID,
+  LIVE_TARGET,
+  liveDataWarning,
   setEmulatorVars,
-  STAGING_MARKER,
-  STAGING_TARGET,
 } from "@/shared/lib/firebase/firebaseTarget";
 
-// bun run dev:staging
-// `next dev` against the real Firebase project, with settings from
-// .env.staging.local (loaded by `bun --env-file`, see package.json).
+// bun run dev:live
+// `next dev` against the live Firebase project (the public site's data), with
+// settings from .env.live.local (loaded by `bun --env-file`, see package.json).
 //
 // Next still loads .env.local (and .env.development*) in every dev run, but a
 // variable already in the environment wins, even an empty one. So every
 // emulator variable is passed blank, which shadows the emulator settings in
 // those files. src/instrumentation.ts checks again once Next has loaded them.
 
-const STAGING_FILE = ".env.staging.local";
-/** Files Next loads in dev, which staging values override but don't replace. */
+const LIVE_FILE = ".env.live.local";
+/** Files Next loads in dev, which live values override but don't replace. */
 const NEXT_DEV_FILES = [".env.development.local", ".env.local", ".env.development", ".env"];
 
 function fail(message: string): never {
-  console.error(`dev:staging refused: ${message}`);
+  console.error(`dev:live refused: ${message}`);
   process.exit(1);
 }
 
@@ -37,26 +39,28 @@ function namesIn(path: string): string[] {
 }
 
 const root = process.cwd();
-const stagingPath = join(root, STAGING_FILE);
-if (!existsSync(stagingPath)) {
-  fail(`${STAGING_FILE} is missing. Copy .env.staging.local.example and fill it in.`);
+const livePath = join(root, LIVE_FILE);
+if (!existsSync(livePath)) {
+  fail(`${LIVE_FILE} is missing. Copy .env.live.local.example and fill it in.`);
 }
 
 const emulatorVars = setEmulatorVars(process.env);
 if (emulatorVars.length > 0) {
-  fail(`${emulatorVars.join(", ")} set (in the shell or ${STAGING_FILE}). Staging never uses the emulator.`);
+  fail(`${emulatorVars.join(", ")} set (in the shell or ${LIVE_FILE}). Live mode never uses the emulator.`);
 }
 
-const stagingNames = new Set(namesIn(stagingPath));
+const liveNames = new Set(namesIn(livePath));
 const blanked = new Set<string>(EMULATOR_ENV_VARS);
 const inherited = NEXT_DEV_FILES.flatMap((file) =>
-  namesIn(join(root, file)).filter((name) => !stagingNames.has(name) && !blanked.has(name)),
+  namesIn(join(root, file)).filter((name) => !liveNames.has(name) && !blanked.has(name)),
 );
 if (inherited.length > 0) {
-  console.warn(`dev:staging: also from the dev env files: ${[...new Set(inherited)].join(", ")}`);
+  console.warn(`dev:live: also from the dev env files: ${[...new Set(inherited)].join(", ")}`);
 }
 
-const env: NodeJS.ProcessEnv = { ...process.env, [STAGING_MARKER]: STAGING_TARGET };
+console.warn(`\n${liveDataWarning(process.env.FIREBASE_PROJECT_ID ?? LIVE_PROJECT_ID)}\n`);
+
+const env: NodeJS.ProcessEnv = { ...process.env, [LIVE_MARKER]: LIVE_TARGET };
 for (const name of EMULATOR_ENV_VARS) env[name] = "";
 
 const next = spawn(join(root, "node_modules", ".bin", "next"), ["dev", ...process.argv.slice(2)], {

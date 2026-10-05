@@ -11,6 +11,7 @@ import { useStaffSignIn, type SignInProblem } from "../hooks/useStaffSignIn";
 const problemText: Record<SignInProblem, string> = {
   invalid: content.invalid,
   locked: content.locked,
+  rateLimited: content.rateLimited,
   failed: content.failed,
 };
 

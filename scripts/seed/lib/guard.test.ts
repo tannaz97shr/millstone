@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { FirebaseEnv } from "@/shared/lib/firebase/env";
 import { resolveSeedTarget } from "./guard";
 
-const STAGING = "millstone-dc47f";
+const LIVE = "millstone-dc47f";
 const EMULATOR = "127.0.0.1:8080";
 
 function firebaseEnv(projectId: string, emulatorHost?: string): FirebaseEnv {
@@ -27,54 +27,62 @@ describe("resolveSeedTarget on the emulator", () => {
   });
 
   test("a non-demo project ID on the emulator is refused", () => {
-    expect(() => resolveSeedTarget([], firebaseEnv(STAGING, EMULATOR), {})).toThrow(/demo-/);
+    expect(() => resolveSeedTarget([], firebaseEnv(LIVE, EMULATOR), {})).toThrow(/demo-/);
   });
 
   test("no emulator and no --project is refused", () => {
-    expect(() => resolveSeedTarget([], firebaseEnv(STAGING), {})).toThrow(/FIRESTORE_EMULATOR_HOST is not set/);
+    expect(() => resolveSeedTarget([], firebaseEnv(LIVE), {})).toThrow(/FIRESTORE_EMULATOR_HOST is not set/);
   });
 });
 
 describe("resolveSeedTarget on a real project", () => {
-  test("--project=millstone-dc47f seeds staging", () => {
-    expect(resolveSeedTarget([`--project=${STAGING}`], firebaseEnv(STAGING), {})).toEqual({
-      projectId: STAGING,
+  test("--project=millstone-dc47f seeds the live project", () => {
+    expect(resolveSeedTarget([`--project=${LIVE}`], firebaseEnv(LIVE), {})).toEqual({
+      projectId: LIVE,
       emulatorHost: null,
       reset: false,
     });
   });
 
-  test("--reset is allowed on staging", () => {
-    expect(resolveSeedTarget([`--project=${STAGING}`, "--reset"], firebaseEnv(STAGING), {}).reset).toBe(true);
+  test("--reset is refused on the live project, before anything else is checked", () => {
+    expect(() => resolveSeedTarget([`--project=${LIVE}`, "--reset"], firebaseEnv(LIVE), {})).toThrow(
+      /Refusing to reset: millstone-dc47f is a real project/,
+    );
+    expect(() =>
+      resolveSeedTarget(["--reset", `--project=${LIVE}`], firebaseEnv(LIVE), { FIRESTORE_EMULATOR_HOST: EMULATOR }),
+    ).toThrow(/Refusing to reset/);
+    expect(() => resolveSeedTarget(["--project=millstone-prod", "--reset"], firebaseEnv("millstone-prod"), {})).toThrow(
+      /Refusing to reset/,
+    );
   });
 
   test("any other project is refused, even when it matches the env", () => {
     expect(() => resolveSeedTarget(["--project=millstone-prod"], firebaseEnv("millstone-prod"), {})).toThrow(
-      /isn't an allowed staging project/,
+      /isn't the live project/,
     );
-    expect(() => resolveSeedTarget(["--project="], firebaseEnv(STAGING), {})).toThrow(
-      /isn't an allowed staging project/,
+    expect(() => resolveSeedTarget(["--project="], firebaseEnv(LIVE), {})).toThrow(
+      /isn't the live project/,
     );
   });
 
   test("--project that doesn't match FIREBASE_PROJECT_ID is refused", () => {
-    expect(() => resolveSeedTarget([`--project=${STAGING}`], firebaseEnv("demo-millstone"), {})).toThrow(
+    expect(() => resolveSeedTarget([`--project=${LIVE}`], firebaseEnv("demo-millstone"), {})).toThrow(
       /doesn't match FIREBASE_PROJECT_ID/,
     );
   });
 
   test("--project with any emulator variable set is refused", () => {
     expect(() =>
-      resolveSeedTarget([`--project=${STAGING}`], firebaseEnv(STAGING, EMULATOR), { FIRESTORE_EMULATOR_HOST: EMULATOR }),
+      resolveSeedTarget([`--project=${LIVE}`], firebaseEnv(LIVE, EMULATOR), { FIRESTORE_EMULATOR_HOST: EMULATOR }),
     ).toThrow(/FIRESTORE_EMULATOR_HOST is set/);
     expect(() =>
-      resolveSeedTarget([`--project=${STAGING}`], firebaseEnv(STAGING), { FIREBASE_STORAGE_EMULATOR_HOST: "127.0.0.1:9199" }),
+      resolveSeedTarget([`--project=${LIVE}`], firebaseEnv(LIVE), { FIREBASE_STORAGE_EMULATOR_HOST: "127.0.0.1:9199" }),
     ).toThrow(/FIREBASE_STORAGE_EMULATOR_HOST is set/);
   });
 
   test("blank emulator variables count as unset", () => {
     const raw = { FIRESTORE_EMULATOR_HOST: "", FIREBASE_STORAGE_EMULATOR_HOST: "" };
-    expect(resolveSeedTarget([`--project=${STAGING}`], firebaseEnv(STAGING), raw).projectId).toBe(STAGING);
+    expect(resolveSeedTarget([`--project=${LIVE}`], firebaseEnv(LIVE), raw).projectId).toBe(LIVE);
   });
 });
 
@@ -83,6 +91,6 @@ test("NODE_ENV=production is always refused", () => {
     /production/,
   );
   expect(() =>
-    resolveSeedTarget([`--project=${STAGING}`], firebaseEnv(STAGING), { NODE_ENV: "production" }),
+    resolveSeedTarget([`--project=${LIVE}`], firebaseEnv(LIVE), { NODE_ENV: "production" }),
   ).toThrow(/production/);
 });

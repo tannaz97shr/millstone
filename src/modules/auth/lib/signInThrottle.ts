@@ -7,7 +7,7 @@ import { signInThrottleRef } from "@/shared/lib/firebase/collections";
 import { timestampField } from "@/shared/lib/firebase/fieldSchemas";
 import { firestoreRead } from "@/shared/lib/firebase/firestoreRead";
 import { parseDoc } from "@/shared/lib/firebase/parseDoc";
-import { isLocked, recordFailure, type ThrottleState } from "./throttleRules";
+import { isLocked, recordFailure, throttleExpiresAtMs, type ThrottleState } from "./throttleRules";
 
 // Firestore side of the sign-in throttle (rules in throttleRules.ts). The doc
 // ID is a hash of the email, so the collection never holds the address.
@@ -16,12 +16,19 @@ const signInThrottleDocSchema = z.object({
   failures: z.number().int().positive(),
   windowStart: timestampField,
   lockedUntil: timestampField.nullable(),
+  /** For the Firestore TTL policy that prunes old records. Missing on records saved before step 9. */
+  expiresAt: timestampField.optional(),
 });
 
 type SignInThrottleDoc = z.input<typeof signInThrottleDocSchema>;
 
+/** The doc ID for an email's record; the address itself is never stored. */
+export function signInThrottleDocId(normalizedEmail: string): string {
+  return createHash("sha256").update(normalizedEmail).digest("hex");
+}
+
 function throttleDocRef(normalizedEmail: string) {
-  return signInThrottleRef().doc(createHash("sha256").update(normalizedEmail).digest("hex"));
+  return signInThrottleRef().doc(signInThrottleDocId(normalizedEmail));
 }
 
 function toThrottleState(snapshot: DocumentSnapshot): ThrottleState | null {
@@ -39,6 +46,7 @@ function throttleStateToDoc(state: ThrottleState): SignInThrottleDoc {
     failures: state.failures,
     windowStart: Timestamp.fromMillis(state.windowStartMs),
     lockedUntil: state.lockedUntilMs === null ? null : Timestamp.fromMillis(state.lockedUntilMs),
+    expiresAt: Timestamp.fromMillis(throttleExpiresAtMs(state)),
   };
 }
 

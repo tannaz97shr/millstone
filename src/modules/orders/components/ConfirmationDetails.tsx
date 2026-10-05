@@ -13,10 +13,12 @@ export interface ConfirmationDetailsProps {
   order: OrderConfirmation;
   /** The page heading, focused when C7 opens. */
   titleRef: React.Ref<HTMLHeadingElement>;
+  /** Whether the confirmation email went anywhere; the live site has no provider yet. */
+  emailed: boolean;
 }
 
 /** C7's content (AC-C9), from ConfGuestPickup.dc.html. */
-export function ConfirmationDetails({ order, titleRef }: ConfirmationDetailsProps) {
+export function ConfirmationDetails({ order, titleRef, emailed }: ConfirmationDetailsProps) {
   const day = formatPickupDay(order.pickupDate);
   const total = formatCents(order.totalCents);
   const paid = order.paymentStatus === "paid";
@@ -91,10 +93,14 @@ export function ConfirmationDetails({ order, titleRef }: ConfirmationDetailsProp
         </p>
       </section>
 
-      <p>
-        {content.emailed}
-        <strong>{order.contactEmail}</strong>.
-      </p>
+      {emailed ? (
+        <p>
+          {content.emailed}
+          <strong>{order.contactEmail}</strong>.
+        </p>
+      ) : (
+        <p>{content.notEmailed}</p>
+      )}
 
       <ButtonLink href={routes.menu(order.branch.id)} block>
         {content.backToMenu}

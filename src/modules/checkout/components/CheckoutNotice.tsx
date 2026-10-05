@@ -21,6 +21,8 @@ export function CheckoutNotice({ notice, onRetry, onPlaceNew }: CheckoutNoticePr
   switch (notice.kind) {
     case "price_changed":
       return <Notice tone="error">{content.priceChanged(formatCents(notice.totalCents))}</Notice>;
+    case "rate_limited":
+      return <Notice tone="error">{content.rateLimited}</Notice>;
     case "key_mismatch":
       return (
         <Notice tone="error" title={content.keyMismatch.title(notice.orderNumber)}>

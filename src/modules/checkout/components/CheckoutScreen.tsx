@@ -18,6 +18,8 @@ const content = checkoutContent.page;
 export interface CheckoutScreenProps {
   /** The server's ONLINE_PAYMENTS_ENABLED switch. */
   onlinePayments: boolean;
+  /** Whether the confirmation email goes anywhere (sendEmail's emailDeliveryEnabled). */
+  emailed: boolean;
 }
 
 /**
@@ -26,7 +28,7 @@ export interface CheckoutScreenProps {
  * can't be ordered, an item that can't be sold) is explained on C4, so C5
  * sends the customer there; an empty cart goes there too.
  */
-export function CheckoutScreen({ onlinePayments }: CheckoutScreenProps) {
+export function CheckoutScreen({ onlinePayments, emailed }: CheckoutScreenProps) {
   // C4's notices were read there; only what changes from here on sends the customer back.
   useEffect(() => clearCartMessages(), []);
 
@@ -82,6 +84,7 @@ export function CheckoutScreen({ onlinePayments }: CheckoutScreenProps) {
           totalCents={page.summary.totalCents}
           canPlace={canPlace}
           onlinePayments={onlinePayments}
+          emailed={emailed}
           onPlaced={() => setPlaced(true)}
           summary={
             <CheckoutSummary

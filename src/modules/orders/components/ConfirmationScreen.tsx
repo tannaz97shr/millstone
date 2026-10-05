@@ -14,7 +14,7 @@ const content = confirmationContent.page;
  * C7. Shows the order only; the cart was already cleared by checkout once the
  * order was saved, so an old confirmation link never touches a new cart.
  */
-export function ConfirmationScreen({ orderId }: { orderId: string }) {
+export function ConfirmationScreen({ orderId, emailed }: { orderId: string; emailed: boolean }) {
   const query = useOrderConfirmationQuery(orderId);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const hasOrder = Boolean(query.data);
@@ -24,7 +24,7 @@ export function ConfirmationScreen({ orderId }: { orderId: string }) {
     if (hasOrder && titleRef.current) focusWithoutTabStop(titleRef.current);
   }, [hasOrder]);
 
-  if (query.data) return <ConfirmationDetails order={query.data} titleRef={titleRef} />;
+  if (query.data) return <ConfirmationDetails order={query.data} titleRef={titleRef} emailed={emailed} />;
   if (query.isError) {
     if (toApiFailure(query.error).status === 404) return <p>{content.notFound}</p>;
     return (

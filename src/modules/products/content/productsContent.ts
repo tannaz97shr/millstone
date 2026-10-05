@@ -3,7 +3,7 @@ import {
   PRODUCT_DESCRIPTION_MAX,
   PRODUCT_NAME_MAX,
 } from "../lib/productFields";
-import { PHOTO_MIN_HEIGHT, PHOTO_MIN_WIDTH } from "../lib/photoRules";
+import { PHOTO_MIN_HEIGHT, PHOTO_MIN_WIDTH, PHOTO_SOURCE_MAX_BYTES } from "../lib/photoRules";
 
 // A5 products (owner only). From design/admin/Products.dc.html, ProductNew,
 // ProductEdit and ProductHide unless marked "undesigned" (listed in
@@ -81,6 +81,12 @@ export const productsContent = {
       hint: "A real Millstone bake, natural light, 4:3. Until there’s a photo, the menu shows the first letter.",
       /** Undesigned. */
       chosen: (fileName: string) => `New photo: ${fileName}. It’s cropped to 4:3 and saved when you save.`,
+      /** Undesigned: while the browser shrinks it for upload. */
+      preparing: "Preparing photo…",
+      /** Undesigned. */
+      sourceTooLarge: `Choose a photo under ${PHOTO_SOURCE_MAX_BYTES / (1024 * 1024)} MB.`,
+      /** Undesigned. */
+      prepareFailed: "We couldn’t prepare that photo. Try choosing it again.",
     },
     active: {
       label: "Show on menus",
@@ -104,7 +110,7 @@ export const productsContent = {
     photoFailed: (name: string, why: string) => `${name} is saved, but the photo didn’t upload. ${why}`,
     photoWhy: {
       unsupported: "Choose a JPEG, PNG or WebP photo.",
-      tooLarge: "Choose a photo under 10 MB.",
+      tooLarge: "This photo is still too big after shrinking it. Choose another photo.",
       tooSmall: `Choose a bigger photo, at least ${PHOTO_MIN_WIDTH} × ${PHOTO_MIN_HEIGHT} pixels.`,
       failed: "Try choosing it again.",
     },

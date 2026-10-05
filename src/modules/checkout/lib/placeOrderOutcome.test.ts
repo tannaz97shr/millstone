@@ -75,6 +75,10 @@ describe("placeOrderProblem", () => {
     expect(placeOrderProblem(failure("unknown_branch"))).toEqual({ kind: "branch_gone" });
   });
 
+  test("too many orders from this address says so, without Try again", () => {
+    expect(placeOrderProblem(failure("rate_limited"))).toEqual({ kind: "rate_limited" });
+  });
+
   test("no answer, a server error, an outage or a missing detail all offer Try again", () => {
     for (const code of ["network_error", "server_error", "unavailable", "payment_method_unavailable"] as const) {
       expect(placeOrderProblem(failure(code))).toEqual({ kind: "failed" });

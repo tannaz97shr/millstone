@@ -2,7 +2,7 @@ import "server-only";
 import { applicationDefault, cert, getApp, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
-import { isUsingEmulator, readFirebaseEnv } from "./env";
+import { isUsingEmulator, privateKeyPem, readFirebaseEnv } from "./env";
 import { dropBlankEmulatorVars } from "./firebaseTarget";
 
 // Server-only Firebase Admin. Initialised lazily and once, so hot reloads and
@@ -24,15 +24,16 @@ function firebaseApp(): App {
   // left out entirely: the SDK rejects an explicit `credential: undefined`.
   if (isUsingEmulator(env)) return initializeApp(options);
 
-  // A host passes the service account as variables; a local staging run points
+  // Vercel passes the service account as variables; a local live run points
   // GOOGLE_APPLICATION_CREDENTIALS at its JSON file, which the SDK reads itself.
-  if (env.FIREBASE_CLIENT_EMAIL && env.FIREBASE_PRIVATE_KEY) {
+  const privateKey = privateKeyPem(env);
+  if (env.FIREBASE_CLIENT_EMAIL && privateKey) {
     return initializeApp({
       ...options,
       credential: cert({
         projectId: env.FIREBASE_PROJECT_ID,
         clientEmail: env.FIREBASE_CLIENT_EMAIL,
-        privateKey: env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+        privateKey,
       }),
     });
   }
