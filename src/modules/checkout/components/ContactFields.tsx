@@ -9,10 +9,12 @@ const content = checkoutContent.details;
 
 export interface ContactFieldsProps {
   form: UseFormReturn<CheckoutFormValues, unknown, CheckoutFormOutput>;
+  /** Whether a confirmation email goes anywhere; the email hint promises one only then. */
+  emailed: boolean;
 }
 
 /** "Your details": name, mobile, email and optional notes (AC-C4). */
-export function ContactFields({ form }: ContactFieldsProps) {
+export function ContactFields({ form, emailed }: ContactFieldsProps) {
   const { register, formState } = form;
   const { errors } = formState;
   return (
@@ -41,7 +43,7 @@ export function ContactFields({ form }: ContactFieldsProps) {
       />
       <TextField
         label={content.email.label}
-        hint={content.email.hint}
+        hint={emailed ? content.email.hint : content.email.hintNoEmail}
         type="email"
         inputMode="email"
         autoComplete="email"

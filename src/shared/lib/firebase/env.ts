@@ -1,13 +1,13 @@
 import "server-only";
 import { z } from "zod";
-import { isStagingTarget, setEmulatorVars, STAGING_MARKER } from "./firebaseTarget";
+import { isLiveTarget, LIVE_MARKER, setEmulatorVars } from "./firebaseTarget";
 
 // Firebase settings from the environment. Credentials are only required when
 // not talking to the local emulator: either a service-account file
-// (GOOGLE_APPLICATION_CREDENTIALS, for local staging runs) or its email and
-// key as variables (for a host).
+// (GOOGLE_APPLICATION_CREDENTIALS, for local live runs) or its email and
+// key as variables (for Vercel).
 
-/** An empty value counts as unset: `dev:staging` blanks the emulator variables that way. */
+/** An empty value counts as unset: `dev:live` blanks the emulator variables that way. */
 const optionalText = z.preprocess((value) => (value === "" ? undefined : value), z.string().min(1).optional());
 
 const firebaseEnvSchema = z
@@ -19,17 +19,18 @@ const firebaseEnvSchema = z
     FIREBASE_CLIENT_EMAIL: optionalText,
     FIREBASE_PRIVATE_KEY: optionalText,
     GOOGLE_APPLICATION_CREDENTIALS: optionalText,
-    [STAGING_MARKER]: optionalText,
+    [LIVE_MARKER]: optionalText,
+    VERCEL_ENV: optionalText,
   })
   .superRefine((env, ctx) => {
-    // Staging mode must never reach an emulator, whatever .env.local says.
-    const staging = isStagingTarget(env);
-    if (staging) {
+    // dev:live and Vercel production must never reach an emulator, whatever .env.local says.
+    const live = isLiveTarget(env);
+    if (live) {
       for (const name of setEmulatorVars(env)) {
-        ctx.addIssue({ code: "custom", path: [name], message: "must not be set in staging mode" });
+        ctx.addIssue({ code: "custom", path: [name], message: "must not be set for the live project" });
       }
     }
-    if ((env.FIRESTORE_EMULATOR_HOST && !staging) || env.GOOGLE_APPLICATION_CREDENTIALS) return;
+    if ((env.FIRESTORE_EMULATOR_HOST && !live) || env.GOOGLE_APPLICATION_CREDENTIALS) return;
     for (const key of ["FIREBASE_CLIENT_EMAIL", "FIREBASE_PRIVATE_KEY"] as const) {
       if (!env[key]) {
         ctx.addIssue({
@@ -61,5 +62,14 @@ export function isUsingEmulator(env: FirebaseEnv): boolean {
 
 /** One line naming the backend, never a value other than the (public) project ID. */
 export function describeBackend(env: FirebaseEnv): string {
-  return isUsingEmulator(env) ? "Firebase: emulator" : `Firebase: project ${env.FIREBASE_PROJECT_ID}`;
+  return isUsingEmulator(env) ? "Firebase: emulator" : `Firebase: LIVE project ${env.FIREBASE_PROJECT_ID}`;
+}
+
+/**
+ * The service-account key as PEM. A host's single-line field holds it with
+ * literal "\n" for each line break (as in the JSON key file); real line
+ * breaks work too.
+ */
+export function privateKeyPem(env: FirebaseEnv): string | undefined {
+  return env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
 }

@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { PHOTO_MAX_WIDTH, isLargeEnough, isPhotoFormat, photoTargetSize } from "./photoRules";
+import {
+  PHOTO_BODY_MAX_BYTES,
+  PHOTO_MAX_WIDTH,
+  browserResizeSize,
+  isLargeEnough,
+  isPhotoFormat,
+  photoTargetSize,
+} from "./photoRules";
 import {
   formatPriceInput,
   normaliseCategory,
@@ -154,4 +161,33 @@ describe("the product form and the API body", () => {
     expect(productUpdateSchema.safeParse(body).success).toBe(false);
     expect(productUpdateSchema.safeParse({ ...body, expectedVersion: 3 }).success).toBe(true);
   });
+});
+
+describe("browserResizeSize", () => {
+  test("a 12 MP phone photo shrinks to 2048 on the long edge, either way up", () => {
+    expect(browserResizeSize(4032, 3024)).toEqual({ width: 2048, height: 1536 });
+    expect(browserResizeSize(3024, 4032)).toEqual({ width: 1536, height: 2048 });
+  });
+
+  test("never upscales a small photo", () => {
+    expect(browserResizeSize(1600, 1200)).toEqual({ width: 1600, height: 1200 });
+    expect(browserResizeSize(500, 400)).toEqual({ width: 500, height: 400 });
+  });
+
+  test("a wide panorama keeps enough height for the full 4:3 crop", () => {
+    const shrunk = browserResizeSize(8000, 1000);
+    expect(shrunk).toEqual({ width: 7200, height: 900 });
+    expect(photoTargetSize(shrunk.width, shrunk.height)).toEqual(photoTargetSize(8000, 1000));
+  });
+
+  test("the server's crop is the same from the shrunk copy as from the original", () => {
+    for (const [w, h] of [[4032, 3024], [3024, 4032], [6000, 4000], [4000, 6000], [5000, 900], [900, 5000]]) {
+      const shrunk = browserResizeSize(w, h);
+      expect(photoTargetSize(shrunk.width, shrunk.height)).toEqual(photoTargetSize(w, h));
+    }
+  });
+});
+
+test("the photo body cap stays under Vercel's 4.5 MB request limit", () => {
+  expect(PHOTO_BODY_MAX_BYTES).toBeLessThan(4.5 * 1024 * 1024);
 });

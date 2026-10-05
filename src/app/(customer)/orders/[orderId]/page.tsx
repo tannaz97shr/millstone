@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ConfirmationScreen } from "@/modules/orders/components/ConfirmationScreen";
 import { orderRouteParamsSchema } from "@/modules/orders/lib/orderParams";
 import { prefetchOrderConfirmation } from "@/modules/orders/lib/prefetchOrderConfirmation";
+import { emailDeliveryEnabled } from "@/shared/lib/email/sendEmail";
 import { getQueryClient } from "@/shared/lib/query/getQueryClient";
 
 // C7. Public: the order's unguessable ID is the only credential (see
@@ -17,7 +18,7 @@ export default async function OrderConfirmationPage({ params }: { params: Promis
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <ConfirmationScreen orderId={orderId} />
+      <ConfirmationScreen orderId={orderId} emailed={emailDeliveryEnabled()} />
     </HydrationBoundary>
   );
 }

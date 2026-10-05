@@ -11,8 +11,10 @@ import { createProduct, updateProduct, uploadProductPhoto } from "../api/product
 import { adminProductsQueryOptions } from "../api/productsQueries";
 import { adminProductKeys } from "../api/queryKeys";
 import { productsContent } from "../content/productsContent";
+import { PHOTO_MAX_BYTES, PHOTO_SOURCE_MAX_BYTES } from "../lib/photoRules";
 import { formatPriceInput } from "../lib/productFields";
 import { withSavedProduct } from "../lib/productList";
+import { resizePhoto } from "../lib/resizePhoto";
 import {
   PRODUCT_FORM_FIELDS,
   productFormSchema,
@@ -94,12 +96,45 @@ export function useProductForm({ product, onSaved }: UseProductFormOptions) {
   useEffect(() => () => {
     if (previewRef.current) URL.revokeObjectURL(previewRef.current);
   }, []);
-  const choosePhoto = useCallback((file: File | null) => {
+  const setChosenPhoto = useCallback((file: File | null) => {
     if (previewRef.current) URL.revokeObjectURL(previewRef.current);
     const previewUrl = file ? URL.createObjectURL(file) : null;
     previewRef.current = previewUrl;
     setPhoto(file && previewUrl ? { file, previewUrl } : null);
   }, []);
+
+  // A chosen file is shrunk in the browser before it counts as chosen, so the
+  // upload fits Vercel's body limit. Only the latest choice applies.
+  const [photoPreparing, setPhotoPreparing] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const prepareAttempt = useRef(0);
+  const choosePhoto = useCallback(
+    async (file: File) => {
+      const attempt = ++prepareAttempt.current;
+      const isLatest = () => attempt === prepareAttempt.current;
+      setPhotoError(null);
+      if (file.size > PHOTO_SOURCE_MAX_BYTES) {
+        setPhotoError(content.form.photo.sourceTooLarge);
+        return;
+      }
+      setPhotoPreparing(true);
+      try {
+        const resized = await resizePhoto(file);
+        if (!isLatest()) return;
+        // A file this browser can't decode goes up as it is if it fits: the server says what it is.
+        const upload = resized ?? (file.size <= PHOTO_MAX_BYTES ? file : null);
+        if (!upload) setPhotoError(content.messages.photoWhy.unsupported);
+        else if (upload.size > PHOTO_MAX_BYTES) setPhotoError(content.messages.photoWhy.tooLarge);
+        else setChosenPhoto(upload);
+      } catch (error) {
+        logError(error, "prepare photo", { level: "warn" });
+        if (isLatest()) setPhotoError(content.form.photo.prepareFailed);
+      } finally {
+        if (isLatest()) setPhotoPreparing(false);
+      }
+    },
+    [setChosenPhoto],
+  );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<StatusMessage | null>(null);
 
@@ -170,11 +205,12 @@ export function useProductForm({ product, onSaved }: UseProductFormOptions) {
       try {
         saved = (await uploadProductPhoto(saved.id, photo.file, saved.version)).product;
         remember(saved);
-        choosePhoto(null);
+        setChosenPhoto(null);
       } catch (error) {
         logError(error, `upload photo ${saved.id}`, { level: "warn" });
         const failure = toApiFailure(error);
         const why = content.messages.photoWhy;
+        // Vercel's own 413 (over its 4.5 MB body limit) isn't our JSON, so the status counts too.
         if (failure.code === "product_changed") {
           await reloadLatest(saved.id).catch((reloadError: unknown) => logError(reloadError, "reload product after 409"));
         }
@@ -184,7 +220,7 @@ export function useProductForm({ product, onSaved }: UseProductFormOptions) {
             saved.name,
             failure.code === "unsupported_image"
               ? why.unsupported
-              : failure.code === "file_too_large"
+              : failure.code === "file_too_large" || failure.status === 413
                 ? why.tooLarge
                 : failure.code === "image_too_small"
                   ? why.tooSmall
@@ -218,6 +254,8 @@ export function useProductForm({ product, onSaved }: UseProductFormOptions) {
     current,
     photo,
     choosePhoto,
+    photoPreparing,
+    photoError,
     saving,
     message,
     dismissMessage: () => setMessage(null),

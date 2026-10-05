@@ -4,16 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:staging": "bun --no-env-file --env-file=.env.staging.local scripts/staging/dev.ts",
+    "dev:live": "bun --no-env-file --env-file=.env.live.local scripts/live/dev.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "test": "bun test",
     "emulators": "mkdir -p .emulator-data && firebase emulators:start --only firestore,storage --import=.emulator-data --export-on-exit=.emulator-data",
     "seed": "bun --conditions=react-server scripts/seed/index.ts",
-    "seed:staging": "bun --no-env-file --env-file=.env.staging.local --conditions=react-server scripts/seed/index.ts --project=millstone-dc47f",
+    "seed:live": "bun --no-env-file --env-file=.env.live.local --conditions=react-server scripts/seed/index.ts --project=millstone-dc47f",
     "migrate:orders": "bun --conditions=react-server scripts/migrations/2026-10-order-admin-fields.ts",
-    "migrate:orders:staging": "bun --no-env-file --env-file=.env.staging.local --conditions=react-server scripts/migrations/2026-10-order-admin-fields.ts --project=millstone-dc47f"
+    "cleanup:smoke:live": "bun --no-env-file --env-file=.env.live.local --conditions=react-server scripts/live/cleanupSmoke.ts --project=millstone-dc47f",
+    "migrate:orders:live": "bun --no-env-file --env-file=.env.live.local --conditions=react-server scripts/migrations/2026-10-order-admin-fields.ts --project=millstone-dc47f"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

@@ -1,6 +1,6 @@
 {
   "projects": {
     "default": "demo-millstone",
-    "staging": "millstone-dc47f"
+    "live": "millstone-dc47f"
   }
 }

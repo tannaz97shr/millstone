@@ -1,13 +1,13 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useId, useRef } from "react";
 import { Button } from "@/shared/components/atoms/Button/Button";
 import { FieldError } from "@/shared/components/atoms/Field/FieldError";
 import { FieldHint } from "@/shared/components/atoms/Field/FieldHint";
 import { FieldLabel } from "@/shared/components/atoms/Field/FieldLabel";
 import { productsContent } from "../content/productsContent";
 import type { ChosenPhoto } from "../hooks/useProductForm";
-import { PHOTO_ACCEPT, PHOTO_MAX_BYTES } from "../lib/photoRules";
+import { PHOTO_ACCEPT } from "../lib/photoRules";
 import { ProductThumb } from "./ProductThumb";
 
 const content = productsContent.form.photo;
@@ -17,31 +17,28 @@ export interface PhotoFieldProps {
   /** The saved photo's URL, if there is one. */
   currentUrl: string | null;
   chosen: ChosenPhoto | null;
-  onChoose: (file: File | null) => void;
+  /** True while the chosen file is being shrunk for upload. */
+  preparing: boolean;
+  /** Why the last file chosen can't be used, if it can't. */
+  error: string | null;
+  onChoose: (file: File) => void;
 }
 
 /**
- * The product's photo (optional): a preview, then "Choose photo". The file
- * is only checked here for size, to say so straight away; the server decides
- * from the bytes whether it's a JPEG, PNG or WebP, and crops it to 4:3.
+ * The product's photo (optional): a preview, then "Choose photo". The form
+ * shrinks the file in the browser (useProductForm); the server decides from
+ * the bytes whether it's a JPEG, PNG or WebP, and crops it to 4:3.
  */
-export function PhotoField({ name, currentUrl, chosen, onChoose }: PhotoFieldProps) {
+export function PhotoField({ name, currentUrl, chosen, preparing, error, onChoose }: PhotoFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const hintId = useId();
   const errorId = useId();
-  const [error, setError] = useState<string | null>(null);
 
   const onFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     // Cleared so choosing the same file again still counts as a change.
     event.target.value = "";
-    if (!file) return;
-    if (file.size > PHOTO_MAX_BYTES) {
-      setError(productsContent.messages.photoWhy.tooLarge);
-      return;
-    }
-    setError(null);
-    onChoose(file);
+    if (file) onChoose(file);
   };
 
   return (
@@ -73,7 +70,9 @@ export function PhotoField({ name, currentUrl, chosen, onChoose }: PhotoFieldPro
             className="hidden"
             onChange={onFile}
           />
-          <FieldHint id={hintId}>{chosen ? content.chosen(chosen.file.name) : content.hint}</FieldHint>
+          <FieldHint id={hintId}>
+            {preparing ? content.preparing : chosen ? content.chosen(chosen.file.name) : content.hint}
+          </FieldHint>
           <FieldError id={errorId} error={error} />
         </div>
       </div>

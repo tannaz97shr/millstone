@@ -39,6 +39,8 @@ export type ApiErrorCode =
   | "invalid_credentials"
   /** Staff sign-in: too many failed tries for this email; locked for a while (429). */
   | "too_many_attempts"
+  /** Orders and staff sign-in: too many requests from this address; `Retry-After` says when to try again (429). */
+  | "rate_limited"
   /**
    * Admin: the order isn't in the state the staff member saw, because it was
    * changed on another screen (409). Carries the order's number and status now.
@@ -112,6 +114,8 @@ export class ApiError extends Error {
     readonly code: ApiErrorCode,
     message: string,
     readonly details: ApiErrorDetails = {},
+    /** Extra response headers, e.g. Retry-After on a 429. */
+    readonly headers: Record<string, string> = {},
   ) {
     super(message);
     this.name = "ApiError";

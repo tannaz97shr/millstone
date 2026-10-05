@@ -29,3 +29,11 @@ export function recordFailure(state: ThrottleState | null, nowMs: number): Throt
     lockedUntilMs: failures >= MAX_FAILURES ? nowMs + LOCK_MS : null,
   };
 }
+
+/**
+ * When a record no longer matters and can be deleted (Firestore TTL on
+ * `expiresAt`): once its window has passed and any lock has ended.
+ */
+export function throttleExpiresAtMs(state: ThrottleState): number {
+  return Math.max(state.windowStartMs + WINDOW_MS, state.lockedUntilMs ?? 0);
+}

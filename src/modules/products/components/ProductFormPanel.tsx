@@ -34,10 +34,8 @@ export interface ProductFormPanelProps {
 
 /** A5's side panel for a new or an edited product (ProductNew, ProductEdit, ProductHide). */
 export function ProductFormPanel({ product, categories, branchCount, onClose, onSaved }: ProductFormPanelProps) {
-  const { form, current, photo, choosePhoto, saving, message, dismissMessage, submit } = useProductForm({
-    product,
-    onSaved,
-  });
+  const { form, current, photo, choosePhoto, photoPreparing, photoError, saving, message, dismissMessage, submit } =
+    useProductForm({ product, onSaved });
   const { register, control, watch, setValue, formState } = form;
   const errors = formState.errors;
   const [name, category, newCategory, price, isActive] = watch(["name", "category", "newCategory", "price", "isActive"]);
@@ -74,7 +72,7 @@ export function ProductFormPanel({ product, categories, branchCount, onClose, on
             form={FORM_ID}
             icon="check"
             className="grow"
-            aria-disabled={saving || undefined}
+            aria-disabled={saving || photoPreparing || undefined}
           >
             {saving ? content.saving : current ? content.saveEdit : content.saveNew}
           </Button>
@@ -90,7 +88,8 @@ export function ProductFormPanel({ product, categories, branchCount, onClose, on
         className="flex flex-col gap-6"
         onSubmit={(event) => {
           event.preventDefault();
-          if (!saving) void submit();
+          // A photo still being prepared would be left out of the save.
+          if (!saving && !photoPreparing) void submit();
         }}
       >
         {message && (
@@ -163,7 +162,14 @@ export function ProductFormPanel({ product, categories, branchCount, onClose, on
           </Notice>
         )}
 
-        <PhotoField name={name} currentUrl={current?.imageUrl ?? null} chosen={photo} onChoose={choosePhoto} />
+        <PhotoField
+          name={name}
+          currentUrl={current?.imageUrl ?? null}
+          chosen={photo}
+          preparing={photoPreparing}
+          error={photoError}
+          onChoose={(file) => void choosePhoto(file)}
+        />
 
         <div className="flex flex-col gap-3 border-t-2 border-line pt-2">
           <Controller

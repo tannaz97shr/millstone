@@ -25,7 +25,12 @@ export const checkoutContent = {
     guestNote: "No account needed. We'll only use these to reach you about this order.",
     name: { label: "Name" },
     phone: { label: "Mobile number", hint: "So we can call if something changes." },
-    email: { label: "Email", hint: "We'll send your confirmation here." },
+    email: {
+      label: "Email",
+      hint: "We'll send your confirmation here.",
+      /** Undesigned: the live site sends no email yet (no provider). */
+      hintNoEmail: "So we can reach you about your order.",
+    },
     notes: { label: "Notes for the bakery", hint: "Like “Sliced, please”." },
   },
 
@@ -59,6 +64,8 @@ export const checkoutContent = {
       body: "Check your connection and try again. Everything you've typed is still here.",
       retry: "Try again",
     },
+    rateLimited:
+      "There have been a lot of orders from this connection. Try again in an hour, or call the branch to order.",
     keyMismatch: {
       title: (orderNumber: string) => `Your earlier order ${orderNumber} was already placed`,
       body: "It went through before you changed your order. See that order, or place what's in your order now as a new one.",

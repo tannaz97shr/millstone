@@ -7,12 +7,12 @@ import { logError } from "@/shared/utils/logError";
 import { resolveSeedTarget } from "../seed/lib/guard";
 
 // bun run migrate:orders            (emulator)
-// bun run migrate:orders:staging    (millstone-dc47f, .env.staging.local)
+// bun run migrate:orders:live       (millstone-dc47f, .env.live.local)
 // Step 6 Batch B (4 Oct 2026): adds the admin fields to orders saved before
 // them: searchTokens, cancellationNote and collectUndo, and turns a free-text
 // cancellationReason into a reason code (anything unknown becomes "other"
 // with the old text as its note). Idempotent: a second run changes nothing.
-// Same safety rules as the seed: the emulator, or an allow-listed staging project.
+// Same safety rules as the seed: the emulator, or the live project.
 
 const KNOWN_WORDS: Record<string, CancellationReason> = {
   "not collected": "not_collected",

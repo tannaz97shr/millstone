@@ -49,6 +49,8 @@ export const confirmationContent = {
   },
 
   emailed: "We've emailed these details to ",
+  /** Undesigned: the live site sends no email yet (no provider). */
+  notEmailed: "Keep this page: it has your order details. We don't send emails yet.",
   backToMenu: "Back to the menu",
 
   email: {

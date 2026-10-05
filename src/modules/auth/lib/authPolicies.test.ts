@@ -1,7 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import { safeAdminReturnPath } from "./returnPath";
 import { isSessionExpired, SESSION_MAX_AGE_SECONDS } from "./sessionPolicy";
-import { isLocked, LOCK_MS, MAX_FAILURES, recordFailure, WINDOW_MS, type ThrottleState } from "./throttleRules";
+import {
+  isLocked,
+  LOCK_MS,
+  MAX_FAILURES,
+  recordFailure,
+  throttleExpiresAtMs,
+  WINDOW_MS,
+  type ThrottleState,
+} from "./throttleRules";
 
 describe("safeAdminReturnPath", () => {
   test("keeps an admin path with its query", () => {
@@ -81,5 +89,13 @@ describe("sign-in throttle", () => {
 
   test("no record is never locked", () => {
     expect(isLocked(null, t0)).toBe(false);
+  });
+
+  test("a record expires once its window has passed and its lock has ended", () => {
+    const one = recordFailure(null, t0);
+    expect(throttleExpiresAtMs(one)).toBe(t0 + WINDOW_MS);
+    const locked = recordFailure(failTimes(MAX_FAILURES - 1), t0 + 5000);
+    expect(throttleExpiresAtMs(locked)).toBe(t0 + 5000 + LOCK_MS);
+    expect(isLocked(locked, throttleExpiresAtMs(locked))).toBe(false);
   });
 });

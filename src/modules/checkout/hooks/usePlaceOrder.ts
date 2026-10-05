@@ -23,7 +23,10 @@ import type { CheckoutFormOutput, CheckoutFormValues } from "../lib/checkoutSche
 import { placeOrderProblem, type PlaceOrderProblem } from "../lib/placeOrderOutcome";
 
 /** Problems C5 shows itself; the rest send the customer back to C4. */
-export type CheckoutNotice = Extract<PlaceOrderProblem, { kind: "price_changed" | "key_mismatch" | "failed" }>;
+export type CheckoutNotice = Extract<
+  PlaceOrderProblem,
+  { kind: "price_changed" | "key_mismatch" | "rate_limited" | "failed" }
+>;
 
 export interface PlaceOrderOptions {
   branch: BranchSummary | undefined;

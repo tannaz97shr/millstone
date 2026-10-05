@@ -21,4 +21,6 @@ export const signInContent = {
   forgotten: "Forgotten your password? Ask the owner to reset it.",
   locked: "Too many tries. Wait 15 minutes and try again, or ask the owner.",
   failed: "We couldn't sign you in just now. Check the connection and try again.",
+  /** Undesigned: too many tries from this address, whatever the email (per-IP limit). */
+  rateLimited: "Too many sign-in tries from this network. Wait 15 minutes and try again, or ask the owner.",
 } as const;

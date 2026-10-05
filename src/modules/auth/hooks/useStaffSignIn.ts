@@ -14,7 +14,13 @@ import {
 } from "../lib/signInSchema";
 
 /** What A1 says after a refused sign-in. */
-export type SignInProblem = "invalid" | "locked" | "failed";
+export type SignInProblem = "invalid" | "locked" | "rateLimited" | "failed";
+
+const PROBLEMS: Partial<Record<string, SignInProblem>> = {
+  invalid_credentials: "invalid",
+  too_many_attempts: "locked",
+  rate_limited: "rateLimited",
+};
 
 /**
  * A1's form and its submit. On success the browser loads the page it came
@@ -36,11 +42,9 @@ export function useStaffSignIn(returnTo: string | null) {
         window.location.assign(redirectTo);
       } catch (error) {
         const failure = toApiFailure(error);
-        const expected = failure.code === "invalid_credentials" || failure.code === "too_many_attempts";
+        const expected = PROBLEMS[failure.code];
         logError(error, `useStaffSignIn: ${failure.code}`, { level: expected ? "warn" : "error" });
-        setProblem(
-          failure.code === "invalid_credentials" ? "invalid" : failure.code === "too_many_attempts" ? "locked" : "failed",
-        );
+        setProblem(expected ?? "failed");
         // The form focuses the message; the password is cleared for the next try.
         form.resetField("password");
       }

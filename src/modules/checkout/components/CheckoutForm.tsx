@@ -31,6 +31,8 @@ export interface CheckoutFormProps {
   /** The lines are priced from the current menu, so the order can be placed. */
   canPlace: boolean;
   onlinePayments: boolean;
+  /** Whether the confirmation email goes anywhere (sendEmail's emailDeliveryEnabled). */
+  emailed: boolean;
   /** The order is saved; C7 opens next. */
   onPlaced: () => void;
   /** The order summary card, rendered first inside the form. */
@@ -48,6 +50,7 @@ export function CheckoutForm({
   totalCents,
   canPlace,
   onlinePayments,
+  emailed,
   onPlaced,
   summary,
 }: CheckoutFormProps) {
@@ -98,7 +101,7 @@ export function CheckoutForm({
     >
       {summary}
       <div inert={pending} className="flex flex-col gap-6">
-        <ContactFields form={form} />
+        <ContactFields form={form} emailed={emailed} />
         <PaymentChoice control={form.control} onlinePayments={onlinePayments} />
       </div>
       {place.notice && (
