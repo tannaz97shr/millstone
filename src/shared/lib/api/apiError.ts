@@ -1,4 +1,11 @@
-import type { Cents, IsoDate, OrderId, ProductId, VisibleOrderStatus } from "@/shared/domain";
+import type {
+  AvailabilityState,
+  Cents,
+  IsoDate,
+  OrderId,
+  ProductId,
+  VisibleOrderStatus,
+} from "@/shared/domain";
 
 // The error shape every API route returns, shared by the route handlers and
 // the browser's API client. Messages are for developers; screens show their
@@ -43,6 +50,22 @@ export type ApiErrorCode =
   | "undo_expired"
   /** Admin: Collected on an unpaid order without "Yes, paid" (409). */
   | "payment_unconfirmed"
+  /**
+   * Admin (A4): the product's row at this branch isn't what the staff member
+   * saw, because it was changed on another screen (409). Carries the row now.
+   */
+  | "availability_changed"
+  /**
+   * Admin (A5): the product was saved on another screen since the form read
+   * it (409). Carries the version now; nothing is written.
+   */
+  | "product_changed"
+  /** Admin (A5): a photo over the size limit, refused before it's read in full (413). */
+  | "file_too_large"
+  /** Admin (A5): the file's bytes aren't a JPEG, PNG or WebP, whatever its name says (415). */
+  | "unsupported_image"
+  /** Admin (A5): a photo smaller than the minimum size (422). */
+  | "image_too_small"
   /** Firestore didn't answer in time (503). */
   | "unavailable"
   | "server_error";
@@ -74,6 +97,10 @@ export interface ApiErrorBody {
     /** On the admin's order action errors: which order, and its status now. */
     orderNumber?: string;
     currentStatus?: VisibleOrderStatus;
+    /** On availability_changed: the product's row at the branch now. */
+    currentAvailability?: AvailabilityState;
+    /** On product_changed: the product's version now. */
+    currentVersion?: number;
   };
 }
 

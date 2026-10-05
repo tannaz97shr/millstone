@@ -23,8 +23,8 @@ export interface FilterButtonsProps<Value extends string> {
   className?: string;
 }
 
-// The pressed button is filled with ink (A2/A4 filters); the others stay secondary.
-const pressedClasses =
+// The pressed button is filled with ink (A2/A4 filters, A5 categories); the others stay secondary.
+export const pressedClasses =
   "aria-pressed:border-ink! aria-pressed:bg-ink! aria-pressed:text-flour-raised! whitespace-nowrap";
 
 /**

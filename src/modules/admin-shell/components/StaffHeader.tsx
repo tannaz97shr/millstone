@@ -19,7 +19,7 @@ export function StaffHeader({ role, branchName }: StaffHeaderProps) {
   const owner = role === "owner";
   const nav: AdminNavItem[] = [
     { href: routes.admin.home, label: content.nav.orders },
-    { href: routes.admin.availability, label: content.nav.availability },
+    { href: routes.admin.availability(), label: content.nav.availability },
     ...(owner ? [{ href: routes.admin.products, label: content.nav.products }] : []),
   ];
 

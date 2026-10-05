@@ -51,7 +51,7 @@ export function SidePanel({
       id={id}
       data-modal
       aria-labelledby={titleId}
-      className="fixed inset-x-0 top-20 bottom-0 m-0 h-auto max-h-none w-full max-w-none justify-end bg-ink/25 p-0 text-ink backdrop:bg-transparent open:flex"
+      className="fixed inset-x-0 top-20 bottom-0 m-0 h-auto max-h-none w-full max-w-none justify-end overflow-hidden bg-ink/25 p-0 text-ink backdrop:bg-transparent open:flex"
     >
       {open && (
         <div

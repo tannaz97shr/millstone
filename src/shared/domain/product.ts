@@ -17,4 +17,9 @@ export interface Product {
   /** Null until a real photo exists; the UI shows the first letter instead. */
   image: ProductImage | null;
   isActive: boolean;
+  /**
+   * Goes up by one on every save. An admin edit sends the version it read,
+   * so a change made on another screen in between is refused, not overwritten.
+   */
+  version: number;
 }

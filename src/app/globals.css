@@ -129,6 +129,11 @@
     scroll-padding-top: 80px;
   }
 
+  /* A4/A5: a status line also sticks, under the header (up to two lines of message). */
+  :root:has([data-admin-header]):has([data-sticky-status]) {
+    scroll-padding-top: 200px;
+  }
+
   /* No page scroll behind an open Sheet or Dialog. */
   :root:has(dialog[data-modal][open]) {
     overflow: hidden;

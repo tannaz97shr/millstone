@@ -10,4 +10,6 @@ export const productDocSchema = z.object({
   priceCents: centsField.positive(),
   image: z.object({ path: z.string().min(1), url: z.url() }).nullable(),
   isActive: z.boolean(),
+  /** Added in step 7; products saved before it read as 0 (no migration needed). */
+  version: z.number().int().nonnegative().default(0),
 });

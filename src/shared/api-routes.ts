@@ -23,8 +23,18 @@ export const apiRoutes = {
     order: (orderId: string) => `/api/admin/orders/${encodeURIComponent(orderId)}`,
     /** POST: ready, collect, undo, cancel or mark refunded. */
     orderAction: (orderId: string) => `/api/admin/orders/${encodeURIComponent(orderId)}/actions`,
-    /** GET: the product catalogue (owner only). */
+    /** GET: A4, every active product with its row at one branch. */
+    branchAvailability: (branchId: string) =>
+      `/api/admin/branches/${encodeURIComponent(branchId)}/availability`,
+    /** POST: switch on or off, mark sold out for a date, or back on sale. */
+    branchAvailabilityAction: (branchId: string) =>
+      `/api/admin/branches/${encodeURIComponent(branchId)}/availability/actions`,
+    /** GET: the product catalogue; POST: a new product (owner only). */
     products: "/api/admin/products",
+    /** PATCH: save a product's fields, hide or show it. */
+    product: (productId: string) => `/api/admin/products/${encodeURIComponent(productId)}`,
+    /** POST (multipart): a new photo for the product. */
+    productPhoto: (productId: string) => `/api/admin/products/${encodeURIComponent(productId)}/photo`,
   },
 } as const;
 

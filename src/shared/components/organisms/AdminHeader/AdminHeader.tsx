@@ -61,7 +61,7 @@ export function AdminHeader({
             key={item.href}
             href={item.href}
             aria-current={isCurrent(pathname, item.href, homeHref) ? "page" : undefined}
-            className="inline-flex min-h-tap items-center border-b-4 border-transparent px-4 text-[20px] font-bold text-ink-muted no-underline hover:text-ink aria-[current=page]:border-crust aria-[current=page]:text-ink"
+            className="inline-flex min-h-tap items-center border-b-4 border-transparent px-4 text-[20px] font-bold text-ink-muted no-underline hover:text-ink focus-visible:rounded-sm aria-[current=page]:border-crust aria-[current=page]:text-ink"
           >
             {item.label}
           </Link>
