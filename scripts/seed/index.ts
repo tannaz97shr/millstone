@@ -2,7 +2,8 @@ import type { CustomerId } from "@/shared/domain";
 import { readFirebaseEnv } from "@/shared/lib/firebase/env";
 import { logError } from "@/shared/utils/logError";
 import { seedCustomers, seedStaffUsers } from "./data/people";
-import { resetEmulator, resolveSeedTarget } from "./lib/guard";
+import { resolveSeedTarget } from "./lib/guard";
+import { resetTarget } from "./lib/reset";
 import { seedBranchesAndCatalog, seedOrderCounter } from "./lib/seedCatalog";
 import { seedOrdersAndRecurring } from "./lib/seedOrders";
 import { readSeedEnv } from "./lib/seedEnv";
@@ -10,21 +11,19 @@ import { seedCustomer, seedStaffUser } from "./lib/seedPeople";
 import { printSeedSummary } from "./lib/summary";
 import { WriteTally } from "./lib/upsert";
 
-// bun run seed [--reset] [--project=<id>]
+// bun run seed [--reset]            (emulator)
+// bun run seed:staging [-- --reset] (millstone-dc47f, .env.staging.local)
 // Idempotent: a second run reports no changes.
 
 async function main(): Promise<void> {
-  const target = resolveSeedTarget(process.argv.slice(2), readFirebaseEnv(), process.env.NODE_ENV);
+  const target = resolveSeedTarget(process.argv.slice(2), readFirebaseEnv(), process.env);
   const passwords = readSeedEnv();
   const now = new Date();
 
   console.log(
     `Seeding ${target.projectId} ${target.emulatorHost ? `(emulator ${target.emulatorHost})` : "(real project)"}`,
   );
-  if (target.reset) {
-    await resetEmulator(target);
-    console.log("Emulator Firestore wiped.");
-  }
+  if (target.reset) await resetTarget(target);
 
   const tally = new WriteTally();
   await seedBranchesAndCatalog(now, tally);

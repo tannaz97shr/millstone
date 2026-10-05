@@ -6,12 +6,13 @@ import { readFirebaseEnv } from "@/shared/lib/firebase/env";
 import { logError } from "@/shared/utils/logError";
 import { resolveSeedTarget } from "../seed/lib/guard";
 
-// bun run migrate:orders [--project=<id>]
+// bun run migrate:orders            (emulator)
+// bun run migrate:orders:staging    (millstone-dc47f, .env.staging.local)
 // Step 6 Batch B (4 Oct 2026): adds the admin fields to orders saved before
 // them: searchTokens, cancellationNote and collectUndo, and turns a free-text
 // cancellationReason into a reason code (anything unknown becomes "other"
 // with the old text as its note). Idempotent: a second run changes nothing.
-// Same safety rules as the seed: the emulator, or a named dev project.
+// Same safety rules as the seed: the emulator, or an allow-listed staging project.
 
 const KNOWN_WORDS: Record<string, CancellationReason> = {
   "not collected": "not_collected",
@@ -37,7 +38,8 @@ function reasonFields(raw: Raw): { cancellationReason: CancellationReason | null
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 async function main(): Promise<void> {
-  const target = resolveSeedTarget(process.argv.slice(2), readFirebaseEnv(), process.env.NODE_ENV);
+  const target = resolveSeedTarget(process.argv.slice(2), readFirebaseEnv(), process.env);
+  if (target.reset) throw new Error("Refusing to migrate: --reset is a seed option.");
   console.log(`Migrating orders in ${target.projectId}${target.emulatorHost ? ` (emulator ${target.emulatorHost})` : ""}`);
 
   const snapshot = await ordersRef().get();
