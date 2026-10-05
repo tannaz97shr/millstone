@@ -4,18 +4,28 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
 
 ## Undeployed infra steps
 
-- **No real Firebase project yet.** Local dev runs on the emulator (`demo-millstone`). Before deploying: create the Blaze project, run `firebase deploy --only firestore:rules,firestore:indexes,storage`, and set `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY` in the host's env.
+- ~~**No real Firebase project yet.**~~ Done 5 Oct 2026 (step 8):
+  - `millstone-dc47f` (Blaze, australia-southeast2) has `firestore.rules`, all 11 indexes and `storage.rules` deployed (`bunx firebase deploy --only firestore:rules,firestore:indexes,storage --project staging`).
+  - It's seeded, and smoke-tested through `bun run dev:staging` (see Tooling: Staging mode).
+  - **Still open for hosting:** set `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY` (or a mounted credentials file) in the host's env, and decide whether `millstone-dc47f` stays staging or becomes production. If it becomes production, take it off the seed's `REAL_PROJECTS_ALLOWED` first.
+  - Local dev still runs on the emulator (`demo-millstone`).
 - **Emulator needs a JDK (21+)** installed locally (`brew install --cask temurin@21`).
 - **`POST /api/orders` has no rate limiting (step 5).** It's public (guest checkout) and has no abuse protection. A script could place unlimited fake pay-at-pickup orders, create guest customers, and send confirmation emails to any address. Before launch, add rate limiting per IP (and per email), at the host's edge or in the route. Consider a bot check too.
 - **No email provider (step 5).** Emails go through `sendEmail` (`src/shared/lib/email/`). In development, and in builds with `DEV_PAGES=true`, each one is saved to the gitignored `.dev-emails/` folder, logged to the console, and listed at `/dev/emails`. Anywhere else it is logged as unsent (warn) and nobody receives it. A provider and a sender address are needed before launch.
 - **Emulator data is kept between runs (3 Oct 2026).** `bun run emulators` imports from the gitignored `.emulator-data/` on start and exports to it on exit. The export only happens on a clean stop (one Ctrl-C, then wait for "Export complete"); a second Ctrl-C or a killed terminal skips it and loses that session's changes. The first run with an empty folder logs "Could not find import/export metadata file, skipping data import!", which is expected. `bun run seed` still works on top (it's idempotent, and `--reset` still wipes). For a clean start, stop the emulator and delete `.emulator-data/`.
 
 - **Auth env on the host (step 6).** `AUTH_SECRET` must be set wherever the app runs; without it Auth.js refuses every sign-in (the API answers 500). `AUTH_TRUST_HOST=true` is needed for `next start` and any self-hosted deploy. Set `AUTH_URL` too if the host can't work out its own URL. Production also serves the cookie as `__Secure-authjs.session-token` over HTTPS.
-- **Product photos on a real bucket (step 7).** Only the Storage emulator has been tested. Before deploying:
-  - Set `FIREBASE_STORAGE_BUCKET` wherever `next build` runs. `next.config.mjs` reads it to allow `https://firebasestorage.googleapis.com/v0/b/<bucket>/o/**` for `next/image`.
-  - Make sure `FIREBASE_STORAGE_EMULATOR_HOST` is **not** set in production. It also turns on `images.dangerouslyAllowLocalIP`, which is only for the emulator.
-  - Deploy `storage.rules` (closed to clients, unchanged). Download URLs carry their own token and don't need any rule.
-  - The upload route reads up to about 10 MB per request. If the host caps request bodies lower, raise that cap for `/api/admin/products/*/photo`.
+- **Product photos on a real bucket (step 7).**
+  - **Tested on `millstone-dc47f.firebasestorage.app` (5 Oct 2026, step 8):**
+    - A5 created a product with a JPEG carrying GPS and camera EXIF. It was stored as a 1200 × 900 WebP with no EXIF, ICC or XMP.
+    - `next/image` served it from `firebasestorage.googleapis.com` on A5 and C2.
+    - Replacing it left only the new file under `products/{id}/`.
+    - A deleted file's old download URL answers 403, not 404: Storage falls back to the closed rules.
+  - ~~Deploy `storage.rules`~~ Done (closed to clients, unchanged). Download URLs carry their own token and don't need any rule.
+  - **Still open for hosting:**
+    - Set `FIREBASE_STORAGE_BUCKET` wherever `next build` runs. `next.config.mjs` reads it to allow `https://firebasestorage.googleapis.com/v0/b/<bucket>/o/**` for `next/image`.
+    - Make sure no emulator variable is set in production (`FIREBASE_STORAGE_EMULATOR_HOST` also turns on `images.dangerouslyAllowLocalIP`, which is only for the emulator). Not even blank: `@google-cloud/storage` takes any string in `STORAGE_EMULATOR_HOST`, even `""`, as its endpoint. `admin.ts` drops blank ones before starting Firebase (`dropBlankEmulatorVars`).
+    - The upload route reads up to about 10 MB per request. If the host caps request bodies lower, raise that cap for `/api/admin/products/*/photo`.
 - **Sign-in has no IP rate limit (step 6).** Repeated guessing is slowed per email only: 5 failures in 15 minutes lock that email for 15 minutes, counted in `signInThrottle/{sha256(email)}`. Left for later: per-IP or edge rate limiting, a bot check, and pruning old throttle docs (each is deleted on a successful sign-in; failures for unknown emails stay). Someone who knows a staff email can keep that person locked out by guessing wrong every 15 minutes.
 
 ## Deferred features
@@ -42,7 +52,7 @@ _None yet._
 
 ## Un-applied migration scripts
 
-- **`bun run migrate:orders`** (`scripts/migrations/2026-10-order-admin-fields.ts`, step 6 Batch B). Adds `searchTokens`, `cancellationNote` and `collectUndo` to orders saved before them. It also turns a free-text `cancellationReason` into a code: "Not collected" and "Customer request" map to their codes, and anything else becomes `other` with the old text as its note. The order schema requires these fields, so older orders fail to load until it has run. It's idempotent and has the seed's safety rules (the emulator, or `--project=<id>`). Applied to the local emulator on 4 Oct 2026; run it against any real project before this code is deployed, together with `firebase deploy --only firestore:indexes` for the new search and list indexes.
+- ~~**`bun run migrate:orders`**~~ Applied to `millstone-dc47f` on 5 Oct 2026 (step 8) with `bun run migrate:orders:staging`, before seeding: an empty database, so a no-op. Its indexes were deployed then too. Any other project still needs it before this code runs there. (`scripts/migrations/2026-10-order-admin-fields.ts`, step 6 Batch B.) Adds `searchTokens`, `cancellationNote` and `collectUndo` to orders saved before them. It also turns a free-text `cancellationReason` into a code: "Not collected" and "Customer request" map to their codes, and anything else becomes `other` with the old text as its note. The order schema requires these fields, so older orders fail to load until it has run. It's idempotent and has the seed's safety rules (the emulator, or `--project=<id>`). Applied to the local emulator on 4 Oct 2026; run it against any real project before this code is deployed, together with `firebase deploy --only firestore:indexes` for the new search and list indexes.
 
 ## Data model notes
 
@@ -291,3 +301,26 @@ _None yet._
 - ~~**Node 21.1.0 locally.**~~ Resolved 30 Sep 2026: Node 24.21.0 (LTS) installed via nvm. Build, lint and `bun test` pass on it. nvm's default alias still points at v21.1.0, so new non-interactive shells pick 21 until `nvm alias default 24` is run.
 - **Stray `~/package-lock.json`** outside the repo made Next guess the wrong workspace root. `turbopack.root` is pinned in `next.config.mjs` to work around it.
 - **`next-env.d.ts` is tracked** even though `.gitignore` lists it; Next regenerates it on every build.
+- **Staging mode (step 8, 5 Oct 2026).** Runs the app locally against the real project `millstone-dc47f`.
+  - **Commands.** `bun run dev:staging`, `bun run seed:staging [-- --reset]` and `bun run migrate:orders:staging` read only the gitignored `.env.staging.local` (names in the committed `.env.staging.local.example`), through `bun --no-env-file --env-file=…`. `.firebaserc` has the alias `staging`.
+  - **Credentials.** `GOOGLE_APPLICATION_CREDENTIALS` (the path to the service-account JSON outside the repo), or `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY` (for a host; used when both are set). `admin.ts` uses `cert()` for the pair, otherwise `applicationDefault()`.
+  - **Env layering.** Next still loads `.env.local` (and `.env.development*`) in every `next dev`, and prints "Environments: .env.local" in staging too. A variable already in the environment wins, even an empty one, so `scripts/staging/dev.ts` passes every emulator variable (`EMULATOR_ENV_VARS` in `firebaseTarget.ts`) as `""`, which shadows the files.
+  - **Blank values.** `admin.ts` deletes the blank values again (`dropBlankEmulatorVars`) before Firebase starts, because `@google-cloud/storage` treats `STORAGE_EMULATOR_HOST=""` as an endpoint. Uploads went to `https://upload/...` until that fix (found in the step 8 smoke test).
+  - **Refusals.**
+    - The launcher refuses to start when `.env.staging.local` is missing, or when an emulator variable is set in the shell or in that file.
+    - It sets `MILLSTONE_FIREBASE_TARGET=staging`. With that set, `readFirebaseEnv` rejects any emulator variable, and `src/instrumentation-node.ts` exits the server.
+    - It lives in its own file so the Edge bundle (`proxy.ts`) never compiles `process.exit`.
+  - **Startup line.** Every `next dev` / `next start` logs one line at start: "Firebase: emulator" or "Firebase: project millstone-dc47f".
+  - **Inherited keys.** The launcher also prints the names (never values) of keys staging still inherits from the dev env files. In step 8 that left only `METADATA_SERVER_DETECTION` from `.env.local`, which is harmless with a credentials file. Define a key in `.env.staging.local` to stop inheriting it.
+  - **Smoke test (5 Oct 2026), against `millstone-dc47f`, no index or `FAILED_PRECONDITION` errors:**
+    - A pay-at-pickup checkout (MS-1047), then Ready and "Yes, paid · Collected" on A2.
+    - Every A2 status × date × branch for the owner, and for Northcote staff (150 list calls, each count equal to its rows). Staff asking for Fitzroy got a 403.
+    - Searches by number, name and phone.
+    - A4 sold out with its orders warning, then back on sale.
+    - A5 photos (see Undeployed infra).
+    - Cleaned up afterwards with `bun run seed:staging -- --reset`.
+  - **Seed and migration guard.**
+    - Real projects must be passed as `--project=<id>`, be listed in `REAL_PROJECTS_ALLOWED` (only `millstone-dc47f`) and match `FIREBASE_PROJECT_ID`.
+    - `--project` with any emulator variable set is refused.
+    - On staging, `--reset` deletes every Firestore collection (recursively) and every Storage file under `products/`, then reseeds.
+    - **Never add a production project to that list.**
