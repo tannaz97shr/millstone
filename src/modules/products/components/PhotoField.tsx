@@ -70,7 +70,7 @@ export function PhotoField({ name, currentUrl, chosen, onChoose }: PhotoFieldPro
             accept={PHOTO_ACCEPT}
             tabIndex={-1}
             aria-hidden="true"
-            className="sr-only"
+            className="hidden"
             onChange={onFile}
           />
           <FieldHint id={hintId}>{chosen ? content.chosen(chosen.file.name) : content.hint}</FieldHint>

@@ -47,7 +47,13 @@ export function ProductRow({ product, branchCount, onEdit }: ProductRowProps) {
           {shown ? content.onMenus : content.hidden}
         </Stamp>
       </span>
-      <Button variant="secondary" data-edit aria-label={content.editLabel(product.name)} onClick={() => onEdit(product)}>
+      <Button
+        variant="secondary"
+        data-edit
+        aria-label={content.editLabel(product.name)}
+        onClick={() => onEdit(product)}
+        className="shrink-0"
+      >
         {content.edit}
       </Button>
     </article>

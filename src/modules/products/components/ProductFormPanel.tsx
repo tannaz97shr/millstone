@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Controller } from "react-hook-form";
 import { Button } from "@/shared/components/atoms/Button/Button";
 import { Toggle } from "@/shared/components/atoms/Toggle/Toggle";
@@ -51,6 +51,14 @@ export function ProductFormPanel({ product, categories, branchCount, onClose, on
   const newPrice = parsePriceInput(price);
   const priceChanged = current !== null && newPrice !== null && newPrice !== current.priceCents;
   const hiding = current !== null && current.isActive && !isActive;
+
+  // The hiding note can land below the panel's fold in a short window: bring it into view.
+  const hideNoteRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!hiding) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    hideNoteRef.current?.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+  }, [hiding]);
 
   return (
     <SidePanel
@@ -172,9 +180,11 @@ export function ProductFormPanel({ product, categories, branchCount, onClose, on
             )}
           />
           {hiding && (
-            <Notice tone="warning" role="note">
-              <strong>{content.active.hideNoteStrong(branchCount)}</strong> {content.active.hideNote}
-            </Notice>
+            <div ref={hideNoteRef}>
+              <Notice tone="warning" role="note">
+                <strong>{content.active.hideNoteStrong(branchCount)}</strong> {content.active.hideNote}
+              </Notice>
+            </div>
           )}
         </div>
       </form>

@@ -248,6 +248,7 @@ _None yet._
 - **A5 products (step 7, Batch B): decisions and deliberate differences.**
   - **New products: the canvas's note only** (decided 5 Oct 2026). There are no per-branch toggles in the form. A new product is on at every branch, because no branch rows are written, and a branch switches it off in A4.
   - **Hidden products can be shown again** with the same "Show on menus" toggle, as on the canvas ("It's back on the menus."). Hiding never deletes anything.
+  - **Closing the product panel discards typed changes without asking** (Close, Cancel, Escape, or a tap on the dimmed list). Not designed; a "Discard changes?" dialog could come later. Found in step 7 QA.
   - **Photos.**
     - **Type and size:**
       - The type is decided from the bytes by sharp's decoder, never from the file name or the browser's MIME type. Only JPEG, PNG and WebP are accepted; anything else is 415 `unsupported_image`.
