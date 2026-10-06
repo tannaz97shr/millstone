@@ -22,11 +22,35 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
   - **Startup log.** It names the backend ("Firebase: LIVE project millstone-dc47f"). A key that isn't a readable PEM is logged as "FIREBASE_PRIVATE_KEY isn't a readable PEM key (…)", never with its value.
   - **Auth.js on Vercel.** `@auth/core` already trusts the host when `VERCEL` is set; `AUTH_TRUST_HOST=true` makes that explicit. `AUTH_URL` isn't needed. The cookie is `__Secure-authjs.session-token` over HTTPS.
   - **Build check (step 9).** The build passes in a copy of the tree with no `.env*` files and placeholder production values. Every data page is dynamic, so nothing reads Firestore at build.
-  - **Still to do by hand:**
-    - Create the Vercel project and add the variables.
-    - Create a dedicated service account (recommended: Cloud Datastore User + Storage Object Admin only).
-    - Create the two TTL policies (below).
-    - Merge to main, then run the post-deploy smoke test.
+  - **Done by hand (5–6 Oct 2026):**
+    - ~~Create the Vercel project and add the variables.~~ Live at https://millstone-two.vercel.app/ (functions in `syd1`).
+    - ~~Create a dedicated service account.~~ Vercel uses its own service account. Its roles weren't checked in the smoke test; they should be Cloud Datastore User and Storage Object Admin only.
+    - ~~Merge to main, then run the post-deploy smoke test.~~ Passed 6 Oct 2026 (below).
+  - **Still to do by hand:** create the two TTL policies (below), if not done yet. The smoke test can't see them.
+  - **First deploy: every Firestore call failed (6 Oct 2026).**
+    - The first key in Vercel wasn't a readable PEM. Once fixed, every call failed with `16 UNAUTHENTICATED: Request had invalid authentication credentials`. `/api/branches` answered 500, C1 said "We couldn't load our branches" and `/menu/{branch}` was a 404.
+    - Pasting the email and key again from one fresh JSON key and redeploying fixed it.
+    - The startup check only catches a key that isn't a PEM. A readable key that Google refuses (from another key or account, or deleted) shows only as a 500 on every Firestore call, with this error in the function logs.
+    - Reading those logs needs a recent Vercel CLI (`bunx vercel@latest logs -p millstone -d <deployment id> -x`); v33 shows build logs only.
+    - A new deployment can take a minute or two to take over `millstone-two.vercel.app`; `vercel inspect millstone-two.vercel.app` names the one being served.
+  - **Step 9 live smoke test (6 Oct 2026), against https://millstone-two.vercel.app/ (deployment `dpl_2jsV7jVnZpzissJi6b9mAQq15bsK`):** ad hoc Playwright, 390px customer and 1180px admin. Every step passed:
+    - **C1 → C7:** Northcote, 1 × Fruit loaf, pay at pickup, as `smoke-test@example.com`. The order was **MS-1047** (201). C5's email hint said "So we can reach you about your order." and C7 said "…We don't send emails yet." No email promise anywhere.
+    - **A1 → A2/A3:** the owner signed in (200). MS-1047 was found by search and cancelled as "Other" with a note (200), and A3 showed Cancelled and "MS-1047 cancelled."
+    - **A4:** at Northcote, Sourdough rye loaf was marked sold out for Wed 7 Oct, then back on sale (both 200, with the designed messages).
+    - **A5:** "Smoke test loaf" (Breads, $1.00) was created (201, ID `smoke-test-loaf`) with a 4032 × 3024, 10.3 MB JPEG.
+      - The browser-shrunk upload was accepted (200), so it was under the 4 MB cap and Vercel's 4.5 MB limit.
+      - Stored as a 1200 × 900 WebP (338 KB) with no EXIF, ICC or XMP, served with `max-age=31536000, immutable`.
+      - `/_next/image` served it (200) and it rendered on A5's row and on C2.
+      - The product was then hidden ("Show on menus" off, 200) and is no longer on C2.
+    - **`/dev/emails`, `/dev/components`, `/dev/tokens`:** 404.
+    - **Headers:** HSTS, `nosniff`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy` and the CSP were on both `/` and `/api/branches`.
+    - **Rate limits:**
+      - Junk `POST /api/orders` got 400 nine times, then 429 `rate_limited` with `Retry-After` (10 per hour, counting the real order).
+      - Sign-ins as `smoke-limit-0…11@example.com` got 401 twelve times, then 429 with `Retry-After`. That's 20 per 15 minutes, counting the owner's earlier sign-ins.
+      - A1 showed "Too many sign-in tries from this network…".
+    - **Console:** no errors apart from the browser's "Failed to load resource" lines for the expected 400, 401 and 429 answers.
+    - **Left on live by design:** the hidden `smoke-test-loaf` product. There's no hard delete; cleanup removes its photo, so it goes back to its letter. The order counter also stays past 1047. A rerun's product would get the ID `smoke-test-loaf-2`.
+    - **Cleanup:** `bun run cleanup:smoke:live -- --order=MS-1047 --product=smoke-test-loaf`, then the same command with `--yes`.
 - **Firestore TTL policies (step 9), set by hand once.** On collection group `rateLimits`, field `expiresAt`; on collection group `signInThrottle`, field `expiresAt`. TTL deletes within about 24 hours of expiry; reads check their own window, so a late delete changes nothing. Throttle records saved before step 9 have no `expiresAt` and are never pruned (a handful at most).
 - **Emulator needs a JDK (21+)** installed locally (`brew install --cask temurin@21`).
 - ~~**`POST /api/orders` has no rate limiting (step 5).**~~ Done 5 Oct 2026 (step 9): see Privacy and security notes, Rate limits. Still open: a per-email limit and a bot check.
@@ -273,6 +297,7 @@ _None yet._
     - "Loading orders…", "We couldn't load the orders…", "Loading the order…", "This order isn't on your list…"
     - The cancel form's field errors.
   - **The 409s are logged by the browser** as failed requests in the console. That's expected for a refused action; the app itself logs them as warnings.
+  - **Search summary ahead of its results (seen in the step 9 live smoke test, not investigated).** Just after "MS-1047" was typed, the summary read "12 orders found for "MS-1047"" while the list still showed the previous orders. A moment later it read "1 order found". A tap on a row in between opens the wrong order. The summary likely counts the previous results kept while the search loads.
 
 - **A4 branch availability (step 7, Batch A): decisions and deliberate differences.**
   - **Orders that already include the product (decided 5 Oct 2026).** The change saves at once, as on the canvas. If open orders (Placed or Ready) already include the product, the message turns wheat and names them.
