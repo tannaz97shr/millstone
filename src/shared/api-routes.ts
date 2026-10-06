@@ -9,6 +9,10 @@ export const apiRoutes = {
   orders: "/api/orders",
   /** GET: what C7 shows for one order. */
   orderConfirmation: (orderId: string) => `/api/orders/${encodeURIComponent(orderId)}`,
+  webhooks: {
+    /** POST, from Stripe only: signed payment events (checkout paid or expired). */
+    stripe: "/api/webhooks/stripe",
+  },
   admin: {
     /** POST: staff sign-in (A1). */
     signIn: "/api/admin/sign-in",

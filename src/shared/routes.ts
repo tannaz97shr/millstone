@@ -10,6 +10,8 @@ export const routes = {
   },
   cart: "/cart",
   checkout: "/checkout",
+  /** C5 after the customer backed out of (or failed) the payment page: CheckoutPayFailed's message. */
+  checkoutPaymentCancelled: `/checkout?${new URLSearchParams({ payment: "cancelled" })}`,
   /** C7: one order's confirmation, by its unguessable ID. */
   orderConfirmation: (orderId: string) => `/orders/${encodeURIComponent(orderId)}`,
   admin: {

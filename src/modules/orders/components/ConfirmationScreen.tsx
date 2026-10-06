@@ -17,13 +17,15 @@ const content = confirmationContent.page;
 export function ConfirmationScreen({ orderId, emailed }: { orderId: string; emailed: boolean }) {
   const query = useOrderConfirmationQuery(orderId);
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const hasOrder = Boolean(query.data);
+  const hasOrder = query.data?.state === "confirmed";
 
   // Arriving from Place order: start reading at "Your order is in".
   useEffect(() => {
     if (hasOrder && titleRef.current) focusWithoutTabStop(titleRef.current);
   }, [hasOrder]);
 
+  // Until C6 is built (step 10, Batch B), an order that isn't placed reads as not found, as before.
+  if (query.data && query.data.state !== "confirmed") return <p>{content.notFound}</p>;
   if (query.data) return <ConfirmationDetails order={query.data} titleRef={titleRef} emailed={emailed} />;
   if (query.isError) {
     if (toApiFailure(query.error).status === 404) return <p>{content.notFound}</p>;

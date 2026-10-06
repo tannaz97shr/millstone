@@ -16,7 +16,7 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
     - `FIREBASE_STORAGE_BUCKET` (also read at build by `next.config.mjs`)
     - `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (the JSON's `private_key` value without its quotes, keeping each `\n`)
     - `AUTH_SECRET`, `AUTH_TRUST_HOST=true`
-    - `ONLINE_PAYMENTS_ENABLED=false`
+    - `ONLINE_PAYMENTS_ENABLED=false` (step 10: `true` once Stripe is set up there, with the variables in Online payments (step 10))
     - Never any emulator variable (not even blank), `DEV_PAGES`, `GOOGLE_APPLICATION_CREDENTIALS` or `SEED_*`.
   - **Production refuses emulator variables.** `VERCEL_ENV=production` counts as live (`isLiveTarget`), so `readFirebaseEnv` rejects any emulator variable there too.
   - **Startup log.** It names the backend ("Firebase: LIVE project millstone-dc47f"). A key that isn't a readable PEM is logged as "FIREBASE_PRIVATE_KEY isn't a readable PEM key (…)", never with its value.
@@ -84,13 +84,80 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
   - Left out of C7: the "Save your details for next time" offer (AC-C10).
   - Left out of the email: the guest "Create an account" box (AC-C11).
   - These belong to the accounts step.
-  - "Pay online now" is behind the server-only switch `ONLINE_PAYMENTS_ENABLED` (off). `POST /api/orders` refuses `online` with 422 `payment_method_unavailable` whatever the switch says, until the payment-provider step.
+  - ~~"Pay online now" is behind the server-only switch `ONLINE_PAYMENTS_ENABLED` (off). `POST /api/orders` refuses `online` with 422 `payment_method_unavailable` whatever the switch says, until the payment-provider step.~~ Step 10 (6 Oct 2026): online orders are taken when the switch is on and Stripe is configured. See Online payments (step 10). The 422 now means "switched off or not configured".
 - **Staff accounts (step 6).** Staff can't reset or change a password, and the owner has no screen to add, remove or move staff. Passwords come from the seed (`SEED_STAFF_PASSWORD`). A1 says "Forgotten your password? Ask the owner to reset it."
 - **No audit trail of who did what (step 6).** Orders record when they changed, not which staff member changed them.
-- **`awaiting_payment` orders never expire yet (step 6, Batch B).** Spec 6 says they expire after about an hour. There's no job for it until the payment-provider step. The seed's MS-1028 stays `awaiting_payment`; staff never see it either way.
+- ~~**`awaiting_payment` orders never expire yet (step 6, Batch B).**~~ Resolved 6 Oct 2026 (step 10): see Online payments (step 10), Expiry. The seed's MS-1028 still stays `awaiting_payment` for good: its ID (`seed-ms-1028`) isn't a checkout key, so nothing ever reads it to expire it. Staff never see it either way.
 - ~~**Phone display formatting.**~~ Resolved 30 Sep 2026 (step 2): `formatPhone` in `src/shared/utils/phone.ts` ("0491 570 156", "03 7010 2140"; landlines changed from "(03) 7010 2140" on 1 Oct 2026 to match spec section 4's branch table and the designs), used by OrderRow. Later screens that show a phone should use it too.
 
 - **Shared patterns not built yet (step 2).** These repeat across screens but belong with their features: ~~the admin side panel (A3 order detail, A5 product form)~~, admin nav, ~~admin filter buttons with a pressed ink fill (A2/A4)~~, empty-state boxes, ~~admin uppercase section headings~~ and the order-detail items table. Step 6 Batch B built `organisms/SidePanel`, `molecules/FilterButtons` and `atoms/SectionLabel` for A5 and A4 to reuse; the items table stays inside A3. ~~ProductCard photos will need `images.remotePatterns` for Firebase Storage once uploads exist.~~ Done in step 7 (see Undeployed infra). Step 7 also added `molecules/StatusLine`, the sticky message/summary line A4 and A5 share. Built in step 3: the link styled as a Button (`atoms/ButtonLink`) and the sticky bottom bar (`organisms/BottomBar`, used by C1, the C2 order bar and the C4 total bar).
+
+## Online payments (step 10)
+
+Stripe Checkout (hosted page), test mode, behind a small adapter (`src/shared/lib/payments/`). Started 6 Oct 2026; Batch A is the server, Batch B the screens.
+
+- **Adapter.** `PaymentProvider` (`paymentProvider.ts`) has `createCheckout`, `expireCheckout` and `parseWebhook`. Orders code sees only its shapes. `stripe/stripeProvider.ts` is the one implementation (`stripe@23.0.0`, API `2026-09-30.endive` pinned, 6s timeout, one retry). Square would be a second implementation.
+- **Switch (`paymentsConfig.ts`, rules unit-tested).** Online payment is on only when all of these are set:
+  - `ONLINE_PAYMENTS_ENABLED=true`
+  - `STRIPE_SECRET_KEY`, a **test** key (`sk_test_` or `rk_test_`)
+  - `STRIPE_WEBHOOK_SECRET`
+  - a site URL: `SITE_URL`, else `https://` + Vercel's `VERCEL_PROJECT_PRODUCTION_URL`. It's never taken from the request's Host header, so the return URLs can't be steered.
+  - A live key (`sk_live_`) turns online payment off, and so does anything missing. Either way the server logs one line naming the variables, never a value (`[payments] off: …`). A switch that's simply off logs nothing.
+- **Variables.**
+
+  | Name | Local (`.env.local`) | Vercel (Production) | Secret |
+  |---|---|---|---|
+  | `STRIPE_SECRET_KEY` | test key | test key | yes |
+  | `STRIPE_WEBHOOK_SECRET` | the `whsec_…` that `stripe listen` prints (new each session) | the dashboard endpoint's signing secret | yes |
+  | `SITE_URL` | `http://localhost:3000` | optional (Vercel's production domain is used) | no |
+  | `ONLINE_PAYMENTS_ENABLED` | `true` | `true` when wanted | no |
+
+  There's no publishable key and no `NEXT_PUBLIC_*` variable: it's a plain redirect.
+- **Still to do by hand for Vercel.** In Stripe's dashboard (test mode), add a webhook endpoint `https://millstone-two.vercel.app/api/webhooks/stripe` for `checkout.session.completed` and `checkout.session.expired`, and put its signing secret in Vercel.
+- **Checkout (`POST /api/orders` with `online`).**
+  - The same transaction and checks as pay at pickup. The order is written `awaiting_payment` / `unpaid` with `paymentExpiresAt` = created + 60 minutes.
+  - The Checkout Session is created after the transaction (`startOnlinePayment`):
+    - Card only (`allowed_payment_method_types: ["card"]`; Apple Pay and Google Pay are card wallets), so a completed session is always paid at once.
+    - Line items in AUD from the order's own snapshot, so Stripe's total is the server's.
+    - `metadata.orderId` and `client_reference_id`, and `customer_email`.
+    - `expires_at` is the order's `paymentExpiresAt`.
+    - Success returns to `/orders/{id}` (C6, then C7). Cancel returns to `/checkout?payment=cancelled` (`routes.checkoutPaymentCancelled`).
+  - **One key, one page.** The idempotency key is `checkout-session:{checkoutKey}`, and every parameter comes from the stored order, so a retry gets the same session back. The session ID is saved on the order (`checkoutSessionId`).
+  - **Answers.**
+    - `{ orderId, orderNumber, next: "pay", paymentUrl }` for an open page.
+    - `next: "confirmation"` for pay at pickup, or when the page was already paid and the webhook hasn't arrived yet.
+  - **Retries with the same key** (`planCheckoutRetry`, unit-tested):
+    - A waiting order with the same cart goes back to its page, until 5 minutes before the page closes. With no page yet, it's reused only while a new page could still get Stripe's 30-minute minimum.
+    - A changed cart or payment method after coming back, or an expired or closed page, is **409 `payment_abandoned`**. Nothing new is saved, and the old page is expired at Stripe after the response, so a forgotten tab can't pay it. C5 then places the cart under a new key (Batch B).
+    - A placed order that differs is still 409 `checkout_key_mismatch`, as in step 5.
+  - **The page can't be created** (Stripe down, a bad key): **503 `payment_unavailable`**. Nothing is charged. The order stays `awaiting_payment` with no page and is never shown to staff. A retry with the same key tries the same idempotent create again. It expires lazily (below).
+  - **Gaps in order numbers.** The number is taken when the order is created, so an abandoned payment leaves a gap in the MS-numbers staff see.
+  - The confirmation email is sent only for a new pay-at-pickup order here. Online orders get it from the webhook once paid (AC-C9).
+- **Webhook (`POST /api/webhooks/stripe`).**
+  - It reads the raw body with `request.text()` and checks it with `constructEventAsync` and `STRIPE_WEBHOOK_SECRET`. A missing or bad signature, or one older than 5 minutes, is a **400 `invalid_signature`**.
+  - There's no session and no rate limit: the signature is the credential, and a limit would drop Stripe's retries.
+  - **Events.**
+    - `checkout.session.completed` with `payment_status: "paid"` → paid.
+    - `checkout.session.expired` → expired.
+    - Anything else, an event with no order ID (a `stripe trigger` one), or one from the other mode (`livemode`) is a 200 and ignored, with one info line.
+    - An unknown order is a 200 with a warning.
+  - While payments are off it answers **503**, so Stripe keeps the event and retries later.
+  - **Rules (`planPaymentEvent`, unit-tested), in a transaction:**
+    - An event ID already in `processedStripeEventIds` changes nothing.
+    - Paid on `awaiting_payment` → `placed`, `paid`, `paidAt`, `paymentRef` = the PaymentIntent (`pi_…`). The confirmation email is sent once, after the response.
+    - Paid on an order that's already paid, or that staff have moved on, only records the event ID. It never moves the order back.
+    - Expired on anything but `awaiting_payment` changes nothing, so a paid order never expires.
+    - An event for a session other than the order's own changes nothing and is logged as an error.
+    - An amount or currency that doesn't match the order is still marked paid (the money was taken) and logged as an error.
+    - **Paid after expiry** stays `expired` (spec 7: final) with the `paymentRef` recorded, and is logged as an error to refund in Stripe. This shouldn't happen: orders only expire through Stripe's own expiry event, or when they never had a page.
+  - A Firestore failure is a 5xx, so Stripe retries. That's safe for the same reasons.
+- **Expiry.**
+  - An order with a page expires when Stripe sends `checkout.session.expired` at its `expires_at` (60 minutes). Stripe can't complete an expired session.
+  - An order with no page has no webhook. It's written `expired` the next time it's read (C7's `GET /api/orders/{id}`, or a retry with its key) once it's 5 minutes past its hour (`isLazilyExpired`). Until then it sits as `awaiting_payment`, which nobody sees.
+  - There's no cron job. Vercel Hobby crons run daily at most, and nothing visible depends on the stored status. A daily sweep could be added if old `awaiting_payment` docs matter.
+- **Order fields added (no migration).** `checkoutSessionId` and `paymentExpiresAt` read as `null` on orders saved before step 10 (Zod `.default(null)`). An old order with no `paymentExpiresAt` counts its hour from `createdAt`.
+- **C7 API.** `GET /api/orders/{id}` now answers for `awaiting_payment` and `expired` orders too, with `state: "awaiting_payment" | "confirmed" | "expired"`. It sends the same public fields as before, which C6 needs for its pickup card. Until Batch B builds C6, C7 shows its not-found sentence for an order that isn't `confirmed`, as before.
+- **Live keys** are refused until the provider is decided (spec 12).
 
 ## Investigated but unreproduced bugs
 

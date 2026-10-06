@@ -2,7 +2,7 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { connection } from "next/server";
 import { prefetchBranches } from "@/modules/branches/lib/prefetchBranches";
 import { CheckoutScreen } from "@/modules/checkout/components/CheckoutScreen";
-import { onlinePaymentsEnabled } from "@/shared/lib/config/features";
+import { onlinePaymentsEnabled } from "@/shared/lib/payments/paymentsConfig";
 import { emailDeliveryEnabled } from "@/shared/lib/email/sendEmail";
 import { getQueryClient } from "@/shared/lib/query/getQueryClient";
 

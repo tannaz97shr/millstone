@@ -1,16 +1,22 @@
 import type { Branch, Order } from "@/shared/domain";
-import type { OrderConfirmation } from "../types/orderConfirmation";
+import type { ConfirmationState, OrderConfirmation } from "../types/orderConfirmation";
 
 /** "Ben" from "Ben Okafor". */
 export function firstNameOf(name: string): string {
   return name.trim().split(/\s+/)[0] ?? "";
 }
 
-/** The view C7 and the confirmation email share. */
+export function confirmationState(status: Order["status"]): ConfirmationState {
+  if (status === "awaiting_payment" || status === "expired") return status;
+  return "confirmed";
+}
+
+/** The view C6, C7 and the confirmation email share. */
 export function toOrderConfirmation(order: Order, branch: Branch): OrderConfirmation {
   return {
     orderId: order.id,
     orderNumber: order.orderNumber,
+    state: confirmationState(order.status),
     pickupDate: order.pickupDate,
     branch: {
       id: branch.id,

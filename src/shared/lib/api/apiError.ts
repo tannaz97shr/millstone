@@ -30,6 +30,16 @@ export type ApiErrorCode =
    * the response was lost and the cart was edited. Carries that order.
    */
   | "checkout_key_mismatch"
+  /**
+   * Checkout: this checkout key's online order was never paid and can't be
+   * now (expired), or the customer changed the order after coming back from
+   * payment (409). Nothing new is saved; C5 places it under a new key.
+   */
+  | "payment_abandoned"
+  /** Checkout: the payment provider couldn't open its page (503). Nothing was charged; the order stays unpaid and hidden. */
+  | "payment_unavailable"
+  /** Webhook: the provider's signature is missing or doesn't match the body (400). */
+  | "invalid_signature"
   | "not_found"
   /** No session, or it has expired (401). */
   | "unauthenticated"
