@@ -158,6 +158,35 @@ Stripe Checkout (hosted page), test mode, behind a small adapter (`src/shared/li
 - **Order fields added (no migration).** `checkoutSessionId` and `paymentExpiresAt` read as `null` on orders saved before step 10 (Zod `.default(null)`). An old order with no `paymentExpiresAt` counts its hour from `createdAt`.
 - **C7 API.** `GET /api/orders/{id}` now answers for `awaiting_payment` and `expired` orders too, with `state: "awaiting_payment" | "confirmed" | "expired"`. It sends the same public fields as before, which C6 needs for its pickup card. Until Batch B builds C6, C7 shows its not-found sentence for an order that isn't `confirmed`, as before.
 - **Live keys** are refused until the provider is decided (spec 12).
+- **Batch A live checks (6 Oct 2026),** run against the emulator with `stripe listen --api-key … --forward-to localhost:3000/api/webhooks/stripe` and real test-mode sessions driven through `POST /api/orders` and Stripe's page (Playwright, 390px). Every check passed:
+  - **Paid (4242), MS-1057:**
+    - 201 `next: "pay"`. A retry with the same key was 200 with the same page.
+    - Stored `awaiting_payment` with its session ID and an expiry an hour on.
+    - After paying: `placed` / `paid`, with `paymentRef` `pi_…`, `paidAt` and the event ID.
+    - A retry after paying: 200 `next: "confirmation"`.
+  - **3-D Secure (4000 0027 6000 3184), MS-1058:** the challenge appeared, Complete was pressed, then paid as above.
+  - **Declined (4000 0000 0000 0002), MS-1059:** Stripe's page said "Your credit card was declined…". The order stayed `awaiting_payment`.
+  - **Cancelled from Stripe's back link, MS-1060:**
+    - The back link landed on `/checkout?payment=cancelled`, with the order unchanged.
+    - The same key with the same cart got the same page back.
+    - A changed cart was 409 `payment_abandoned`. The old session was closed at Stripe after the response, and its `expired` event expired the order.
+    - Pay at pickup with that key was 409 `payment_abandoned`. A fresh key placed it (MS-1061).
+  - **Expired:**
+    - MS-1059's open session was expired through the API, and its event expired the order.
+    - MS-1055, left unpaid, got Stripe's own `checkout.session.expired` at the end of its hour.
+  - **Late webhook:** MS-1056 was paid while the listener was misconfigured. Resending its event (`stripe events resend`) placed and paid it, with one email.
+  - **Duplicate:** resending that event again logged `duplicate`, wrote nothing, and sent no second email.
+  - **Bad signature:** a junk signature, no header, or a stale timestamp: all 400 `invalid_signature`.
+  - **Page can't be created:** a production build with a bogus test key gave 503 `payment_unavailable`. MS-1062 stayed `awaiting_payment` with no session. Stripe's error masks the key.
+  - **Staff:** the owner and Northcote staff each ran 25 lists (every status × all, today, tomorrow and a date, plus searches by name, number and phone). None showed MS-1055, 1059, 1060, 1062, 1027 or 1028; the paid MS-1056 to 1058 showed as Placed. A3's endpoint for the hidden orders answered 404.
+  - **Not checked live:** lazy expiry of a session-less order (MS-1062 would be written expired on its next read after about 04:19 UTC). It's unit-tested.
+  - **Test orders left on the emulator:** MS-1054 to MS-1062, guest `stripe.test@example.com` and `batch.a@example.com`. `bun run seed --reset` clears them.
+- **Findings from the live checks.**
+  - **The CLI must use the same account as the key.** `stripe listen` logged in to another sandbox forwards nothing useful, and its `whsec_` won't verify the app's events. Pass `--api-key` (from the same key) and `--forward-to`.
+  - **Event versions.** Events arrive in the account's default API version (`2026-07-29.dahlia` on this sandbox), not the SDK's pinned `2026-09-30.endive`. The session fields used (`id`, `metadata`, `client_reference_id`, `payment_status`, `payment_intent`, `amount_total`, `currency`) are the same in both. Pin the dashboard endpoint's version to `2026-09-30.endive` when creating it for Vercel.
+  - **Stripe's page shows the account's business name** ("Nuvia sandbox" now). Set it to Millstone in Stripe (Settings → Business → Public details) before showing it to anyone.
+  - **Link's "Save my information" box is ticked by default** on Stripe's page and then asks for a phone number. That's Stripe's UI; a visitor can untick it, or Link can be turned off in the dashboard's payment-method settings.
+  - **Rate limit and payment retries.** Every Continue to payment counts towards the 10 orders an hour per address. So does C5's automatic resend after `payment_abandoned`, which makes two. A customer who cancels and retries many times could reach the limit. Left as is.
 
 ## Investigated but unreproduced bugs
 
