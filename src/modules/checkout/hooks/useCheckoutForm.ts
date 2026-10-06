@@ -24,20 +24,23 @@ const blankValues = (onlinePayments: boolean): CheckoutFormValues => ({
   paymentMethod: onlinePayments ? "" : "at_pickup",
 });
 
-function initialDraft(onlinePayments: boolean): CheckoutDraft {
+function initialDraft(onlinePayments: boolean, backFromPayment: boolean): CheckoutDraft {
   const stored = readCheckoutDraft();
   const values = { ...blankValues(onlinePayments), ...stored?.values };
   if (!onlinePayments) values.paymentMethod = "at_pickup";
+  // Back from the payment page unpaid: online was the choice, whatever the draft kept.
+  else if (backFromPayment) values.paymentMethod = "online";
   return { version: 1, checkoutKey: stored?.checkoutKey ?? newCheckoutKey(), values };
 }
 
 /**
  * C5's form (React Hook Form + the shared Zod schema), restored from and saved
  * to this tab's draft, and the checkout key that goes with it. Browser only:
- * mount it once the cart has loaded.
+ * mount it once the cart has loaded. `backFromPayment`: the customer came back
+ * from the payment page without paying, so "Pay online now" stays chosen.
  */
-export function useCheckoutForm(onlinePayments: boolean) {
-  const [initial] = useState(() => initialDraft(onlinePayments));
+export function useCheckoutForm(onlinePayments: boolean, backFromPayment: boolean) {
+  const [initial] = useState(() => initialDraft(onlinePayments, backFromPayment));
   const checkoutKey = useRef(initial.checkoutKey);
 
   const form = useForm<CheckoutFormValues, unknown, CheckoutFormOutput>({

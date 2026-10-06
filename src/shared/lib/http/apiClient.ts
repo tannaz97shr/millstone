@@ -14,6 +14,14 @@ export interface ApiFailure extends ApiErrorDetails {
   /** 0 when the request never got a response (offline, timeout). */
   status: number;
   code: ApiErrorCode | "network_error";
+  /** On a 429: the response's Retry-After, in seconds, when it sent a usable one. */
+  retryAfterSeconds?: number;
+}
+
+/** Retry-After as delta-seconds (the only form the API sends). */
+function retryAfterSeconds(value: unknown): number | undefined {
+  if (typeof value !== "string" || !/^\d+$/.test(value.trim())) return undefined;
+  return Number(value.trim());
 }
 
 function isApiErrorBody(data: unknown): data is ApiErrorBody {
@@ -55,6 +63,7 @@ export function toApiFailure(error: unknown): ApiFailure {
         currentStatus,
         currentAvailability,
         currentVersion,
+        retryAfterSeconds: retryAfterSeconds(error.response?.headers["retry-after"]),
       };
     }
     return { status, code: status === 0 ? "network_error" : "server_error" };

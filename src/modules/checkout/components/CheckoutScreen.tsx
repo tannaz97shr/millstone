@@ -18,6 +18,10 @@ const content = checkoutContent.page;
 export interface CheckoutScreenProps {
   /** The server's ONLINE_PAYMENTS_ENABLED switch. */
   onlinePayments: boolean;
+  /** Payments run on Stripe's test keys (paymentsTestMode). */
+  testPayments: boolean;
+  /** Arrived with ?payment=cancelled: back from the payment page without paying. */
+  paymentCancelled: boolean;
   /** Whether the confirmation email goes anywhere (sendEmail's emailDeliveryEnabled). */
   emailed: boolean;
 }
@@ -28,11 +32,17 @@ export interface CheckoutScreenProps {
  * can't be ordered, an item that can't be sold) is explained on C4, so C5
  * sends the customer there; an empty cart goes there too.
  */
-export function CheckoutScreen({ onlinePayments, emailed }: CheckoutScreenProps) {
+export function CheckoutScreen({ onlinePayments, testPayments, paymentCancelled, emailed }: CheckoutScreenProps) {
   // C4's notices were read there; only what changes from here on sends the customer back.
   useEffect(() => clearCartMessages(), []);
 
   const router = useRouter();
+  // Kept from the first render: the form may mount after the param is gone.
+  const [backFromPayment] = useState(paymentCancelled);
+  // Shown once: a reload or a shared link shouldn't say the payment failed again.
+  useEffect(() => {
+    if (backFromPayment) router.replace(routes.checkout, { scroll: false });
+  }, [backFromPayment, router]);
   const page = useCartPage();
   /** Placed: the cart is about to be cleared and C7 is opening. */
   const [placed, setPlaced] = useState(false);
@@ -84,6 +94,8 @@ export function CheckoutScreen({ onlinePayments, emailed }: CheckoutScreenProps)
           totalCents={page.summary.totalCents}
           canPlace={canPlace}
           onlinePayments={onlinePayments}
+          testPayments={testPayments}
+          backFromPayment={backFromPayment && onlinePayments}
           emailed={emailed}
           onPlaced={() => setPlaced(true)}
           summary={

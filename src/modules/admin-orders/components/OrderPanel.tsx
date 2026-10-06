@@ -55,6 +55,21 @@ function payLine(order: AdminOrderDetail): string {
   }
 }
 
+/** The provider's page for this payment, in a new tab: staff refund there. */
+function StripeLink({ href }: { href: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex min-h-12 items-center self-start font-bold text-crust underline underline-offset-3 hover:text-crust-deep"
+    >
+      {content.seeInStripe}
+      <span className="sr-only">{content.newTab}</span>
+    </a>
+  );
+}
+
 function cancellationText(order: AdminOrderDetail): string | null {
   if (!order.cancellationReason) return null;
   if (order.cancellationReason === "other") return order.cancellationNote;
@@ -138,6 +153,7 @@ function PanelBody({ order }: { order: AdminOrderDetail }) {
         </SectionLabel>
         <p className="font-bold">{order.paymentMethod === "online" ? content.methodOnline : content.methodAtPickup}</p>
         <p className="text-[18px]/[26px] text-ink-muted">{payLine(order)}</p>
+        {order.paymentDashboardUrl && <StripeLink href={order.paymentDashboardUrl} />}
       </section>
 
       {reason && (
@@ -279,6 +295,7 @@ export function OrderPanel({
                 <span className="text-[18px]/[26px]">{content.refundBody}</span>
               </div>
             </div>
+            {order.paymentDashboardUrl && <StripeLink href={order.paymentDashboardUrl} />}
             <Button
               variant="primary"
               icon="refund"

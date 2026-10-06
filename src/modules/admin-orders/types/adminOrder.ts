@@ -48,6 +48,8 @@ export interface AdminOrderDetail extends AdminOrderRow {
   contactEmail: string;
   lines: AdminOrderLine[];
   paymentRef: string | null;
+  /** "See this payment in Stripe": paid online with a provider reference, else null. Built on the server. */
+  paymentDashboardUrl: string | null;
   cancellationReason: CancellationReason | null;
   /** Staff's words, with the reason "other". */
   cancellationNote: string | null;

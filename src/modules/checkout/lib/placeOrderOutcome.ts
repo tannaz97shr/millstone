@@ -2,6 +2,7 @@ import type { CartRemovals } from "@/modules/cart/types/cart";
 import type { Cents, IsoDate, OrderId, ProductId } from "@/shared/domain";
 import type { ApiFailure } from "@/shared/lib/http/apiClient";
 import type { CheckoutFormValues } from "./checkoutSchema";
+import { waitMinutes } from "./retryWait";
 
 // What C5 does after Place order fails, decided from the server's answer.
 // Pure, so every branch is unit-tested; the hook carries it out.
@@ -22,8 +23,19 @@ export type PlaceOrderProblem =
   | { kind: "fields"; fields: (keyof CheckoutFormValues)[] }
   /** The branch is gone: C4 asks for a branch again. */
   | { kind: "branch_gone" }
-  /** Too many orders from this address for now (per-IP limit): say so, with no Try again. */
-  | { kind: "rate_limited" }
+  /**
+   * Too many orders from this address for now (per-IP limit): say so, with no
+   * Try again. `waitMinutes` comes from Retry-After; null when it had none.
+   */
+  | { kind: "rate_limited"; waitMinutes: number | null }
+  /**
+   * This checkout's online order wasn't paid and can't be now (the cart or
+   * payment changed after coming back, or its page closed). Nothing was saved:
+   * place the cart under a new checkout key.
+   */
+  | { kind: "payment_abandoned" }
+  /** The payment page couldn't be opened. Nothing was charged; offer Try again or Pay at pickup. */
+  | { kind: "payment_unavailable" }
   /** Anything else, including no answer: keep everything and offer Try again. */
   | { kind: "failed" };
 
@@ -76,7 +88,13 @@ export function placeOrderProblem(failure: ApiFailure): PlaceOrderProblem {
       return { kind: "branch_gone" };
 
     case "rate_limited":
-      return { kind: "rate_limited" };
+      return { kind: "rate_limited", waitMinutes: waitMinutes(failure.retryAfterSeconds) };
+
+    case "payment_abandoned":
+      return { kind: "payment_abandoned" };
+
+    case "payment_unavailable":
+      return { kind: "payment_unavailable" };
 
     default:
       return { kind: "failed" };

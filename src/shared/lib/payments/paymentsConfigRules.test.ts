@@ -65,4 +65,10 @@ describe("stripeDashboardPaymentUrl", () => {
     expect(stripeDashboardPaymentUrl("pi_123", true)).toBe("https://dashboard.stripe.com/test/payments/pi_123");
     expect(stripeDashboardPaymentUrl("pi_123", false)).toBe("https://dashboard.stripe.com/payments/pi_123");
   });
+
+  test("no link for anything but a PaymentIntent ID", () => {
+    for (const ref of [null, "", "PAY-7Q2M81", "cs_test_123", "pi_", "pi_123/../../settings", "pi_1 2"]) {
+      expect(stripeDashboardPaymentUrl(ref, true)).toBeNull();
+    }
+  });
 });

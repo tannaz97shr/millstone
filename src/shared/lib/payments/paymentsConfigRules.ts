@@ -23,6 +23,9 @@ export type PaymentsConfig =
 const TEST_KEY = /^(sk|rk)_test_/;
 const LIVE_KEY = /^(sk|rk)_live_/;
 
+/** A live Stripe secret or restricted key (refused for now). */
+export const isLiveSecretKey = (key: string | undefined): boolean => LIVE_KEY.test(key?.trim() ?? "");
+
 const present = (value: string | undefined): value is string => value !== undefined && value.trim() !== "";
 
 /** SITE_URL, else Vercel's production domain. Never the request's Host header. */
@@ -64,8 +67,15 @@ export function readPaymentsConfig(env: PaymentsEnv): PaymentsConfig {
   };
 }
 
-/** Where staff can see one payment in Stripe's dashboard (A3). */
-export function stripeDashboardPaymentUrl(paymentRef: string, testMode: boolean): string {
+const PAYMENT_INTENT_ID = /^pi_[A-Za-z0-9]+$/;
+
+/**
+ * Where staff can see one payment in Stripe's dashboard (A3). Null for a
+ * reference that isn't a PaymentIntent ID, such as the seed's "PAY-…" ones,
+ * so A3 never links to a page that doesn't exist.
+ */
+export function stripeDashboardPaymentUrl(paymentRef: string | null, testMode: boolean): string | null {
+  if (!paymentRef || !PAYMENT_INTENT_ID.test(paymentRef)) return null;
   const base = testMode ? "https://dashboard.stripe.com/test/payments/" : "https://dashboard.stripe.com/payments/";
-  return base + encodeURIComponent(paymentRef);
+  return base + paymentRef;
 }
