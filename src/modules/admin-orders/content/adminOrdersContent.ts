@@ -45,6 +45,8 @@ export const adminOrdersContent = {
     summary: (count: number, status: StatusFilter, where: string, branch: string | null) =>
       `${orders(count)} ${statusWords[status]}${where}${branch ? ` at ${branch}` : ""}`,
     found: (count: number, query: string) => `${orders(count)} found for “${query}”`,
+    /** Undesigned: a search is loading; the previous rows are dimmed and can't be used. */
+    searching: "Searching…",
     whereToday: " for today",
     whereTomorrow: " for tomorrow",
     whereDate: (day: string) => ` for ${day}`,

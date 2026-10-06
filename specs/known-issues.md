@@ -294,10 +294,19 @@ _None yet._
     - "That didn't go through…", "The orders didn't answer in time…"
     - "Couldn't refresh since 9:41am…"
     - "Showing the latest 100…"
-    - "Loading orders…", "We couldn't load the orders…", "Loading the order…", "This order isn't on your list…"
+    - "Searching…", "Loading orders…", "We couldn't load the orders…", "Loading the order…", "This order isn't on your list…"
     - The cancel form's field errors.
   - **The 409s are logged by the browser** as failed requests in the console. That's expected for a refused action; the app itself logs them as warnings.
-  - **Search summary ahead of its results (seen in the step 9 live smoke test, not investigated).** Just after "MS-1047" was typed, the summary read "12 orders found for "MS-1047"" while the list still showed the previous orders. A moment later it read "1 order found". A tap on a row in between opens the wrong order. The summary likely counts the previous results kept while the search loads.
+  - ~~**Search summary ahead of its results (seen in the step 9 live smoke test).**~~ Fixed 6 Oct 2026 (`fix/search-stale-list`).
+    - **Cause:** while a new search or filter loads, TanStack keeps the previous answer as placeholder data, and the summary counted it under the new search ("12 orders found for "MS-1047""). Its rows could still be tapped, so a tap could open or change the wrong order.
+    - **Now:** while the list on screen answers an earlier query, it's dimmed to half opacity, `inert` and `aria-busy`, and the summary says "Searching…" (a search) or "Loading orders…" (a filter change, or a cleared search).
+      - This also covers the 300ms while typing settles. `OrderFilters` reports the pending text.
+      - If the previous answer was empty, "Searching…" shows in place of "No orders match …".
+      - The 100-result note is hidden.
+      - The rule is `listState` in `src/modules/admin-orders/lib/listState.ts`, with unit tests.
+    - **Not affected:** the 30-second refresh of the same query keeps its key, so it's never stale. Rows stay in place, with no dimming.
+    - **Focus:** a query change starts in the filters, so focus isn't in the list when it goes inert. If it ever is, it moves to the status line. Tab skips the dimmed rows. A tap on the dimmed list does nothing, and, like a tap on any blank area, it takes focus off the search field.
+    - **Still open:** the status buttons' counts ("To do · 11") come from the previous answer while a date or branch change loads. They're display only, and blanking them would make the labels flicker on every change.
 
 - **A4 branch availability (step 7, Batch A): decisions and deliberate differences.**
   - **Orders that already include the product (decided 5 Oct 2026).** The change saves at once, as on the canvas. If open orders (Placed or Ready) already include the product, the message turns wheat and names them.
