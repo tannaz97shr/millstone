@@ -7,6 +7,7 @@ import { buildConfirmationEmail } from "./buildConfirmationEmail";
 const order: OrderConfirmation = {
   orderId: "6f1c2a9e-3b7d-4c41-9a2e-8d5f0b7c1e23" as OrderId,
   orderNumber: "MS-1048",
+  state: "confirmed",
   pickupDate: toIsoDate("2026-09-30"),
   branch: {
     id: "northcote" as BranchId,

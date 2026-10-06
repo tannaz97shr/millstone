@@ -56,6 +56,9 @@ export const orderDocSchema = z
     paymentStatus: z.enum(PAYMENT_STATUSES),
     paymentRef: z.string().min(1).nullable(),
     processedStripeEventIds: z.array(z.string().min(1)),
+    // Added in step 10; orders saved before it have neither, so they read as null.
+    checkoutSessionId: z.string().min(1).nullable().default(null),
+    paymentExpiresAt: timestampField.nullable().default(null),
     recurringOrderId: z.string().min(1).nullable(),
     generationNote: z.string().min(1).nullable(),
     cancellationReason: z.enum(CANCELLATION_REASONS).nullable(),

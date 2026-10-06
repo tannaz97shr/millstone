@@ -8,7 +8,7 @@ import { getOrderConfirmation } from "./getOrderConfirmation";
 
 /**
  * Server-side fill of C7's query. Returns "not_found" for an order that
- * doesn't exist (or isn't confirmed), so the page can 404. Any other failure
+ * doesn't exist, so the page can 404. Any other failure
  * is logged and left to the browser, which asks again and shows the error.
  */
 export async function prefetchOrderConfirmation(

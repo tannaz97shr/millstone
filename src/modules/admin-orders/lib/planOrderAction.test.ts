@@ -25,6 +25,8 @@ function order(overrides: Partial<VisibleOrder> = {}): VisibleOrder {
     paymentStatus: "paid",
     paymentRef: null,
     processedStripeEventIds: [],
+    checkoutSessionId: null,
+    paymentExpiresAt: null,
     recurringOrderId: null,
     generationNote: null,
     cancellationReason: null,

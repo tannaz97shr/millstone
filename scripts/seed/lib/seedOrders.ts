@@ -1,5 +1,6 @@
 import { FIRST_ORDER_NUMBER, formatOrderNumber, generatedOrderId, orderCounterRef, orderCounterToDoc } from "@/modules/orders/lib/orderIds";
 import { orderCounterDocSchema } from "@/modules/orders/lib/orderSchema";
+import { paymentExpiresAtFor } from "@/modules/orders/lib/payment/paymentWindow";
 import { orderToDoc } from "@/modules/orders/lib/toOrder";
 import { recurringOrderToDoc } from "@/modules/recurring-orders/lib/toRecurringOrder";
 import type {
@@ -101,6 +102,7 @@ function buildOrder(spec: SeedOrder, context: SeedContext): Omit<Order, "id"> {
   const days = daysFor(context, spec.branchId);
   const customer = customerFor(context, spec.email);
   const items = priceItems(spec.items);
+  const createdAt = instantAt(days, spec.placedAt);
   return {
     orderNumber: formatOrderNumber(spec.number),
     branchId: spec.branchId,
@@ -117,12 +119,17 @@ function buildOrder(spec: SeedOrder, context: SeedContext): Omit<Order, "id"> {
     paymentStatus: spec.paymentStatus,
     paymentRef: spec.paymentRef ?? null,
     processedStripeEventIds: [],
+    // No checkout page: seed orders were never sent to Stripe. MS-1028 stays
+    // awaiting_payment for good: its ID isn't a checkout key, so neither C7
+    // nor checkout ever reads it to expire it lazily. Staff never see it.
+    checkoutSessionId: null,
+    paymentExpiresAt: spec.paymentMethod === "online" ? paymentExpiresAtFor(new Date(createdAt)) : null,
     recurringOrderId: null,
     generationNote: null,
     cancellationReason: spec.cancellationReason ?? null,
     cancellationNote: spec.cancellationNote ?? null,
     collectUndo: null,
-    createdAt: instantAt(days, spec.placedAt),
+    createdAt,
     paidAt: optionalInstant(days, spec.paidAt),
     refundedAt: optionalInstant(days, spec.refundedAt),
     readyAt: optionalInstant(days, spec.readyAt),

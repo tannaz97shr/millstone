@@ -50,9 +50,14 @@ export interface Order {
   totalCents: Cents;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
+  /** The provider's payment ID (Stripe: the PaymentIntent, `pi_…`), set when paid online. */
   paymentRef: string | null;
   /** Webhook event IDs already applied, so a duplicate event changes nothing. */
   processedStripeEventIds: string[];
+  /** Online only: the provider's checkout page (Stripe: the Checkout Session, `cs_…`), once it exists. */
+  checkoutSessionId: string | null;
+  /** Online only: when an unpaid order stops waiting for payment (spec 6, ~1 hour). */
+  paymentExpiresAt: IsoInstant | null;
   recurringOrderId: RecurringOrderId | null;
   generationNote: string | null;
   cancellationReason: CancellationReason | null;
