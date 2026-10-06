@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { LoadErrorNotice, LoadingMessage } from "@/shared/components/molecules/LoadState/LoadState";
 import { componentsContent } from "@/shared/content/components";
 import type { OrderId } from "@/shared/domain";
@@ -14,6 +14,7 @@ import { useOrderFilters } from "../hooks/useOrderFilters";
 import { useStableRows } from "../hooks/useStableRows";
 import { groupOrders } from "../lib/groupOrders";
 import { withHeldRows } from "../lib/heldRows";
+import { listState, staleSummary } from "../lib/listState";
 import { type AdminOrderFilters, filtersToQuery, isSearching, rowFitsFilters } from "../lib/orderFilters";
 import type { AdminOrderList, AdminOrderRow } from "../types/adminOrder";
 import { CancelOrderDialog } from "./CancelOrderDialog";
@@ -28,6 +29,8 @@ const content = adminOrdersContent;
 
 /** How long a focus request waits for its row to render before settling for the status line. */
 const ROW_FOCUS_WAIT_MS = 1_000;
+
+const ORDERS_LIST_ID = "orders";
 
 export interface AdminOrdersScreenProps {
   owner: boolean;
@@ -73,6 +76,17 @@ export function AdminOrdersScreen({ owner }: AdminOrdersScreenProps) {
   const { filters, setFilters, openOrderId, setOpenOrder } = useOrderFilters(owner);
   const query = useAdminOrdersQuery(filters);
   const data = query.data;
+  // Search text typed but not applied yet.
+  const [pendingSearch, setPendingSearch] = useState<string | null>(null);
+  // The rows on screen answer an earlier query while a new search or filter loads:
+  // they're dimmed and inert, and the summary doesn't count them.
+  const stale =
+    listState({
+      hasData: data !== undefined,
+      isPlaceholderData: query.isPlaceholderData,
+      isError: query.isError,
+      typing: pendingSearch !== null,
+    }) === "stale";
 
   const listRows = data?.orders ?? [];
   const fitting = listRows.filter((row) => rowFitsFilters(row, filters));
@@ -94,6 +108,12 @@ export function AdminOrdersScreen({ owner }: AdminOrdersScreenProps) {
   const arrived = useArrivals(data, filterKey, query.isPlaceholderData);
   const searching = isSearching(filters);
   const groups = groupOrders(rows, data?.branches ?? [], owner && filters.branch === null);
+
+  // Going inert would drop focus inside the list to the page: hand it to the status line.
+  // (A query change starts in the filters, so this is only a safety net.)
+  useEffect(() => {
+    if (stale && document.activeElement?.closest(`#${ORDERS_LIST_ID}`)) document.getElementById(STATUS_LINE_ID)?.focus();
+  }, [stale]);
 
   const { focusRequest, focusHandled } = actions;
   useEffect(() => {
@@ -131,9 +151,11 @@ export function AdminOrdersScreen({ owner }: AdminOrdersScreenProps) {
 
   const where = whereText(filters, data);
   const branchName = owner && filters.branch ? data?.branches.find((b) => b.id === filters.branch)?.name ?? null : null;
-  const summary = searching
-    ? content.status.found(fitting.length, filters.q.trim())
-    : content.status.summary(fitting.length, filters.status, where, branchName);
+  const summary = stale
+    ? staleSummary(pendingSearch ?? filters.q)
+    : searching
+      ? content.status.found(fitting.length, filters.q.trim())
+      : content.status.summary(fitting.length, filters.status, where, branchName);
   const updated = data
     ? query.isError
       ? content.status.refreshFailed(formatMelbourneTime(data.generatedAt))
@@ -153,6 +175,7 @@ export function AdminOrdersScreen({ owner }: AdminOrdersScreenProps) {
         today={data?.today ?? null}
         branches={data?.branches ?? []}
         counts={data?.counts ?? null}
+        onPendingSearch={setPendingSearch}
       />
       <OrdersStatusBar
         undo={actions.undo}
@@ -164,7 +187,13 @@ export function AdminOrdersScreen({ owner }: AdminOrdersScreenProps) {
         updated={updated}
         arrived={arrived}
       />
-      <div id="orders" className="flex flex-col gap-8 px-8 pt-1 pb-12">
+      <div
+        id={ORDERS_LIST_ID}
+        inert={stale}
+        aria-busy={stale}
+        data-stale={stale || undefined}
+        className="flex flex-col gap-8 px-8 pt-1 pb-12 transition-opacity data-stale:opacity-50"
+      >
         {!data && query.isError ? (
           <LoadErrorNotice
             retryLabel={content.load.retry}
@@ -173,8 +202,8 @@ export function AdminOrdersScreen({ owner }: AdminOrdersScreenProps) {
           >
             {content.load.failed}
           </LoadErrorNotice>
-        ) : !data ? (
-          <LoadingMessage>{content.load.loading}</LoadingMessage>
+        ) : !data || (stale && groups.length === 0) ? (
+          <LoadingMessage>{stale ? summary : content.load.loading}</LoadingMessage>
         ) : groups.length === 0 ? (
           <OrdersEmpty
             filters={filters}
@@ -201,7 +230,7 @@ export function AdminOrdersScreen({ owner }: AdminOrdersScreenProps) {
               onOpen={openOrder}
               onFocusRow={stable.holdFocused}
             />
-            {data.capped && <p className="text-ink-muted">{content.status.capped}</p>}
+            {data.capped && !stale && <p className="text-ink-muted">{content.status.capped}</p>}
           </>
         )}
       </div>

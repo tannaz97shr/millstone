@@ -43,6 +43,8 @@ export interface OrderFiltersProps {
   today: IsoDate | null;
   branches: AdminBranchOption[];
   counts: Record<StatusFilter, number> | null;
+  /** The search text while it's typed but not applied yet (the debounce is pending), else null. */
+  onPendingSearch?: (text: string | null) => void;
 }
 
 /** Weekdays every branch in view is closed: the month grid strikes them through. */
@@ -56,7 +58,15 @@ function sharedClosedDays(branches: AdminBranchOption[]): Weekday[] {
  * filter by pickup date, status and (owner) branch. Every choice is a button
  * with a word on it; the month grid opens under "Choose date".
  */
-export function OrderFilters({ filters, onChange, owner, today, branches, counts }: OrderFiltersProps) {
+export function OrderFilters({
+  filters,
+  onChange,
+  owner,
+  today,
+  branches,
+  counts,
+  onPendingSearch,
+}: OrderFiltersProps) {
   const [text, setText] = useState(filters.q);
   const [picking, setPicking] = useState(false);
   const searching = isSearching(filters);
@@ -73,6 +83,9 @@ export function OrderFilters({ filters, onChange, owner, today, branches, counts
     const timer = window.setTimeout(() => onChange({ q: text.trim() }), SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [text, filters.q, onChange]);
+
+  const pending = text.trim() === filters.q.trim() ? null : text;
+  useEffect(() => onPendingSearch?.(pending), [pending, onPendingSearch]);
 
   const custom = !(DATE_PRESETS as readonly string[]).includes(filters.date);
   const customDate = custom ? (filters.date as IsoDate) : null;
