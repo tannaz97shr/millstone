@@ -1,5 +1,6 @@
-// C7 Confirmation and C13 email: the same details in the same words, from
-// design/customer/Confirmation.dc.html (ConfGuestPickup) and Email.dc.html.
+// C6 Confirming, C7 Confirmation and C13 email: the same details in the same
+// words, from design/customer/Confirming.dc.html, Confirmation.dc.html
+// (ConfGuestPickup) and Email.dc.html.
 
 export const confirmationContent = {
   page: {
@@ -8,6 +9,27 @@ export const confirmationContent = {
     loadError: "We couldn't load your order. Check your connection and try again.",
     retry: "Try again",
     notFound: "We couldn't find that order. Check the link in your confirmation email.",
+  },
+
+  /** C6, from design/customer/Confirming.dc.html and ConfirmingSlow.dc.html (AC-C6). */
+  confirming: {
+    title: "Confirming your payment",
+    body: "This usually takes a few seconds. Please keep this page open.",
+    slowTitle: "Still confirming your payment",
+    slowBody: (email: string) =>
+      `This is taking longer than usual. If your payment went through, your order is safe. We'll email the confirmation to ${email} as soon as it arrives.`,
+    /** Undesigned: the live site sends no email yet, so the link is how they'll see it. */
+    slowBodyNoEmail:
+      "This is taking longer than usual. If your payment went through, your order is safe. Keep this link: it will show your confirmation once the payment is confirmed.",
+    pickup: (day: string, branch: string) => `Pickup ${day} at ${branch}`,
+    count: (count: number) => (count === 1 ? "1 item" : `${count} items`),
+    checkAgain: "Check again",
+  },
+
+  /** Undesigned: the online order's payment page closed unpaid, so it was never placed. */
+  expired: {
+    title: "Your payment wasn't completed",
+    body: "This order wasn't placed, and you haven't been charged.",
   },
 
   title: "Your order is in",

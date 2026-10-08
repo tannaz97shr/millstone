@@ -1,6 +1,6 @@
 import "server-only";
 import type { PaymentProvider } from "./paymentProvider";
-import { type PaymentsConfig, readPaymentsConfig } from "./paymentsConfigRules";
+import { isLiveSecretKey, type PaymentsConfig, readPaymentsConfig, stripeDashboardPaymentUrl } from "./paymentsConfigRules";
 import { createStripeProvider } from "./stripe/stripeProvider";
 
 // Server-only: Stripe's keys never reach the browser (no NEXT_PUBLIC_*). Read
@@ -38,6 +38,16 @@ export function paymentProvider(): PaymentProvider | null {
 export function paymentsSiteUrl(): string | null {
   const current = paymentsConfig();
   return current.enabled ? current.siteUrl : null;
+}
+
+/**
+ * A3's "See this payment in Stripe". Stays a link while payments are off, as
+ * paid orders outlive the switch: the test dashboard, unless a live key is set.
+ */
+export function paymentDashboardUrl(paymentRef: string | null): string | null {
+  const current = paymentsConfig();
+  const testMode = current.enabled ? current.testMode : !isLiveSecretKey(process.env.STRIPE_SECRET_KEY);
+  return stripeDashboardPaymentUrl(paymentRef, testMode);
 }
 
 /** True when payments run on Stripe's test keys: C5 says no real money moves. */

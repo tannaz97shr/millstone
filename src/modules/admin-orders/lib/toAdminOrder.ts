@@ -25,9 +25,14 @@ export function toAdminOrderRow(order: Order & { status: VisibleOrderStatus }, b
   };
 }
 
+/**
+ * `dashboardUrl` turns a payment reference into the provider's dashboard
+ * link (paymentDashboardUrl, server-only), so this mapper stays pure.
+ */
 export function toAdminOrderDetail(
   order: Order & { status: VisibleOrderStatus },
   branch: Pick<Branch, "name">,
+  dashboardUrl: (paymentRef: string | null) => string | null,
 ): AdminOrderDetail {
   return {
     ...toAdminOrderRow(order, branch),
@@ -39,6 +44,7 @@ export function toAdminOrderDetail(
       lineTotalCents: item.lineTotalCents,
     })),
     paymentRef: order.paymentRef,
+    paymentDashboardUrl: order.paymentMethod === "online" ? dashboardUrl(order.paymentRef) : null,
     cancellationReason: order.cancellationReason,
     cancellationNote: order.cancellationNote,
     paidAt: order.paidAt,

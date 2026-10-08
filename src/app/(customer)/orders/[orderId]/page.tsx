@@ -6,7 +6,8 @@ import { prefetchOrderConfirmation } from "@/modules/orders/lib/prefetchOrderCon
 import { emailDeliveryEnabled } from "@/shared/lib/email/sendEmail";
 import { getQueryClient } from "@/shared/lib/query/getQueryClient";
 
-// C7. Public: the order's unguessable ID is the only credential (see
+// C6 then C7 (the payment page's success URL), or C7 straight from Place
+// order. Public: the order's unguessable ID is the only credential (see
 // specs/known-issues.md). A malformed or unknown ID is the customer 404.
 export default async function OrderConfirmationPage({ params }: { params: Promise<{ orderId: string }> }) {
   const parsed = orderRouteParamsSchema.safeParse(await params);

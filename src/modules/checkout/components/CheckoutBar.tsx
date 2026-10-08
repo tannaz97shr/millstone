@@ -13,12 +13,14 @@ const content = checkoutContent.bar;
 export interface CheckoutBarProps {
   control: Control<CheckoutFormValues, unknown, CheckoutFormOutput>;
   totalCents: Cents;
-  /** Placing, or placed and on the way to C7: the button says so and ignores taps. */
+  /** Placing, or on the way to C7 or the payment page: the button says so and ignores taps. */
   pending: boolean;
+  /** Place order, for moving focus to it (e.g. after switching to Pay at pickup). */
+  submitRef?: React.Ref<HTMLButtonElement>;
 }
 
 /** The error summary, the total and Place order (the form's submit button). */
-export function CheckoutBar({ control, totalCents, pending }: CheckoutBarProps) {
+export function CheckoutBar({ control, totalCents, pending, submitRef }: CheckoutBarProps) {
   const { errors } = useFormState({ control });
   const method = useWatch({ control, name: "paymentMethod" });
   const errorCount = Object.keys(errors).length;
@@ -37,8 +39,14 @@ export function CheckoutBar({ control, totalCents, pending }: CheckoutBarProps) 
         </span>
       </div>
       {/* aria-disabled, not disabled: the button keeps focus while the order is placed. */}
-      <Button type="submit" variant="primary" block aria-disabled={pending || undefined}>
-        {pending ? content.placing : method === "online" ? content.continueToPayment : content.place}
+      <Button ref={submitRef} type="submit" variant="primary" block aria-disabled={pending || undefined}>
+        {pending
+          ? method === "online"
+            ? content.openingPayment
+            : content.placing
+          : method === "online"
+            ? content.continueToPayment
+            : content.place}
       </Button>
     </BottomBar>
   );

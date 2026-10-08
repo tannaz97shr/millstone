@@ -9,6 +9,7 @@ import { ApiError } from "@/shared/lib/api/apiError";
 import { getDb } from "@/shared/lib/firebase/admin";
 import { branchesRef, ordersRef } from "@/shared/lib/firebase/collections";
 import { firestoreRead } from "@/shared/lib/firebase/firestoreRead";
+import { paymentDashboardUrl } from "@/shared/lib/payments/paymentsConfig";
 import { withDeadline } from "@/shared/utils/withDeadline";
 import type { AdminOrderActionResult } from "../types/adminOrder";
 import { orderNotFound } from "./getAdminOrder";
@@ -75,5 +76,5 @@ export async function applyOrderAction(
     () => new ApiError(503, "unavailable", `Order action took over ${ORDER_ACTION_DEADLINE_MS}ms`),
   );
   const branchSnapshot = await firestoreRead(branchesRef().doc(order.branchId).get(), `branches/${order.branchId}`);
-  return { order: toAdminOrderDetail(order, toBranch(branchSnapshot)), undoUntil };
+  return { order: toAdminOrderDetail(order, toBranch(branchSnapshot), paymentDashboardUrl), undoUntil };
 }

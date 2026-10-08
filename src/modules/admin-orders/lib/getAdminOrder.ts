@@ -6,6 +6,7 @@ import type { OrderId } from "@/shared/domain";
 import { ApiError } from "@/shared/lib/api/apiError";
 import { branchesRef, ordersRef } from "@/shared/lib/firebase/collections";
 import { firestoreRead } from "@/shared/lib/firebase/firestoreRead";
+import { paymentDashboardUrl } from "@/shared/lib/payments/paymentsConfig";
 import type { AdminOrderDetail } from "../types/adminOrder";
 import { isVisibleStatus } from "./paymentLabel";
 import { toAdminOrderDetail } from "./toAdminOrder";
@@ -26,5 +27,5 @@ export async function getAdminOrder(actor: StaffActor, orderId: OrderId): Promis
   if (!isVisibleStatus(status)) throw orderNotFound();
 
   const branchSnapshot = await firestoreRead(branchesRef().doc(order.branchId).get(), `branches/${order.branchId}`);
-  return toAdminOrderDetail({ ...order, status }, toBranch(branchSnapshot));
+  return toAdminOrderDetail({ ...order, status }, toBranch(branchSnapshot), paymentDashboardUrl);
 }

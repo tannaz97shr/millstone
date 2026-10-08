@@ -1,6 +1,9 @@
 // Single source of truth for page paths. Never hand-build a path elsewhere;
 // add a helper here for anything with params.
 
+/** The query param the payment page's back link adds to C5 (routes.checkoutPaymentCancelled). */
+export const paymentCancelledParam = { name: "payment", value: "cancelled" } as const;
+
 export const routes = {
   home: "/",
   /** C2: a branch's menu, optionally for a pickup date ("YYYY-MM-DD"). */
@@ -11,7 +14,7 @@ export const routes = {
   cart: "/cart",
   checkout: "/checkout",
   /** C5 after the customer backed out of (or failed) the payment page: CheckoutPayFailed's message. */
-  checkoutPaymentCancelled: `/checkout?${new URLSearchParams({ payment: "cancelled" })}`,
+  checkoutPaymentCancelled: `/checkout?${new URLSearchParams({ [paymentCancelledParam.name]: paymentCancelledParam.value })}`,
   /** C7: one order's confirmation, by its unguessable ID. */
   orderConfirmation: (orderId: string) => `/orders/${encodeURIComponent(orderId)}`,
   admin: {

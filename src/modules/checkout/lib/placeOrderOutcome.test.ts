@@ -75,8 +75,25 @@ describe("placeOrderProblem", () => {
     expect(placeOrderProblem(failure("unknown_branch"))).toEqual({ kind: "branch_gone" });
   });
 
-  test("too many orders from this address says so, without Try again", () => {
-    expect(placeOrderProblem(failure("rate_limited"))).toEqual({ kind: "rate_limited" });
+  test("too many orders from this address says so, without Try again, with the wait from Retry-After", () => {
+    expect(placeOrderProblem(failure("rate_limited", { status: 429, retryAfterSeconds: 1_500 }))).toEqual({
+      kind: "rate_limited",
+      waitMinutes: 25,
+    });
+    expect(placeOrderProblem(failure("rate_limited", { status: 429 }))).toEqual({
+      kind: "rate_limited",
+      waitMinutes: null,
+    });
+  });
+
+  test("an abandoned online payment asks for a new checkout key", () => {
+    expect(placeOrderProblem(failure("payment_abandoned"))).toEqual({ kind: "payment_abandoned" });
+  });
+
+  test("a payment page that couldn't open has its own notice", () => {
+    expect(placeOrderProblem(failure("payment_unavailable", { status: 503 }))).toEqual({
+      kind: "payment_unavailable",
+    });
   });
 
   test("no answer, a server error, an outage or a missing detail all offer Try again", () => {

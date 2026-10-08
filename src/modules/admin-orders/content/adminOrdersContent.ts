@@ -123,6 +123,9 @@ export const adminOrdersContent = {
     refundedLine: (when: string, ref: string | null) => `Refunded ${when}${ref ? ` · Ref ${ref}` : ""}`,
     unpaidLine: (total: string) => `Not paid yet. Take ${total} when they collect.`,
     nothingPaid: "Nothing was paid.",
+    // Undesigned: the provider's own page for a paid online order (step 10).
+    seeInStripe: "See this payment in Stripe",
+    newTab: " (opens in a new tab)",
     reason: "Why it was cancelled",
     history: "History",
     historyLabels: {

@@ -1,4 +1,5 @@
-// C5 Checkout, from design/customer/Checkout.dc.html and CheckoutErrors.dc.html.
+// C5 Checkout, from design/customer/Checkout.dc.html, CheckoutErrors.dc.html
+// and CheckoutPayFailed.dc.html.
 
 export const checkoutContent = {
   page: {
@@ -11,6 +12,11 @@ export const checkoutContent = {
     opening: "Your order is placed. Opening your confirmation…",
     loadError: "We couldn't load your order's prices. Check your connection and try again.",
     retry: "Try again",
+    /** CheckoutPayFailed: back from the payment page without paying (AC-C6). */
+    paymentCancelled: {
+      title: "Your payment wasn't completed",
+      body: "You haven't been charged, and your order and details are just as you left them. Try again, or choose Pay at pickup.",
+    },
   },
 
   summary: {
@@ -42,6 +48,11 @@ export const checkoutContent = {
       hint: "Pay by card on a secure payment page, then come back here.",
     },
     atPickup: { label: "Pay at pickup", hint: "Pay at the counter when you collect your order." },
+    /** Not designed: shown only while payments run on Stripe's test keys. */
+    testNote: {
+      title: "Test payments only.",
+      body: "No real money moves. To try paying online, use card 4242 4242 4242 4242 with any future date and any CVC.",
+    },
   },
 
   bar: {
@@ -51,6 +62,8 @@ export const checkoutContent = {
     continueToPayment: "Continue to payment",
     /** Not designed. */
     placing: "Placing your order…",
+    /** Not designed: on the way to the payment page. */
+    openingPayment: "Opening the payment page…",
     errorSummary: (count: number) =>
       count === 1 ? "Fix the 1 thing marked above." : `Fix the ${count} things marked above.`,
   },
@@ -64,8 +77,21 @@ export const checkoutContent = {
       body: "Check your connection and try again. Everything you've typed is still here.",
       retry: "Try again",
     },
-    rateLimited:
-      "There have been a lot of orders from this connection. Try again in an hour, or call the branch to order.",
+    rateLimited: {
+      /** `minutes` from Retry-After; null when unknown (the limit's window is an hour). */
+      body: (minutes: number | null) =>
+        `You've tried a lot of times from this connection. Your order and details are still here. Try again in ${
+          minutes === null ? "an hour" : minutes === 1 ? "1 minute" : `${minutes} minutes`
+        }, or call `,
+      call: (branch: string) => `${branch} on `,
+      after: " to order.",
+    },
+    paymentUnavailable: {
+      title: "We couldn't open the payment page",
+      body: "You haven't been charged. Try again, or choose Pay at pickup.",
+      retry: "Try again",
+      atPickup: "Pay at pickup",
+    },
     keyMismatch: {
       title: (orderNumber: string) => `Your earlier order ${orderNumber} was already placed`,
       body: "It went through before you changed your order. See that order, or place what's in your order now as a new one.",
