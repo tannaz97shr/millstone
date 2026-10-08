@@ -8,7 +8,10 @@ export const confirmationContent = {
     loading: "Loading your order…",
     loadError: "We couldn't load your order. Check your connection and try again.",
     retry: "Try again",
-    notFound: "We couldn't find that order. Check the link in your confirmation email.",
+    /** Undesigned: no email goes out, and a missing order has no branch to name. C1 lists every phone. */
+    notFound:
+      "We couldn't find that order. Check the link, or call the branch you ordered from. Their numbers are on our branches page.",
+    notFoundLink: "See our branches",
   },
 
   /** C6, from design/customer/Confirming.dc.html and ConfirmingSlow.dc.html (AC-C6). */

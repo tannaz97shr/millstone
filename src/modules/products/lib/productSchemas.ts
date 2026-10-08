@@ -89,3 +89,10 @@ export function toProductInput(values: ProductFormValues): ProductInputRequest {
     isActive: values.isActive,
   };
 }
+
+/** DELETE /api/admin/products/{id}/photo: the version the form read. */
+export const productPhotoRemoveSchema = z.object({
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export type ProductPhotoRemoveRequest = z.input<typeof productPhotoRemoveSchema>;

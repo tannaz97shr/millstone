@@ -22,6 +22,9 @@ export interface PhotoFieldProps {
   /** Why the last file chosen can't be used, if it can't. */
   error: string | null;
   onChoose: (file: File) => void;
+  /** Asks to remove the saved photo; offered only while no new file is chosen. */
+  onRemove?: () => void;
+  removing?: boolean;
 }
 
 /**
@@ -29,7 +32,16 @@ export interface PhotoFieldProps {
  * shrinks the file in the browser (useProductForm); the server decides from
  * the bytes whether it's a JPEG, PNG or WebP, and crops it to 4:3.
  */
-export function PhotoField({ name, currentUrl, chosen, preparing, error, onChoose }: PhotoFieldProps) {
+export function PhotoField({
+  name,
+  currentUrl,
+  chosen,
+  preparing,
+  error,
+  onChoose,
+  onRemove,
+  removing = false,
+}: PhotoFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const hintId = useId();
   const errorId = useId();
@@ -54,13 +66,25 @@ export function PhotoField({ name, currentUrl, chosen, preparing, error, onChoos
           local={chosen !== null}
         />
         <div className="flex min-w-0 flex-col items-start gap-2">
-          <Button
-            variant="secondary"
-            aria-describedby={[hintId, error ? errorId : null].filter(Boolean).join(" ")}
-            onClick={() => inputRef.current?.click()}
-          >
-            {currentUrl || chosen ? content.replace : content.choose}
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="secondary"
+              aria-describedby={[hintId, error ? errorId : null].filter(Boolean).join(" ")}
+              onClick={() => inputRef.current?.click()}
+            >
+              {currentUrl || chosen ? content.replace : content.choose}
+            </Button>
+            {onRemove && currentUrl && !chosen && !preparing && (
+              <Button
+                variant="danger"
+                icon="cross"
+                aria-disabled={removing || undefined}
+                onClick={() => !removing && onRemove()}
+              >
+                {removing ? content.removing : content.remove}
+              </Button>
+            )}
+          </div>
           <input
             ref={inputRef}
             type="file"

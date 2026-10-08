@@ -58,7 +58,7 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
   - In development, and local builds with `DEV_PAGES=true`, each one is saved to the gitignored `.dev-emails/` folder, logged and listed at `/dev/emails`.
   - Anywhere else, Vercel production included, `emailDeliveryEnabled()` is false. `sendEmail` logs one info line (`[email] off: "Your Millstone order MS-1047 for Tue 6 Oct" not sent (no provider)`, no address) and nobody receives anything. It never throws, and it runs in `after()` inside a try/catch, so it can't fail a checkout.
   - C5's email hint and C7 don't promise an email then (undesigned): "So we can reach you about your order." and "Keep this page: it has your order details. We don't send emails yet."
-  - C7's not-found text still says "Check the link in your confirmation email."
+  - ~~C7's not-found text still says "Check the link in your confirmation email."~~ Fixed 8 Oct 2026 (demo polish): see Checkout (C5) and confirmation (C7), Undesigned copy.
   - To turn email on: a domain with SPF/DKIM records, a provider adapter behind `sendEmail`, a sender address, and `emailDeliveryEnabled()` true for it.
 - **Emulator data is kept between runs (3 Oct 2026).** `bun run emulators` imports from the gitignored `.emulator-data/` on start and exports to it on exit. The export only happens on a clean stop (one Ctrl-C, then wait for "Export complete"); a second Ctrl-C or a killed terminal skips it and loses that session's changes. The first run with an empty folder logs "Could not find import/export metadata file, skipping data import!", which is expected. `bun run seed` still works on top (it's idempotent, and `--reset` still wipes). For a clean start, stop the emulator and delete `.emulator-data/`.
 
@@ -232,7 +232,8 @@ Stripe Checkout (hosted page), test mode, behind a small adapter (`src/shared/li
     - `stripe events list` doesn't accept `--events`. Filter it with `-d type=checkout.session.completed` instead.
   - **Resending a late payment's event** (Batch B). Unfiltered, `events list` shows a `payment_intent.succeeded` first, and it carries the same `orderId` and `orderNumber` metadata. Resending that one does nothing: the listener's `--events` doesn't forward it, and the webhook ignores it. Resend the `checkout.session.completed` event whose `data.object` is the order's `cs_test_…` session. That worked even though the event was created while the listener was stopped.
   - **Stripe sandbox moved (8 Oct 2026).** Millstone now has its own Stripe sandbox, with a new `sk_test_` key and a listener on that key. Orders paid on the old account can't have their events resent. **MS-1054** (paid on the old account) is a leftover on the emulator.
-  - **Stripe link on A3.** In RefundDue, "See this payment in Stripe" shows twice: in the red refund box and in the Payment section below it. Harmless; left as is.
+  - ~~**Stripe link on A3.** In RefundDue, "See this payment in Stripe" shows twice: in the red refund box and in the Payment section below it.~~ Fixed 8 Oct 2026 (demo polish). While a refund is due, only the refund box has it. Once refunded, the Payment section shows it again. Checked at 1180px: one link before and after Mark refunded.
+  - **A3 links only real-looking refs.** The link needs a ref matching `pi_` plus letters and digits (`stripeDashboardPaymentUrl`). The seed's `PAY-…` refs and the demo orders' `pi_demo_…` refs get no link, so the walkthrough never opens a Stripe page for a payment that doesn't exist.
 
 ## Investigated but unreproduced bugs
 
@@ -396,6 +397,8 @@ _None yet._
     - C5 loading. C7 loading, load error and not-found.
     - The `/dev/emails` pages.
     - Step 9: the per-address limit's notice, "There have been a lot of orders from this connection. Try again in an hour, or call the branch to order." It has no Try again.
+    - Demo polish (8 Oct 2026): C7's not-found text is now "We couldn't find that order. Check the link, or call the branch you ordered from. Their numbers are on our branches page.", with a "See our branches" link to C1. A missing order has no branch to name, and C1 lists every phone.
+      - In practice a missing order's URL gets the site's 404 page ("We couldn't find that page…"), because the server checks first. C7's own text shows only if the order goes missing after the page's first load.
 - **Confirmation email (C13, step 5): decisions and deliberate differences.**
   - "Ready from 7am" (spec 13) isn't in the C7 or C13 canvases. It joins the intro: "We'll have it ready at Northcote from 7am on Tue 6 Oct." C7 will use the same sentence.
   - Order notes aren't in the email (nor in the C7 design).
@@ -485,7 +488,14 @@ _None yet._
 - **A5 products (step 7, Batch B): decisions and deliberate differences.**
   - **New products: the canvas's note only** (decided 5 Oct 2026). There are no per-branch toggles in the form. A new product is on at every branch, because no branch rows are written, and a branch switches it off in A4.
   - **Hidden products can be shown again** with the same "Show on menus" toggle, as on the canvas ("It's back on the menus."). Hiding never deletes anything.
-  - **Closing the product panel discards typed changes without asking** (Close, Cancel, Escape, or a tap on the dimmed list). Not designed; a "Discard changes?" dialog could come later. Found in step 7 QA.
+  - ~~**Closing the product panel discards typed changes without asking.**~~ Fixed 8 Oct 2026 (demo polish).
+    - Close, Cancel, Escape and a tap on the dimmed list ask "Discard changes?" when something would be lost.
+    - That's checked by `hasUnsavedChanges` (`lib/unsavedChanges.ts`, unit-tested):
+      - the form against the product as last saved, with prices compared as cents ("5.5" for $5.50 is no change);
+      - for a new product, anything filled in;
+      - a photo chosen or being prepared.
+    - "Keep editing", or Escape in the dialog, goes back to the form. A save that succeeds closes without asking.
+    - Checked at 1180px for every way of closing, a new product, and the equal-price case.
   - **Photos.**
     - **Type and size:**
       - The type is decided from the bytes by sharp's decoder, never from the file name or the browser's MIME type. Only JPEG, PNG and WebP are accepted; anything else is 415 `unsupported_image`.
@@ -508,7 +518,13 @@ _None yet._
       - The new file is uploaded first, then the product is saved in a transaction with its version checked again, and only then is the old file deleted.
       - If the save fails, the new file is deleted, unless a re-read shows the save did land, or the re-read itself fails. In those cases the file is kept, since an orphaned file is better than a product pointing at nothing.
       - A failed delete is logged as a warning and never fails the request.
-    - **There's no "Remove photo"** (not designed). Replacing is the only change. Deferred.
+    - ~~**There's no "Remove photo"**~~ Added 8 Oct 2026 (demo polish).
+      - "Remove photo" shows beside "Choose another photo" when a photo is saved and no new file is chosen. It asks first.
+      - It applies at once, not on Save: `DELETE /api/admin/products/{id}/photo` with `{ expectedVersion }`, owner only.
+      - The server (`removeProductPhoto`) saves the product without its image in a version-checked transaction, then deletes the file. A failed delete is logged, never thrown.
+      - A product with no photo answers 200 unchanged. A stale version is 409 `product_changed`, and the form reloads as for any 409.
+      - Typed fields stay in the form, and the next save uses the new version.
+      - Checked: Keep photo changed nothing. Remove gave the letter tile on A5 and C2, and the old file's URL answered 403. Stale 409, bad body 400, unknown product 404, cross-site 403, staff 403, signed out 401.
   - **Saving is two requests when a photo is chosen:** the fields first (skipped if unchanged), then the photo with the version that came back. If the photo is refused after the fields saved, the panel stays open and says so. A new product's panel then edits the product just made, so trying again only sends the photo.
   - **A 409 reloads the form** with the latest saved values, so anything typed is lost. The message says to check the details and save again.
   - **Categories can't be renamed or removed.** A category that no longer has any products stays in `categoryOrder` and still shows as a button in the form. It doesn't show on any menu, because menus only list categories that have products.
@@ -530,6 +546,12 @@ _None yet._
     - "… was changed on another screen. The form now shows the latest details: check them, then save again."
     - "This product isn't in the catalogue any more…", "That didn't save…", "The catalogue didn't answer in time…".
     - The loading, failure and empty states.
+    - Demo polish (8 Oct 2026):
+      - "Remove photo", "Removing…".
+      - The dialog: "Remove the photo of {name}?" / "It's deleted for good. Menus show the letter {X} until you add a new photo.", with "Remove photo" / "Keep photo".
+      - "Photo removed. {name} shows its letter on the menus now."
+      - "Discard changes?" / "Your changes to {name} haven't been saved." (new: "This new product hasn't been saved."), with "Discard changes" / "Keep editing".
+      - Both dialogs name the product as saved, not as typed.
 
 ## Tooling and housekeeping
 
@@ -569,3 +591,39 @@ _None yet._
     - It refuses any order whose contact email isn't `smoke-test@example.com`.
     - It also removes that guest (if it has nothing else), the photo on `--product`, every `rateLimits` doc, and the throttle records of the smoke run's made-up emails.
     - Tested on the emulator (step 9): a seed order and an already-deleted order were refused.
+- **Test-order cleanup (`scripts/live/cleanupTestOrders.ts`, demo polish, 8 Oct 2026).** `bun run cleanup:test-orders:live`. The emulator form is `bun --conditions=react-server scripts/live/cleanupTestOrders.ts`.
+  - It lists every match with its number, name, email, branch, day, status and why it matched. `--yes` deletes them.
+  - **Matches** (`isTestOrder` in `lib/testOrderMatch.ts`, unit-tested):
+    - the emails `smoke-test@`, `smoke-limit-*@`, `batch.*@` and `stripe.test*@example.com`;
+    - names that look typed to test: one letter repeated ("Ttt"), under 2 letters, no vowels, or the word "test";
+    - any `--order=MS-NNNN` (repeatable).
+  - **Never matched:** `seed-*` (generated `seed-corner-cup_*` included) and `demo-*` orders.
+  - **Also removes:**
+    - the guest customers those orders leave with no orders and no password, with their email locks (`lib/removeOrders.ts`);
+    - every `rateLimits` doc.
+  - The counter is left alone.
+  - On the emulator, the dry run matched only the Batch B QA orders (MS-1054 to 1056).
+- **Demo orders for the walkthrough (`scripts/live/demoOrders.ts`, demo polish, 8 Oct 2026).** `bun run demo:orders:live`, with `--yes` to write and `--remove [--yes]` to delete them. The emulator form is `bun --conditions=react-server scripts/live/demoOrders.ts`.
+  - **What it adds:** 14 orders (`data/demoOrders.ts`), 11 for each branch's "today" and 3 for the next open day, beside the seed's.
+    - Today has placed, ready and collected orders, one cancelled with a note, one paid online, and one paid online then cancelled (refund due).
+    - The customers are made-up names with `@example.com` emails.
+    - Phones are ACMA fictional mobiles the seed doesn't use. Only ACMA's listed numbers are fictional, not the whole 0491 570 block.
+  - **Made the real way, in transactions:**
+    - live prices and sold-out state through `priceOrder`;
+    - the next MS-number through `allocateOrderNumber`;
+    - guest customers through `readCustomerIdByEmail` / `createGuestCustomer`;
+    - contacts parsed by checkout's field schemas, and docs through `orderToDoc`.
+  - **Payments and staff steps:**
+    - Online payments go through `planPaymentEvent`, with a synthetic `evt_demo_…` event and a `pi_demo_…` ref. The ref doesn't match A3's Stripe-link pattern, so those orders have no link.
+    - Staff steps go through `orderActionSchema` + `planOrderAction`, at fixed morning times.
+  - **Why not `placeOrder`:** it refuses today's pickup after the cutoff, and online orders need Stripe.
+  - **Times:**
+    - Today's orders were placed the day before, before the 2pm cutoff. Tomorrow's were placed today, never after now.
+    - A staff step applies only once its time has passed (ready from 7:05am, the last collect at 10:40am), and only on the pickup day itself. Run it after about 11am for the full mix. A morning run gives an earlier-looking day, and a rerun moves orders on.
+  - **Idempotent:**
+    - Doc IDs are `demo-{pickupDate}-{key}`, created with `create()`. A rerun skips existing orders and applies only the steps now due.
+    - An order someone changed by hand is left alone.
+    - A line that's sold out or off the menu on the day is dropped and named. An order with nothing left is skipped.
+    - A run on a later day adds that day's set beside the old one.
+  - **`--remove`** deletes every `demo-*` order and the demo guests they leave. The MS-numbers keep their gaps.
+  - **Tested on the emulator (8 Oct 2026):** the dry run, `--yes` (MS-1057 to 1070, 11 steps), a rerun (0 placed, 0 steps), then `--remove --yes` and a dry run showing 0 left. One Northcote line (Seeded sandwich loaf, seeded sold out today) was dropped.

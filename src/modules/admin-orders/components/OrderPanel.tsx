@@ -153,7 +153,8 @@ function PanelBody({ order }: { order: AdminOrderDetail }) {
         </SectionLabel>
         <p className="font-bold">{order.paymentMethod === "online" ? content.methodOnline : content.methodAtPickup}</p>
         <p className="text-[18px]/[26px] text-ink-muted">{payLine(order)}</p>
-        {order.paymentDashboardUrl && <StripeLink href={order.paymentDashboardUrl} />}
+        {/* While a refund is due, the refund box above carries the link instead. */}
+        {order.paymentDashboardUrl && !isRefundDue(order) && <StripeLink href={order.paymentDashboardUrl} />}
       </section>
 
       {reason && (

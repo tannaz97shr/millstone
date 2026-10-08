@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { cx } from "@/shared/utils/cx";
+import { productLetter } from "../lib/productFields";
 
 export interface ProductThumbProps {
   name: string;
@@ -29,7 +30,7 @@ export function ProductThumb({ name, src, size, local = false }: ProductThumbPro
       {src ? (
         <Image src={src} alt="" fill sizes={sizes} unoptimized={local} className="object-cover" />
       ) : (
-        (name.trim() || "?").charAt(0).toUpperCase()
+        productLetter(name)
       )}
     </div>
   );

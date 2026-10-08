@@ -87,6 +87,22 @@ export const productsContent = {
       sourceTooLarge: `Choose a photo under ${PHOTO_SOURCE_MAX_BYTES / (1024 * 1024)} MB.`,
       /** Undesigned. */
       prepareFailed: "We couldn’t prepare that photo. Try choosing it again.",
+      /** Undesigned: Remove photo and its confirm dialog. */
+      remove: "Remove photo",
+      removing: "Removing…",
+      removeTitle: (name: string) => `Remove the photo of ${name}?`,
+      removeBody: (letter: string) =>
+        `It’s deleted for good. Menus show the letter ${letter} until you add a new photo.`,
+      removeConfirm: "Remove photo",
+      removeKeep: "Keep photo",
+    },
+    /** Undesigned: closing the panel with unsaved changes. */
+    discard: {
+      title: "Discard changes?",
+      bodyEdit: (name: string) => `Your changes to ${name} haven’t been saved.`,
+      bodyNew: "This new product hasn’t been saved.",
+      confirm: "Discard changes",
+      keep: "Keep editing",
     },
     active: {
       label: "Show on menus",
@@ -107,6 +123,7 @@ export const productsContent = {
     saved: (name: string, change: "hidden" | "shown" | null) =>
       `${name} saved.${change === "hidden" ? " It’s hidden from every menu." : change === "shown" ? " It’s back on the menus." : ""}`,
     /** Undesigned: everything below. */
+    photoRemoved: (name: string) => `Photo removed. ${name} shows its letter on the menus now.`,
     photoFailed: (name: string, why: string) => `${name} is saved, but the photo didn’t upload. ${why}`,
     photoWhy: {
       unsupported: "Choose a JPEG, PNG or WebP photo.",

@@ -14,6 +14,8 @@
     "seed:live": "bun --no-env-file --env-file=.env.live.local --conditions=react-server scripts/seed/index.ts --project=millstone-dc47f",
     "migrate:orders": "bun --conditions=react-server scripts/migrations/2026-10-order-admin-fields.ts",
     "cleanup:smoke:live": "bun --no-env-file --env-file=.env.live.local --conditions=react-server scripts/live/cleanupSmoke.ts --project=millstone-dc47f",
+    "cleanup:test-orders:live": "bun --no-env-file --env-file=.env.live.local --conditions=react-server scripts/live/cleanupTestOrders.ts --project=millstone-dc47f",
+    "demo:orders:live": "bun --no-env-file --env-file=.env.live.local --conditions=react-server scripts/live/demoOrders.ts --project=millstone-dc47f",
     "migrate:orders:live": "bun --no-env-file --env-file=.env.live.local --conditions=react-server scripts/migrations/2026-10-order-admin-fields.ts --project=millstone-dc47f"
   },
   "dependencies": {

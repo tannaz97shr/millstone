@@ -3,8 +3,10 @@
 import { useEffect, useRef } from "react";
 import { updateCart } from "@/modules/cart/hooks/useCart";
 import { clearCheckoutDraft, readCheckoutDraft } from "@/modules/checkout/lib/checkoutDraftStorage";
+import { ButtonLink } from "@/shared/components/atoms/ButtonLink/ButtonLink";
 import { LoadErrorNotice, LoadingMessage } from "@/shared/components/molecules/LoadState/LoadState";
 import { toApiFailure } from "@/shared/lib/http/apiClient";
+import { routes } from "@/shared/routes";
 import { focusWithoutTabStop } from "@/shared/utils/focusable";
 import { confirmationContent } from "../content/confirmationContent";
 import { useOrderConfirmationQuery } from "../hooks/useOrderConfirmationQuery";
@@ -60,7 +62,16 @@ export function ConfirmationScreen({ orderId, emailed }: { orderId: string; emai
     }
   }
   if (query.isError) {
-    if (toApiFailure(query.error).status === 404) return <p>{content.notFound}</p>;
+    if (toApiFailure(query.error).status === 404) {
+      return (
+        <section className="flex flex-col items-start gap-4">
+          <p>{content.notFound}</p>
+          <ButtonLink href={routes.home} variant="secondary">
+            {content.notFoundLink}
+          </ButtonLink>
+        </section>
+      );
+    }
     return (
       <LoadErrorNotice retryLabel={content.retry} onRetry={() => void query.refetch()} retrying={query.isFetching}>
         {content.loadError}
