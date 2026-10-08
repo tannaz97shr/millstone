@@ -156,7 +156,13 @@ Stripe Checkout (hosted page), test mode, behind a small adapter (`src/shared/li
   - An order with no page has no webhook. It's written `expired` the next time it's read (C7's `GET /api/orders/{id}`, or a retry with its key) once it's 5 minutes past its hour (`isLazilyExpired`). Until then it sits as `awaiting_payment`, which nobody sees.
   - There's no cron job. Vercel Hobby crons run daily at most, and nothing visible depends on the stored status. A daily sweep could be added if old `awaiting_payment` docs matter.
 - **Order fields added (no migration).** `checkoutSessionId` and `paymentExpiresAt` read as `null` on orders saved before step 10 (Zod `.default(null)`). An old order with no `paymentExpiresAt` counts its hour from `createdAt`.
-- **C7 API.** `GET /api/orders/{id}` now answers for `awaiting_payment` and `expired` orders too, with `state: "awaiting_payment" | "confirmed" | "expired"`. It sends the same public fields as before, which C6 needs for its pickup card. Until Batch B builds C6, C7 shows its not-found sentence for an order that isn't `confirmed`, as before.
+- **C7 API.** `GET /api/orders/{id}` now answers for `awaiting_payment` and `expired` orders too, with `state: "awaiting_payment" | "confirmed" | "expired"`. It sends the same public fields as before, which C6 needs for its pickup card.
+- **C6 and C7 (Batch B).** `/orders/{id}` shows:
+  - **C6 Confirming** while the order is `awaiting_payment`. It polls every 2 s for 20 s.
+  - Then **ConfirmingSlow**, polling every 5 s for 5 minutes, then only when Check again is pressed or the tab comes back into view (`confirmingPhase.ts`, unit-tested).
+  - **C7** once `confirmed`.
+  - An "order not placed" notice once `expired`.
+  - The cart and the checkout draft are cleared only when C7 shows a confirmed order. They're kept through Stripe, C6 and ConfirmingSlow.
 - **Live keys** are refused until the provider is decided (spec 12).
 - **Batch A live checks (6 Oct 2026),** run against the emulator with `stripe listen --api-key … --forward-to localhost:3000/api/webhooks/stripe` and real test-mode sessions driven through `POST /api/orders` and Stripe's page (Playwright, 390px). Every check passed:
   - **Paid (4242), MS-1057:**
@@ -180,13 +186,53 @@ Stripe Checkout (hosted page), test mode, behind a small adapter (`src/shared/li
   - **Page can't be created:** a production build with a bogus test key gave 503 `payment_unavailable`. MS-1062 stayed `awaiting_payment` with no session. Stripe's error masks the key.
   - **Staff:** the owner and Northcote staff each ran 25 lists (every status × all, today, tomorrow and a date, plus searches by name, number and phone). None showed MS-1055, 1059, 1060, 1062, 1027 or 1028; the paid MS-1056 to 1058 showed as Placed. A3's endpoint for the hidden orders answered 404.
   - **Not checked live:** lazy expiry of a session-less order (MS-1062 would be written expired on its next read after about 04:19 UTC). It's unit-tested.
-  - **Test orders left on the emulator:** MS-1054 to MS-1062, guest `stripe.test@example.com` and `batch.a@example.com`. `bun run seed --reset` clears them.
+  - **Test orders left on the emulator:** MS-1054 to MS-1062, guest `stripe.test@example.com` and `batch.a@example.com`. `bun run seed --reset` clears them. (The emulator has since been reset: Batch B's order numbers start again at MS-1055.)
+- **Batch B live checks (7–8 Oct 2026).** Ad hoc Playwright, customer screens at 390px and admin at 1180px, with `securitypolicyviolation` and console listeners on every page.
+  - **7 Oct, against `bun run dev`:** every check passed.
+    - Paid at 390px.
+    - Cancelled from Stripe's back link (CheckoutPayFailed).
+    - `payment_abandoned`, then the automatic resend under a new key.
+    - The expired link.
+    - The test note.
+    - 429.
+    - `payment_unavailable` (the bogus-key build).
+  - **8 Oct, against a production build on :3001** (`SITE_URL=http://localhost:3001`). The listener forwarded to the dev server on :3000, which shares the emulator. Every check passed:
+    - **Paid flow, MS-1055.** C5 online, with the test note visible → Stripe (4242) → C7 "Paid online. Nothing to pay at the counter." The webhook arrived before the page loaded, so C6 wasn't seen this time. 0 CSP reports, 0 console errors. The cart was cleared once C7 confirmed.
+    - **Slow webhook, MS-1056 (`batch.b.slow@example.com`).** The listener was stopped, then the order paid.
+      - C6 Confirming showed on return, and ConfirmingSlow after exactly 20 s, with Check again.
+      - The cart and the draft were still stored on both screens.
+      - About 30 Check again presses while the order was unpaid all stayed on ConfirmingSlow.
+      - After the listener restarted and `checkout.session.completed` was resent (200), the order was `confirmed` / `paid` and its page opened on C7.
+      - The original tab had closed by then, so C6 changing to C7 in place was seen only through the unit-tested phase logic, not live.
+      - 0 CSP reports, 0 console errors.
+    - **A3 at 1180px (owner), MS-1055.**
+      - Payment showed "Paid … · Ref pi_…".
+      - "See this payment in Stripe" pointed to `https://dashboard.stripe.com/test/payments/{the same pi_}`, with `target="_blank"` and `rel="noopener noreferrer"`.
+      - Cancel (Customer request) showed the dialog's "Paid online: remember the refund", then RefundDue ("Refund $7.50 in the payment dashboard") with the link and "MS-1055 cancelled. Refund it in the payment dashboard."
+      - Mark refunded gave "Refunded 12:39pm Thu 8 Oct · Ref pi_…" and "MS-1055 marked refunded."
+      - 0 CSP reports. The only console line was the local-only `ERR_SSL_PROTOCOL_ERROR` (see Privacy and security notes, Security headers).
+    - **Payments off** (`ONLINE_PAYMENTS_ENABLED=false`). C5 showed only Pay at pickup and Place order. Neither "Pay online now" nor "Test payments only." was in the DOM.
+  - **Test orders left on the emulator:** MS-1054 (old Stripe account), MS-1055 (cancelled and refunded) and MS-1056 (placed, paid), plus the 7 Oct dev-server orders. Guests `batch.b.paid@example.com` and `batch.b.slow@example.com`. `bun run seed --reset` clears them.
+- **Undesigned copy (Batch B).** All of it is in `checkoutContent.ts`, `confirmationContent.ts` and `adminOrdersContent.ts`, marked as not designed:
+  - C5 "Opening the payment page…".
+  - C5's payment unavailable box ("We couldn't open the payment page" / "You haven't been charged. Try again, or choose Pay at pickup.").
+  - C5's 429 notice.
+  - The test note ("Test payments only." / card 4242).
+  - The expired-order notice ("Your payment wasn't completed" / "This order wasn't placed, and you haven't been charged.").
+  - ConfirmingSlow with email off ("…Keep this link: it will show your confirmation once the payment is confirmed.").
+  - A3's "See this payment in Stripe (opens in a new tab)".
 - **Findings from the live checks.**
   - **The CLI must use the same account as the key.** `stripe listen` logged in to another sandbox forwards nothing useful, and its `whsec_` won't verify the app's events. Pass `--api-key` (from the same key) and `--forward-to`.
   - **Event versions.** Events arrive in the account's default API version (`2026-07-29.dahlia` on this sandbox), not the SDK's pinned `2026-09-30.endive`. The session fields used (`id`, `metadata`, `client_reference_id`, `payment_status`, `payment_intent`, `amount_total`, `currency`) are the same in both. Pin the dashboard endpoint's version to `2026-09-30.endive` when creating it for Vercel.
   - **Stripe's page shows the account's business name** ("Nuvia sandbox" now). Set it to Millstone in Stripe (Settings → Business → Public details) before showing it to anyone.
   - **Link's "Save my information" box is ticked by default** on Stripe's page and then asks for a phone number. That's Stripe's UI; a visitor can untick it, or Link can be turned off in the dashboard's payment-method settings.
-  - **Rate limit and payment retries.** Every Continue to payment counts towards the 10 orders an hour per address. So does C5's automatic resend after `payment_abandoned`, which makes two. A customer who cancels and retries many times could reach the limit. Left as is.
+  - **Rate limit and payment retries.** Every Continue to payment counts towards the 10 orders an hour per address. So does C5's automatic resend after `payment_abandoned`, which makes two. A customer who cancels and retries many times could reach the limit. C5 then shows the undesigned 429 notice: "You've tried a lot of times from this connection. Your order and details are still here. Try again in N minutes, or call {branch} on {phone} to order." N comes from `Retry-After`. Left as is.
+  - **The CLI's flags differ by command** (Batch B).
+    - `stripe listen` needs `--events checkout.session.completed,checkout.session.expired`, plus `--api-key "$(grep '^STRIPE_SECRET_KEY=' .env.local | cut -d= -f2-)"` and `--forward-to localhost:3000/api/webhooks/stripe`.
+    - `stripe events list` doesn't accept `--events`. Filter it with `-d type=checkout.session.completed` instead.
+  - **Resending a late payment's event** (Batch B). Unfiltered, `events list` shows a `payment_intent.succeeded` first, and it carries the same `orderId` and `orderNumber` metadata. Resending that one does nothing: the listener's `--events` doesn't forward it, and the webhook ignores it. Resend the `checkout.session.completed` event whose `data.object` is the order's `cs_test_…` session. That worked even though the event was created while the listener was stopped.
+  - **Stripe sandbox moved (8 Oct 2026).** Millstone now has its own Stripe sandbox, with a new `sk_test_` key and a listener on that key. Orders paid on the old account can't have their events resent. **MS-1054** (paid on the old account) is a leftover on the emulator.
+  - **Stripe link on A3.** In RefundDue, "See this payment in Stripe" shows twice: in the red refund box and in the Payment section below it. Harmless; left as is.
 
 ## Investigated but unreproduced bugs
 
@@ -271,7 +317,9 @@ _None yet._
     - **Inline scripts and styles stay allowed** (Next's "Without Nonces" variant). A nonce CSP would force every page to render per request.
   - Checked in step 9 on a production build: C1 → C7, A1, A2 and A5 (with a photo upload) logged no CSP errors.
   - **Deferred:** a nonce-based `script-src`.
-  - When Stripe comes: Checkout is a full redirect (a navigation, which CSP doesn't block), so nothing needs adding for it.
+  - When Stripe comes: Checkout is a full redirect (a navigation, which CSP doesn't block), so nothing needs adding for it. Confirmed in step 10: C5 → Stripe → C6 → C7 logged no CSP reports.
+  - **Zod's eval probe (step 10).** Zod's first object parse in the browser tries `new Function("")` to choose its JIT path. Zod catches the error, but the browser still sends a `script-src` report, one per page. `src/instrumentation-client.ts` runs `z.config({ jitless: true })` before hydration, which skips the probe. On a production build the reports went from 5 to 0, for +217 B of client JS. The server keeps the JIT. Keep `'unsafe-eval'` out of the CSP.
+  - **Local production builds only:** `upgrade-insecure-requests` upgrades A1's `/admin` prefetch redirect to `https://localhost`, so the console logs `ERR_SSL_PROTOCOL_ERROR` (seen 7–8 Oct 2026). Sign-in still works. The live site is HTTPS throughout, so nothing was changed.
 - **`/dev/*` is a 404 on the live site whatever `DEV_PAGES` says (step 9).** `devPagesAllowed` (unit-tested) is false whenever `VERCEL_ENV=production`. Checked on a production build started with `VERCEL_ENV=production DEV_PAGES=true`.
 
 ## Known UX gaps
