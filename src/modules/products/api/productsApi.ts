@@ -1,6 +1,6 @@
 import { apiRoutes } from "@/shared/api-routes";
 import { apiClient } from "@/shared/lib/http/apiClient";
-import type { ProductInputRequest, ProductUpdateRequest } from "../lib/productSchemas";
+import type { ProductInputRequest, ProductPhotoRemoveRequest, ProductUpdateRequest } from "../lib/productSchemas";
 import type { AdminProductResult, AdminProductsResponse } from "../types/adminProduct";
 
 /** A save gets 8s on the server (PRODUCT_SAVE_DEADLINE_MS); the rest is network. */
@@ -33,6 +33,15 @@ export async function uploadProductPhoto(productId: string, file: File, expected
   form.set("expectedVersion", String(expectedVersion));
   const response = await apiClient.post<AdminProductResult>(apiRoutes.admin.productPhoto(productId), form, {
     timeout: PHOTO_TIMEOUT_MS,
+  });
+  return response.data;
+}
+
+export async function removeProductPhoto(productId: string, expectedVersion: number): Promise<AdminProductResult> {
+  const body: ProductPhotoRemoveRequest = { expectedVersion };
+  const response = await apiClient.delete<AdminProductResult>(apiRoutes.admin.productPhoto(productId), {
+    data: body,
+    timeout: SAVE_TIMEOUT_MS,
   });
   return response.data;
 }

@@ -7,7 +7,7 @@ import { type FieldErrors, useForm } from "react-hook-form";
 import type { StatusMessage } from "@/shared/components/molecules/StatusLine/StatusLine";
 import { toApiFailure } from "@/shared/lib/http/apiClient";
 import { logError } from "@/shared/utils/logError";
-import { createProduct, updateProduct, uploadProductPhoto } from "../api/productsApi";
+import { createProduct, removeProductPhoto, updateProduct, uploadProductPhoto } from "../api/productsApi";
 import { adminProductsQueryOptions } from "../api/productsQueries";
 import { adminProductKeys } from "../api/queryKeys";
 import { productsContent } from "../content/productsContent";
@@ -242,6 +242,40 @@ export function useProductForm({ product, onSaved }: UseProductFormOptions) {
     });
   };
 
+  // Remove photo (after the panel's confirm dialog): saved at once, not on Save.
+  // Typed fields stay as they are; `current` takes the new version for the next save.
+  const [removingPhoto, setRemovingPhoto] = useState(false);
+  const removePhoto = async () => {
+    if (!current || removingPhoto) return;
+    setRemovingPhoto(true);
+    setMessage(null);
+    try {
+      const saved = (await removeProductPhoto(current.id, current.version)).product;
+      remember(saved);
+      setMessage({ tone: "success", text: content.messages.photoRemoved(saved.name) });
+    } catch (error) {
+      logError(error, `remove photo ${current.id}`, { level: "warn" });
+      const failure = toApiFailure(error);
+      if (failure.code === "product_changed") {
+        await reloadLatest(current.id).catch((reloadError: unknown) => logError(reloadError, "reload product after 409"));
+      }
+      setMessage({
+        tone: "error",
+        text:
+          failure.code === "product_changed"
+            ? content.messages.changed(current.name)
+            : failure.code === "not_found"
+              ? content.messages.gone
+              : failure.code === "unavailable"
+                ? content.messages.unavailable
+                : content.messages.failed,
+      });
+    } finally {
+      setRemovingPhoto(false);
+      void queryClient.invalidateQueries({ queryKey: adminProductKeys.list() });
+    }
+  };
+
   const onInvalid = (errors: FieldErrors<ProductFormValues>) => {
     // The fields say what to fix; an earlier save's message no longer applies.
     setMessage(null);
@@ -257,6 +291,8 @@ export function useProductForm({ product, onSaved }: UseProductFormOptions) {
     photoPreparing,
     photoError,
     saving,
+    removePhoto,
+    removingPhoto,
     message,
     dismissMessage: () => setMessage(null),
     submit: () => form.handleSubmit(onValid, onInvalid)(),

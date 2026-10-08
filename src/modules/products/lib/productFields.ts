@@ -30,6 +30,11 @@ export function formatPriceInput(cents: Cents): string {
   return (cents / 100).toFixed(2);
 }
 
+/** The letter tile shown until a product has a photo (design system). */
+export function productLetter(name: string): string {
+  return (name.trim() || "?").charAt(0).toUpperCase();
+}
+
 /** Collapses inner spaces: "  Cakes   &  tarts " → "Cakes & tarts". */
 export function tidyText(text: string): string {
   return text.trim().replace(/\s+/g, " ");
