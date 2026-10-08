@@ -40,6 +40,13 @@ export interface Order {
   orderNumber: string;
   branchId: BranchId;
   customerId: CustomerId | null;
+  /**
+   * The account whose history shows this order: set only when it was placed
+   * signed in, or saved to an account from its confirmation (C7). A guest
+   * order linked by email alone stays null, so it never shows in a history
+   * until email verification exists. When set, it equals `customerId`.
+   */
+  accountId: CustomerId | null;
   contactName: string;
   contactPhone: string;
   contactEmail: string;

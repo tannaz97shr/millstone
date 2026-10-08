@@ -11,6 +11,8 @@ import { isLocked, recordFailure, throttleExpiresAtMs, type ThrottleState } from
 
 // Firestore side of the sign-in throttle (rules in throttleRules.ts). The doc
 // ID is a hash of the email, so the collection never holds the address.
+// Staff and customers count separately: a customer's failures can't lock a
+// staff member with the same email, or the other way round.
 
 const signInThrottleDocSchema = z.object({
   failures: z.number().int().positive(),
@@ -22,13 +24,20 @@ const signInThrottleDocSchema = z.object({
 
 type SignInThrottleDoc = z.input<typeof signInThrottleDocSchema>;
 
-/** The doc ID for an email's record; the address itself is never stored. */
-export function signInThrottleDocId(normalizedEmail: string): string {
-  return createHash("sha256").update(normalizedEmail).digest("hex");
+/** Whose sign-in is counted: A1's staff, or C8's customers. */
+export type ThrottleNamespace = "staff" | "customer";
+
+/**
+ * The doc ID for an email's record; the address itself is never stored.
+ * Staff records keep the plain hash they've had since step 6.
+ */
+export function signInThrottleDocId(namespace: ThrottleNamespace, normalizedEmail: string): string {
+  const input = namespace === "staff" ? normalizedEmail : `${namespace}:${normalizedEmail}`;
+  return createHash("sha256").update(input).digest("hex");
 }
 
-function throttleDocRef(normalizedEmail: string) {
-  return signInThrottleRef().doc(signInThrottleDocId(normalizedEmail));
+function throttleDocRef(namespace: ThrottleNamespace, normalizedEmail: string) {
+  return signInThrottleRef().doc(signInThrottleDocId(namespace, normalizedEmail));
 }
 
 function toThrottleState(snapshot: DocumentSnapshot): ThrottleState | null {
@@ -50,19 +59,27 @@ function throttleStateToDoc(state: ThrottleState): SignInThrottleDoc {
   };
 }
 
-export async function isSignInLocked(normalizedEmail: string, now: Date): Promise<boolean> {
-  const snapshot = await firestoreRead(throttleDocRef(normalizedEmail).get(), "signInThrottle");
+export async function isSignInLocked(
+  namespace: ThrottleNamespace,
+  normalizedEmail: string,
+  now: Date,
+): Promise<boolean> {
+  const snapshot = await firestoreRead(throttleDocRef(namespace, normalizedEmail).get(), "signInThrottle");
   return isLocked(toThrottleState(snapshot), now.getTime());
 }
 
-export async function recordSignInFailure(normalizedEmail: string, now: Date): Promise<void> {
-  const ref = throttleDocRef(normalizedEmail);
+export async function recordSignInFailure(
+  namespace: ThrottleNamespace,
+  normalizedEmail: string,
+  now: Date,
+): Promise<void> {
+  const ref = throttleDocRef(namespace, normalizedEmail);
   await getDb().runTransaction(async (tx) => {
     const state = toThrottleState(await tx.get(ref));
     tx.set(ref, throttleStateToDoc(recordFailure(state, now.getTime())));
   });
 }
 
-export async function clearSignInFailures(normalizedEmail: string): Promise<void> {
-  await throttleDocRef(normalizedEmail).delete();
+export async function clearSignInFailures(namespace: ThrottleNamespace, normalizedEmail: string): Promise<void> {
+  await throttleDocRef(namespace, normalizedEmail).delete();
 }

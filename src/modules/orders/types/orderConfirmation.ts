@@ -46,3 +46,12 @@ export interface OrderConfirmation {
   contactFirstName: string;
   contactEmail: string;
 }
+
+/**
+ * C6/C7's view (GET /api/orders/{orderId}): the confirmation plus whether C7
+ * offers "Save your details for next time" to this viewer (AC-C10). Never
+ * for a signed-in customer; see planAccountFromOrder for the rest.
+ */
+export interface OrderConfirmationView extends OrderConfirmation {
+  accountOffer: boolean;
+}

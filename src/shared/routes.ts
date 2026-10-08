@@ -17,6 +17,24 @@ export const routes = {
   checkoutPaymentCancelled: `/checkout?${new URLSearchParams({ [paymentCancelledParam.name]: paymentCancelledParam.value })}`,
   /** C7: one order's confirmation, by its unguessable ID. */
   orderConfirmation: (orderId: string) => `/orders/${encodeURIComponent(orderId)}`,
+  account: {
+    /** C9 My account (signed-in customers). */
+    home: "/account",
+    /**
+     * C8 sign in. `returnTo` is where to go afterwards (checked by
+     * safeCustomerReturnPath); the page's back link and intro follow it
+     * (checkout, a menu, or home).
+     */
+    signIn: (returnTo?: string | null) =>
+      returnTo ? `/account/sign-in?${new URLSearchParams({ returnTo })}` : "/account/sign-in",
+    /** C8 create an account, with the same `returnTo` as sign-in. */
+    signUp: (returnTo?: string | null) =>
+      returnTo ? `/account/sign-up?${new URLSearchParams({ returnTo })}` : "/account/sign-up",
+    /** C8 "Forgot your password?": no reset without emails yet (undesigned). */
+    forgotPassword: "/account/forgot-password",
+    /** One of the account's own orders. */
+    order: (orderId: string) => `/account/orders/${encodeURIComponent(orderId)}`,
+  },
   admin: {
     home: "/admin",
     /**

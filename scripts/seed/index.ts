@@ -33,10 +33,16 @@ async function main(): Promise<void> {
   for (const user of seedStaffUsers) {
     await seedStaffUser(user, passwords.SEED_STAFF_PASSWORD, tally);
   }
-  const customers = new Map<string, { id: CustomerId; name: string; email: string; phone: string }>();
+  const customers = new Map<string, { id: CustomerId; name: string; email: string; phone: string; hasAccount: boolean }>();
   for (const customer of seedCustomers) {
     const id = await seedCustomer(customer, passwords.SEED_CUSTOMER_PASSWORD, now, tally);
-    customers.set(customer.email, { id, name: customer.name, email: customer.email, phone: customer.phone });
+    customers.set(customer.email, {
+      id,
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      hasAccount: customer.hasAccount,
+    });
   }
   await seedOrdersAndRecurring(now, customers, tally);
 

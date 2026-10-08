@@ -203,3 +203,13 @@ export function resolvePickupDate(
   if (calendar.orderableDates.includes(wanted)) return { date: wanted, movedFrom: null };
   return { date: calendar.earliest, movedFrom: wanted };
 }
+
+/**
+ * The account's cart after signing in. The guest cart is what the customer
+ * was just building, so if it has anything in it, it becomes the account's
+ * cart (replacing an older one saved there). An empty guest cart leaves the
+ * account's cart as it was. Either way the guest cart is then cleared.
+ */
+export function mergeCartOnSignIn(guestCart: Cart | null, accountCart: Cart | null): Cart | null {
+  return cartCount(guestCart) > 0 ? guestCart : accountCart;
+}

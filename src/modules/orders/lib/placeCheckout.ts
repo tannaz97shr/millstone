@@ -2,7 +2,7 @@ import "server-only";
 import { after } from "next/server";
 import type { ParsedPlaceOrderRequest } from "@/modules/checkout/lib/checkoutSchema";
 import type { PlaceOrderResponse } from "@/modules/checkout/types/placeOrder";
-import type { Order } from "@/shared/domain";
+import type { CustomerId, Order } from "@/shared/domain";
 import { ApiError } from "@/shared/lib/api/apiError";
 import { closeAbandonedPayment, startOnlinePayment } from "./payment/startOnlinePayment";
 import { placeOrder } from "./placeOrder";
@@ -25,13 +25,17 @@ const abandoned = (order: Order) => {
 };
 
 /**
- * POST /api/orders from start to finish. Pay at pickup: the order is placed
+ * POST /api/orders from start to finish. `account` is the signed-in
+ * customer, or null for a guest. Pay at pickup: the order is placed
  * and its confirmation emailed. Online: the order waits for payment, and the
  * customer is sent to the provider's page; the email goes when the webhook
  * says it's paid (applyPaymentEvent), never here.
  */
-export async function placeCheckout(request: ParsedPlaceOrderRequest): Promise<PlaceCheckoutResult> {
-  const result = await placeOrder(request);
+export async function placeCheckout(
+  request: ParsedPlaceOrderRequest,
+  account: CustomerId | null,
+): Promise<PlaceCheckoutResult> {
+  const result = await placeOrder(request, account);
   if (result.outcome === "abandoned") throw abandoned(result.order);
 
   const { order, branch } = result;

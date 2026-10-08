@@ -10,6 +10,7 @@ import {
   emptyCart,
   hasRemovals,
   MAX_QUANTITY,
+  mergeCartOnSignIn,
   moveCart,
   previewBranchChange,
   previewRemovesItems,
@@ -336,5 +337,25 @@ describe("removeItems", () => {
   test("returns the same cart when none of them are in it", () => {
     expect(removeItems(cart, [SEEDED.id])).toBe(cart);
     expect(removeItems(cart, [])).toBe(cart);
+  });
+});
+
+describe("mergeCartOnSignIn", () => {
+  const product = (id: string, name: string) => ({ id: id as ProductId, name, soldOut: false });
+  const guest = setQuantity(emptyCart(NORTHCOTE, WED), product("rye", "Rye loaf"), 2);
+  const account = setQuantity(emptyCart(FITZROY, THU), product("bagel", "Bagel"), 6);
+
+  test("a guest cart with items becomes the account's cart", () => {
+    expect(mergeCartOnSignIn(guest, account)).toBe(guest);
+    expect(mergeCartOnSignIn(guest, null)).toBe(guest);
+  });
+
+  test("an empty or missing guest cart keeps the account's cart", () => {
+    expect(mergeCartOnSignIn(null, account)).toBe(account);
+    expect(mergeCartOnSignIn(emptyCart(NORTHCOTE, WED), account)).toBe(account);
+  });
+
+  test("nothing anywhere stays nothing", () => {
+    expect(mergeCartOnSignIn(null, null)).toBeNull();
   });
 });
