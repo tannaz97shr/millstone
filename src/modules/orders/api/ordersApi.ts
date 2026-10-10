@@ -1,8 +1,8 @@
 import { apiRoutes } from "@/shared/api-routes";
 import { apiClient } from "@/shared/lib/http/apiClient";
-import type { OrderConfirmation } from "../types/orderConfirmation";
+import type { OrderConfirmationView } from "../types/orderConfirmation";
 
-export async function fetchOrderConfirmation(orderId: string): Promise<OrderConfirmation> {
-  const response = await apiClient.get<OrderConfirmation>(apiRoutes.orderConfirmation(orderId));
+export async function fetchOrderConfirmation(orderId: string): Promise<OrderConfirmationView> {
+  const response = await apiClient.get<OrderConfirmationView>(apiRoutes.orderConfirmation(orderId));
   return response.data;
 }

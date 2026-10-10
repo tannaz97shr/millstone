@@ -29,6 +29,11 @@ export const checkoutContent = {
   details: {
     title: "Your details",
     guestNote: "No account needed. We'll only use these to reach you about this order.",
+    /** CheckoutSignedIn.dc.html. */
+    signedIn: (name: string) =>
+      `Signed in as ${name}. We've filled these in from your account. Changes here are just for this order.`,
+    haveAccount: "Have an account?",
+    signIn: "Sign in",
     name: { label: "Name" },
     phone: { label: "Mobile number", hint: "So we can call if something changes." },
     email: {

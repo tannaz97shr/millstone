@@ -1,12 +1,14 @@
 import { z } from "zod";
+import { GUEST_CART_OWNER, getStorageOwner } from "@/modules/cart/lib/cartStorage";
 import { logError } from "@/shared/utils/logError";
 import type { CheckoutFormValues } from "./checkoutSchema";
 
 // What's typed on C5, kept for this browser tab only (sessionStorage), so it
-// survives going back to C4 and returning. Cleared once the order is placed.
-// Browser only.
+// survives going back to C4 and returning. One per owner, like the cart:
+// `millstone:checkout:guest` or `millstone:checkout:{customerId}`. Cleared
+// once the order is placed. Browser only.
 
-const KEY = "millstone:checkout:guest";
+const keyFor = (owner: string) => `millstone:checkout:${owner}`;
 
 const draftSchema = z.object({
   version: z.literal(1),
@@ -27,9 +29,9 @@ export interface CheckoutDraft {
   values: CheckoutFormValues;
 }
 
-export function readCheckoutDraft(): CheckoutDraft | null {
+function readDraft(key: string): CheckoutDraft | null {
   try {
-    const raw = window.sessionStorage.getItem(KEY);
+    const raw = window.sessionStorage.getItem(key);
     if (raw === null) return null;
     const result = draftSchema.safeParse(JSON.parse(raw));
     if (result.success) return result.data;
@@ -40,10 +42,29 @@ export function readCheckoutDraft(): CheckoutDraft | null {
   return null;
 }
 
+export function readCheckoutDraft(): CheckoutDraft | null {
+  return readDraft(keyFor(getStorageOwner()));
+}
+
+/**
+ * The draft typed as a guest in this tab, removed as it's read: once a
+ * customer has signed in from checkout, it becomes theirs (draftAfterSignIn).
+ */
+export function takeGuestCheckoutDraft(): CheckoutDraft | null {
+  const key = keyFor(GUEST_CART_OWNER);
+  const draft = readDraft(key);
+  try {
+    window.sessionStorage.removeItem(key);
+  } catch (error) {
+    logError(error, "checkoutDraft.takeGuest", { level: "warn" });
+  }
+  return draft;
+}
+
 /** A storage failure only costs the draft; checkout carries on without it. */
 export function writeCheckoutDraft(draft: CheckoutDraft): void {
   try {
-    window.sessionStorage.setItem(KEY, JSON.stringify(draft));
+    window.sessionStorage.setItem(keyFor(getStorageOwner()), JSON.stringify(draft));
   } catch (error) {
     logError(error, "checkoutDraft.write", { level: "warn" });
   }
@@ -51,7 +72,7 @@ export function writeCheckoutDraft(draft: CheckoutDraft): void {
 
 export function clearCheckoutDraft(): void {
   try {
-    window.sessionStorage.removeItem(KEY);
+    window.sessionStorage.removeItem(keyFor(getStorageOwner()));
   } catch (error) {
     logError(error, "checkoutDraft.clear", { level: "warn" });
   }

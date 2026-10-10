@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CONTACT_LIMITS, mobileField, nameField } from "@/modules/checkout/lib/checkoutSchema";
+import { CONTACT_LIMITS, contactEmailField, mobileField, nameField } from "@/modules/checkout/lib/checkoutSchema";
 import { orderIdParam } from "@/modules/orders/lib/orderParams";
 import { accountContent } from "../content/accountContent";
 
@@ -57,11 +57,11 @@ export type SignUpFormOutput = z.output<typeof signUpFormSchema>;
 export const signUpRequestSchema = signUpFormSchema.extend({ returnTo: returnToField });
 export type SignUpRequest = z.input<typeof signUpRequestSchema>;
 
-/** C9 "Your details". */
+/** C9 "Your details": checkout's fields and wording, as in AccountArea.dc.html. */
 export const profileFormSchema = z.object({
   name: nameField,
   phone: mobileField,
-  email: accountEmailField,
+  email: contactEmailField,
 });
 export type ProfileFormValues = z.input<typeof profileFormSchema>;
 export type ProfileFormOutput = z.output<typeof profileFormSchema>;

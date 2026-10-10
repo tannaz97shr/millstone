@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { AccountProfile } from "@/modules/account/types/accountSession";
 import type { BranchSummary } from "@/modules/branches/types/branchSummary";
 import type { CartLineView } from "@/modules/cart/lib/cartLogic";
 import { Notice } from "@/shared/components/molecules/Notice/Notice";
@@ -42,6 +43,8 @@ export interface CheckoutFormProps {
   onPlaced: () => void;
   /** The order summary card, rendered first inside the form. */
   summary: React.ReactNode;
+  /** The signed-in customer, whose details fill in (CheckoutSignedIn), or null for a guest. */
+  profile: AccountProfile | null;
 }
 
 /**
@@ -60,8 +63,9 @@ export function CheckoutForm({
   emailed,
   onPlaced,
   summary,
+  profile,
 }: CheckoutFormProps) {
-  const { form, getCheckoutKey, renewCheckoutKey } = useCheckoutForm(onlinePayments, backFromPayment);
+  const { form, getCheckoutKey, renewCheckoutKey } = useCheckoutForm(onlinePayments, backFromPayment, profile);
   /** CheckoutPayFailed's alert, until the customer tries again. */
   const [paymentFailed, setPaymentFailed] = useState(backFromPayment);
 
@@ -137,7 +141,7 @@ export function CheckoutForm({
       )}
       {summary}
       <div inert={pending} className="flex flex-col gap-6">
-        <ContactFields form={form} emailed={emailed} />
+        <ContactFields form={form} emailed={emailed} accountName={profile?.name ?? null} />
         <PaymentChoice control={form.control} onlinePayments={onlinePayments} testPayments={testPayments} />
       </div>
       {place.notice && (

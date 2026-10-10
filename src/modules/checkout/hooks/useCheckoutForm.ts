@@ -8,12 +8,15 @@ import {
   type CheckoutFormOutput,
   type CheckoutFormValues,
 } from "../lib/checkoutSchema";
+import type { AccountProfile } from "@/modules/account/types/accountSession";
 import {
   newCheckoutKey,
   readCheckoutDraft,
+  takeGuestCheckoutDraft,
   writeCheckoutDraft,
   type CheckoutDraft,
 } from "../lib/checkoutDraftStorage";
+import { draftAfterSignIn } from "../lib/draftAfterSignIn";
 
 const blankValues = (onlinePayments: boolean): CheckoutFormValues => ({
   name: "",
@@ -24,8 +27,23 @@ const blankValues = (onlinePayments: boolean): CheckoutFormValues => ({
   paymentMethod: onlinePayments ? "" : "at_pickup",
 });
 
-function initialDraft(onlinePayments: boolean, backFromPayment: boolean): CheckoutDraft {
+/**
+ * The draft to start from. Signed in with no draft of their own yet (just
+ * signed in from checkout, or a new visit), the details come from the account
+ * and anything typed as a guest in this tab is kept (AC-U2, AC-C4).
+ */
+function storedDraft(profile: AccountProfile | null): CheckoutDraft | null {
   const stored = readCheckoutDraft();
+  if (stored || !profile) return stored;
+  return draftAfterSignIn(takeGuestCheckoutDraft(), profile, newCheckoutKey);
+}
+
+function initialDraft(
+  onlinePayments: boolean,
+  backFromPayment: boolean,
+  profile: AccountProfile | null,
+): CheckoutDraft {
+  const stored = storedDraft(profile);
   const values = { ...blankValues(onlinePayments), ...stored?.values };
   if (!onlinePayments) values.paymentMethod = "at_pickup";
   // Back from the payment page unpaid: online was the choice, whatever the draft kept.
@@ -36,11 +54,12 @@ function initialDraft(onlinePayments: boolean, backFromPayment: boolean): Checko
 /**
  * C5's form (React Hook Form + the shared Zod schema), restored from and saved
  * to this tab's draft, and the checkout key that goes with it. Browser only:
- * mount it once the cart has loaded. `backFromPayment`: the customer came back
- * from the payment page without paying, so "Pay online now" stays chosen.
+ * mount it once the cart and the session have loaded. `backFromPayment`: the
+ * customer came back from the payment page without paying, so "Pay online
+ * now" stays chosen. `profile`: the signed-in customer, whose details fill in.
  */
-export function useCheckoutForm(onlinePayments: boolean, backFromPayment: boolean) {
-  const [initial] = useState(() => initialDraft(onlinePayments, backFromPayment));
+export function useCheckoutForm(onlinePayments: boolean, backFromPayment: boolean, profile: AccountProfile | null) {
+  const [initial] = useState(() => initialDraft(onlinePayments, backFromPayment, profile));
   const checkoutKey = useRef(initial.checkoutKey);
 
   const form = useForm<CheckoutFormValues, unknown, CheckoutFormOutput>({

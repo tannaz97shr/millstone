@@ -79,12 +79,12 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
 
 - ~~**Admin free-text search (AC-A3).**~~ Resolved 4 Oct 2026 (step 6, Batch B): orders store `searchTokens` (see Data model notes), searched with `array-contains` plus two composite indexes.
 - ~~**Category display order.**~~ Resolved 1 Oct 2026 (step 3): `settings/catalog` holds `categoryOrder` (seeded Breads, Pastries, Bagels). Categories not listed go last, A–Z. When A5 lets the owner type a new category, it should append it to this list.
-- **C1 header Sign in and "For cafes and regulars" (step 3).** Both are in `design/customer/Home.dc.html` and left out until the accounts and recurring-order steps. The C2 header Sign in is left out for the same reason. Step 11 builds the header Sign in (Batch B); "For cafes and regulars" waits for recurring orders.
+- **"For cafes and regulars" (step 3).** In `design/customer/Home.dc.html`, left out until the recurring-order step. ~~The C1 and C2 header Sign in~~ Built in step 11.
 - **Checkout: accounts and online payment (step 5).**
   - Left out of C5: the guest "Have an account? Sign in" row and signed-in prefill (`CheckoutSignedIn.dc.html`).
   - Left out of C7: the "Save your details for next time" offer (AC-C10).
   - Left out of the email: the guest "Create an account" box (AC-C11).
-  - These belong to the accounts step. Step 11 builds the C5 and C7 parts (Batch B). The email's box stays out: the site sends no email.
+  - These belong to the accounts step. Step 11 built the C5 and C7 parts. The email's box stays out: the site sends no email.
   - ~~"Pay online now" is behind the server-only switch `ONLINE_PAYMENTS_ENABLED` (off). `POST /api/orders` refuses `online` with 422 `payment_method_unavailable` whatever the switch says, until the payment-provider step.~~ Step 10 (6 Oct 2026): online orders are taken when the switch is on and Stripe is configured. See Online payments (step 10). The 422 now means "switched off or not configured".
 - **Staff accounts (step 6).** Staff can't reset or change a password, and the owner has no screen to add, remove or move staff. Passwords come from the seed (`SEED_STAFF_PASSWORD`). A1 says "Forgotten your password? Ask the owner to reset it."
 - **No audit trail of who did what (step 6).** Orders record when they changed, not which staff member changed them.
@@ -285,6 +285,54 @@ Email and password, on the existing Auth.js setup, as a second principal next to
   - **Profile:** moved to a guest's email (lock moved, old lock deleted); another account's email 409; past orders keep their details; signing in works with the new email only. Sign-out clears the cookie.
   - The server log had only the expected `CredentialsSignin` warnings. The run's customers, orders, locks, throttle records and new-policy rate-limit counts were deleted afterwards.
   - The seed's `accountId` change wasn't run against the emulator: rerun `bun run seed` to see Sam Carter's and Corner Cup's orders in C9.
+- **Screens (Batch B): decisions and deliberate differences.**
+  - **Who's signed in** comes from `GET /api/account/session`, prefetched by the customer layout. That makes every customer page per request (`connection()`), which they already were.
+  - **Cart and draft owner.**
+    - `StorageOwner` (in the layout) sets the owner while rendering, ahead of the page, so the cart's first read is already the right one: `millstone:cart:{customerId}` signed in, `millstone:cart:guest` otherwise. The C5 draft key works the same way.
+    - The first load after signing in carries a guest cart with items over to the account (`mergeCartOnSignIn`) and empties the guest cart.
+    - Signing out leaves the account's cart saved for next time; the guest starts empty.
+    - If the session prefetch fails, the guest's cart is used until the browser's own ask arrives.
+  - **Sign-in, sign-up, C7's save and sign-out** end in a full page load (C7 refetches instead), so the server and every query see the new session.
+  - **Header Sign in / My account** is on C1 and C2 only, as designed. Sign in comes back to that page afterwards.
+  - **C8's back link and intro** follow `returnTo` (`signInPlace`, unit-tested): Checkout, Menu, or Home. "Continue as a guest" shows from checkout only.
+  - **C5 signed in.** The fields come from the account; notes, payment choice and the checkout key are kept from what was typed as a guest (`draftAfterSignIn`, AC-U2). A signed-in customer's own draft wins after that, so edits for this order stay.
+  - **The shared header stays above the account pages**, with the back link under it, as on C4/C5. The design's header has only the back link, or the wordmark on the email-link screens.
+  - **C9 cards** add an "Order details" link to the account order page. A cancelled order that was never paid shows no payment label, as in the admin.
+  - **C9's "Details saved"** uses the success Notice (sage) with OK. The design's flash has the same words.
+  - **C7's "Your account is set up"** is a neutral Notice with a check, close to the design's bordered box. Long emails wrap inside it.
+  - **The C8 refusal** drops "or reset your password" (no reset yet).
+- **Undesigned copy (Batch B).** All in `accountContent.ts` (and `checkoutContent.ts`), marked as not designed:
+  - "Forgot your password?" page: "We can't reset passwords online yet. You can still order as a guest with the same email, or create an account with a different one.", with "Back to sign in" and "Start an order".
+  - Sign-in: "Signing in…", the lock ("Too many tries. Wait 15 minutes and try again."), the per-address limit and the failure.
+  - The guest-order promise, replaced (decided 8 Oct 2026):
+    - Sign-in's note: "Orders you place while signed in show up in My account."
+    - Sign-up's email hint: "You'll sign in with this."
+    - Sign-up's intro without "past".
+  - Sign-up: "Creating your account…", "There's already an account for this email." with "Sign in instead", the limit, the failure, and the over-200 password error.
+  - C9: "Loading your account…", the orders' loading and failure states, "Showing your latest 50 orders.", the empty box's "Orders you placed as a guest before signing in don't show here.", "Saving…", the profile's email-taken, limit and failure messages, "Order details" (labelled "Order details for MS-…"), "Signing out…" and the sign-out failure.
+  - The account order page as a whole:
+    - "Order MS-…", "Ready from 7am", "Details for this order";
+    - "Refunded to your card." and "Nothing to pay: this order was cancelled.";
+    - loading, failure and "We couldn't find that order in your account.".
+  - C7's save: "Creating your account…", "There's already an account for this email. Sign in to see your orders." with "Sign in", "This order can't be saved to an account any more.", the limit and the failure.
+- **Batch B live checks (8 Oct 2026),** ad hoc Playwright on a production build on :3001 with the emulator, customer screens at 390px and A1 at 1180px, with CSP and console listeners. 52 checks, run twice:
+  - **C1 and C2:** Sign in in the header (returns to C1); none on C4. My account once signed in.
+  - **C5 → C8 → sign-up → C5:**
+    - the guest row and note;
+    - C8 from checkout (Checkout back link, checkout intro, Continue as a guest);
+    - empty and wrong sign-ins (one message, password cleared);
+    - sign-up field errors;
+    - after sign-up: back on C5 with the designed note, name, formatted mobile and email from the account, and the guest's notes kept;
+    - the cart moved to the account's key, the guest key gone.
+  - **Signed-in order → C7:** "See your orders in My account", no offer, and the account's cart cleared.
+  - **C9:** the order card with its call line, no Recurring section, profile edit errors, "Details saved…" with the new name and mobile.
+  - **Order page:** notes, the details it was placed with, and change or cancel. An unknown order page is the site's 404.
+  - **Sign out:** back to C1 as a guest; `/account` sends to sign-in.
+  - **Guest order → C7 save:** the offer with the email in the hint, the short-password error, "Your account is set up", the offer gone, the My account link appearing, and the order in that account's C9.
+  - **Also:** sign-up on an account's email ("Sign in instead"), the forgot page, a new account's empty C9 with the guest note, and a customer session on `/admin` going to A1.
+  - **Console:** 0 CSP reports. The only console lines were the expected 401/404/409s and A1's local-only `ERR_SSL_PROTOCOL_ERROR` (Security headers, below).
+  - **Fixed during QA:** a long email overflowed the "Your account is set up" box.
+  - **Cleanup:** the runs' customers, orders (MS-1080 to MS-1083), throttle records and the emulator's rate-limit counts were deleted afterwards.
 
 ## Investigated but unreproduced bugs
 
@@ -304,7 +352,7 @@ _None yet._
 - **Additions in step 3 (not in spec section 5).**
   - `Branch.displayOrder` (Northcote 1, Fitzroy 2, Brunswick 3): C1 lists the branches in that order, which is neither A–Z nor doc-ID order.
   - `settings/catalog` `{ categoryOrder }`: see Deferred features.
-  - The client-side cart (`localStorage`, key `millstone:cart:guest`; later `millstone:cart:{customerId}`) stores each line's product **name** but never a price. The name is only for "We took X out" messages after a branch switch, when the new branch's menu no longer has the product. The cart also records the branch and date it was last checked against (`checkedAgainst`), so a branch switch is still recognised after a reload.
+  - The client-side cart (`localStorage`, key `millstone:cart:guest`; `millstone:cart:{customerId}` while signed in, step 11) stores each line's product **name** but never a price. The name is only for "We took X out" messages after a branch switch, when the new branch's menu no longer has the product. The cart also records the branch and date it was last checked against (`checkedAgainst`), so a branch switch is still recognised after a reload.
 
 - **Orders placed at checkout (step 5).**
   - The order's doc ID is the browser's checkout key (a v4 UUID). A retry with the same key and the same order returns the first order (200) and sends no second email. "Same" means the branch, pickup date, payment method, and items with their quantities. Contact details and notes don't count.
@@ -335,7 +383,7 @@ _None yet._
   - They show the first name, the contact email, items, total, branch and pickup day. They never show the phone, notes or full name.
   - The ID can still leak through browser history, a shared screenshot of the URL, or a forwarded link, and it never expires.
   - Later: expire the page some days after pickup, or limit it to the placing browser session and the customer's account.
-- **C5 keeps what's typed in sessionStorage (step 5).** The key is `millstone:checkout:guest`, holding name, mobile, email, notes, payment choice and the checkout key. It lets the details survive a trip to C4 and back. Personal details stay in that tab's storage until the order is placed or the tab is closed.
+- **C5 keeps what's typed in sessionStorage (step 5).** The key is `millstone:checkout:guest` (`millstone:checkout:{customerId}` while signed in, step 11), holding name, mobile, email, notes, payment choice and the checkout key. It lets the details survive a trip to C4 and back. Personal details stay in that tab's storage until the order is placed or the tab is closed.
 - **Any checkout links the order to whoever owns that email (step 5).** A guest who types an existing customer's email adds the order to that customer's record and history. That includes a customer with a password. The customer's own details are never changed. This is spec 5's "guest = customer with no password" model.
 
 - **Staff sessions (step 6).**
