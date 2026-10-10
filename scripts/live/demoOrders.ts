@@ -137,6 +137,8 @@ async function createDemoOrder({ spec, id, pickupDate, placed }: Planned): Promi
       orderNumber,
       branchId: spec.branchId,
       customerId,
+      // Placed as guests, so in no account's history.
+      accountId: null,
       contactName: contact.name,
       contactPhone: contact.phone,
       contactEmail: contact.email,

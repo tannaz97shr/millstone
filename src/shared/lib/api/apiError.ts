@@ -45,12 +45,22 @@ export type ApiErrorCode =
   | "unauthenticated"
   /** Signed in, but not allowed: not staff, or an owner-only route (403). */
   | "forbidden"
-  /** Staff sign-in: the email and password don't match; never says which (401). */
+  /** Staff and customer sign-in: the email and password don't match; never says which (401). */
   | "invalid_credentials"
-  /** Staff sign-in: too many failed tries for this email; locked for a while (429). */
+  /** Staff and customer sign-in: too many failed tries for this email; locked for a while (429). */
   | "too_many_attempts"
-  /** Orders and staff sign-in: too many requests from this address; `Retry-After` says when to try again (429). */
+  /** Orders, sign-in, sign-up and account changes: too many requests from this address; `Retry-After` says when to try again (429). */
   | "rate_limited"
+  /** Sign-up and C9 profile: another account already has this email (409). */
+  | "email_taken"
+  /** C7 "Save your details": the order is already in an account (409). */
+  | "already_linked"
+  /** C7 "Save your details": the order's email already has an account; sign in instead (409). */
+  | "account_exists"
+  /** C7 "Save your details": not a placed guest order (409). */
+  | "not_eligible"
+  /** C7 "Save your details": the order's pickup day has passed (409). */
+  | "window_closed"
   /**
    * Admin: the order isn't in the state the staff member saw, because it was
    * changed on another screen (409). Carries the order's number and status now.

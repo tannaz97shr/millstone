@@ -83,7 +83,7 @@ async function main(): Promise<void> {
   const limits = await rateLimitsRef().get();
   for (const doc of limits.docs) batch.delete(doc.ref);
   plan.push(`${limits.size} rateLimits docs`);
-  const throttles = await db.getAll(...SMOKE_SIGN_IN_EMAILS.map((email) => signInThrottleRef().doc(signInThrottleDocId(email))));
+  const throttles = await db.getAll(...SMOKE_SIGN_IN_EMAILS.map((email) => signInThrottleRef().doc(signInThrottleDocId("staff", email))));
   const found = throttles.filter((doc) => doc.exists);
   for (const doc of found) batch.delete(doc.ref);
   plan.push(`${found.length} signInThrottle docs for the smoke emails`);

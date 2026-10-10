@@ -83,7 +83,7 @@ function priceItems(items: [number, ProductId][]): OrderItem[] {
 
 interface SeedContext {
   daysByBranch: Map<BranchId, SeedDays>;
-  customers: Map<string, { id: CustomerId; name: string; email: string; phone: string }>;
+  customers: Map<string, { id: CustomerId; name: string; email: string; phone: string; hasAccount: boolean }>;
 }
 
 function customerFor(context: SeedContext, email: string) {
@@ -107,6 +107,8 @@ function buildOrder(spec: SeedOrder, context: SeedContext): Omit<Order, "id"> {
     orderNumber: formatOrderNumber(spec.number),
     branchId: spec.branchId,
     customerId: customer.id,
+    // The cafe's orders show in its account (C9); guests' orders never do.
+    accountId: customer.hasAccount ? customer.id : null,
     contactName: customer.name,
     contactPhone: customer.phone,
     contactEmail: customer.email,

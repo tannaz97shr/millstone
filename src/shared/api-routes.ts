@@ -9,6 +9,24 @@ export const apiRoutes = {
   orders: "/api/orders",
   /** GET: what C7 shows for one order. */
   orderConfirmation: (orderId: string) => `/api/orders/${encodeURIComponent(orderId)}`,
+  account: {
+    /** POST: customer sign-in (C8). */
+    signIn: "/api/account/sign-in",
+    /** POST: create an account (C8), or set a password on a guest's record (AC-U1). */
+    signUp: "/api/account/sign-up",
+    /** POST: ends the session. */
+    signOut: "/api/account/sign-out",
+    /** GET: the signed-in customer, or null (staff and guests). */
+    session: "/api/account/session",
+    /** PATCH: the account's name, mobile and email (C9). */
+    profile: "/api/account/profile",
+    /** GET: the account's order history (C9). */
+    orders: "/api/account/orders",
+    /** GET: one of the account's own orders. */
+    order: (orderId: string) => `/api/account/orders/${encodeURIComponent(orderId)}`,
+    /** POST: C7's "Save your details": an account from a guest order (AC-C10). */
+    fromOrder: "/api/account/from-order",
+  },
   webhooks: {
     /** POST, from Stripe only: signed payment events (checkout paid or expired). */
     stripe: "/api/webhooks/stripe",

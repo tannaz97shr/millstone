@@ -26,7 +26,7 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
     - ~~Create the Vercel project and add the variables.~~ Live at https://millstone-two.vercel.app/ (functions in `syd1`).
     - ~~Create a dedicated service account.~~ Vercel uses its own service account. Its roles weren't checked in the smoke test; they should be Cloud Datastore User and Storage Object Admin only.
     - ~~Merge to main, then run the post-deploy smoke test.~~ Passed 6 Oct 2026 (below).
-  - **Still to do by hand:** create the two TTL policies (below), if not done yet. The smoke test can't see them.
+  - ~~**Still to do by hand:** create the two TTL policies (below).~~ Done: both are on `millstone-dc47f` (seen 10 Oct 2026) and now in `firestore.indexes.json` too.
   - **First deploy: every Firestore call failed (6 Oct 2026).**
     - The first key in Vercel wasn't a readable PEM. Once fixed, every call failed with `16 UNAUTHENTICATED: Request had invalid authentication credentials`. `/api/branches` answered 500, C1 said "We couldn't load our branches" and `/menu/{branch}` was a 404.
     - Pasting the email and key again from one fresh JSON key and redeploying fixed it.
@@ -51,7 +51,8 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
     - **Console:** no errors apart from the browser's "Failed to load resource" lines for the expected 400, 401 and 429 answers.
     - **Left on live by design:** the hidden `smoke-test-loaf` product. There's no hard delete; cleanup removes its photo, so it goes back to its letter. The order counter also stays past 1047. A rerun's product would get the ID `smoke-test-loaf-2`.
     - **Cleanup:** `bun run cleanup:smoke:live -- --order=MS-1047 --product=smoke-test-loaf`, then the same command with `--yes`.
-- **Firestore TTL policies (step 9), set by hand once.** On collection group `rateLimits`, field `expiresAt`; on collection group `signInThrottle`, field `expiresAt`. TTL deletes within about 24 hours of expiry; reads check their own window, so a late delete changes nothing. Throttle records saved before step 9 have no `expiresAt` and are never pruned (a handful at most).
+- **Firestore TTL policies (step 9).** On collection group `rateLimits`, field `expiresAt`; on collection group `signInThrottle`, field `expiresAt`. First set by hand; since 10 Oct 2026 they're `fieldOverrides` in `firestore.indexes.json` (`"ttl": true`, with the default ascending, descending and array-contains index settings, matching what the live project has), so `firebase deploy --only firestore:indexes` keeps them instead of offering to delete them. Customer sign-in records (step 11) share `signInThrottle`, so the same policy prunes them. TTL deletes within about 24 hours of expiry; reads check their own window, so a late delete changes nothing. Throttle records saved before step 9 have no `expiresAt` and are never pruned (a handful at most).
+- **Customer accounts index (step 11).** Deploy the new orders index (`accountId` ASC, `pickupDate` DESC, `createdAt` DESC) to the live project before step 11 is merged: `bunx firebase deploy --only firestore:indexes --project live`. Without it, C9's history (`GET /api/account/orders`) fails with `FAILED_PRECONDITION` on live. The emulator doesn't need it.
 - **Emulator needs a JDK (21+)** installed locally (`brew install --cask temurin@21`).
 - ~~**`POST /api/orders` has no rate limiting (step 5).**~~ Done 5 Oct 2026 (step 9): see Privacy and security notes, Rate limits. Still open: a per-email limit and a bot check.
 - **No email provider (step 5); emails are off on the live site (step 9).** Emails go through `sendEmail` (`src/shared/lib/email/`).
@@ -78,12 +79,12 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
 
 - ~~**Admin free-text search (AC-A3).**~~ Resolved 4 Oct 2026 (step 6, Batch B): orders store `searchTokens` (see Data model notes), searched with `array-contains` plus two composite indexes.
 - ~~**Category display order.**~~ Resolved 1 Oct 2026 (step 3): `settings/catalog` holds `categoryOrder` (seeded Breads, Pastries, Bagels). Categories not listed go last, A–Z. When A5 lets the owner type a new category, it should append it to this list.
-- **C1 header Sign in and "For cafes and regulars" (step 3).** Both are in `design/customer/Home.dc.html` and left out until the accounts and recurring-order steps. The C2 header Sign in is left out for the same reason.
+- **"For cafes and regulars" (step 3).** In `design/customer/Home.dc.html`, left out until the recurring-order step. ~~The C1 and C2 header Sign in~~ Built in step 11.
 - **Checkout: accounts and online payment (step 5).**
   - Left out of C5: the guest "Have an account? Sign in" row and signed-in prefill (`CheckoutSignedIn.dc.html`).
   - Left out of C7: the "Save your details for next time" offer (AC-C10).
   - Left out of the email: the guest "Create an account" box (AC-C11).
-  - These belong to the accounts step.
+  - These belong to the accounts step. Step 11 built the C5 and C7 parts. The email's box stays out: the site sends no email.
   - ~~"Pay online now" is behind the server-only switch `ONLINE_PAYMENTS_ENABLED` (off). `POST /api/orders` refuses `online` with 422 `payment_method_unavailable` whatever the switch says, until the payment-provider step.~~ Step 10 (6 Oct 2026): online orders are taken when the switch is on and Stripe is configured. See Online payments (step 10). The 422 now means "switched off or not configured".
 - **Staff accounts (step 6).** Staff can't reset or change a password, and the owner has no screen to add, remove or move staff. Passwords come from the seed (`SEED_STAFF_PASSWORD`). A1 says "Forgotten your password? Ask the owner to reset it."
 - **No audit trail of who did what (step 6).** Orders record when they changed, not which staff member changed them.
@@ -235,6 +236,140 @@ Stripe Checkout (hosted page), test mode, behind a small adapter (`src/shared/li
   - ~~**Stripe link on A3.** In RefundDue, "See this payment in Stripe" shows twice: in the red refund box and in the Payment section below it.~~ Fixed 8 Oct 2026 (demo polish). While a refund is due, only the refund box has it. Once refunded, the Payment section shows it again. Checked at 1180px: one link before and after Mark refunded.
   - **A3 links only real-looking refs.** The link needs a ref matching `pi_` plus letters and digits (`stripeDashboardPaymentUrl`). The seed's `PAY-…` refs and the demo orders' `pi_demo_…` refs get no link, so the walkthrough never opens a Stripe page for a payment that doesn't exist.
 
+## Customer accounts (step 11)
+
+Email and password, on the existing Auth.js setup, as a second principal next to staff. Started 8 Oct 2026; Batch A is the server, Batch B the screens.
+
+- **No email, so no verification and no reset.** The site sends no email (no domain).
+  - "Forgot your password?" gets honest undesigned copy (Batch B), like A1's.
+  - To add a reset later: a `passwordResets/{sha256(token)}` doc with an expiry, a link sent through `sendEmail`, and a route that writes `passwordHash` the way `setCustomerPassword` (`customers/lib/customerAccount.ts`) does. The designed ResetRequest, ResetSent, NewPassword and ResetExpired screens are waiting for it.
+  - No change-password screen either: none is designed.
+- **Principals.** `SessionPrincipal` is `StaffPrincipal | CustomerPrincipal` (`{ kind: "customer", id, name }`). A second credentials provider (`customer-credentials`) checks `customers` through the `customerEmails` lock.
+  - A guest record (no password) is refused like an unknown email, after the same dummy scrypt run, so sign-in never says an email has ordered before.
+  - `requireCustomerSession()` re-reads the customer on every request: a deleted account, or one with no password, is 401. A staff session is 403.
+  - `getOptionalCustomer()` is null for a guest or staff: `POST /api/orders` and C7's `GET /api/orders/{id}` use it.
+- **One session cookie per browser.** Staff and customers share Auth.js's cookie, so signing in as one kind signs the other out. On the customer site a staff session counts as signed out (`/api/account/session` answers `customer: null`; `/account` pages go to the customer sign-in). On the admin, a customer session goes to A1, as before.
+- **Session length by kind** (`sessionPolicy.ts`, unit-tested): staff 12 hours, customers 30 days, both fixed from sign-in. The cookie's `maxAge` is now the longer one (30 days); the `jwt` callback ends a staff token at 12 hours as before.
+- **Throttling, as for staff.**
+  - Per email: 5 failures in 15 minutes lock that email for 15 minutes. Customer records are `signInThrottle/{sha256("customer:" + email)}`, so a customer's failures can't lock a staff member with the same email, or the other way round. Staff records keep their plain hash, and the same TTL policy prunes both.
+  - Sign-up and C7's save clear the email's customer failures before signing in: those guessed at a password that didn't exist yet.
+  - Per address (`rateLimitRules.ts`): customer sign-in 20 per 15 minutes; sign-up and C7's save share 10 per hour; profile saves 30 per 15 minutes.
+  - Every write checks the Origin first (`assertSameOrigin`), before it's counted.
+- **Order history shows only proven orders (decided 8 Oct 2026).**
+  - New field `Order.accountId` (`.default(null)`, no migration): set when an order is placed signed in, or saved to an account from C7 (which needs the order's link). C9 lists only those.
+  - Guest orders still link to whoever owns the email (`customerId`, spec 5), but stay out of every history. Without an email check, anyone could sign up with someone else's email; showing guest orders would then show a stranger that person's name, mobile, items and notes.
+  - This goes against the design's "Ordered as a guest before? … your past orders come with you" (C8). That copy is replaced (Batch B, undesigned).
+  - Once email verification exists, verified accounts could take in their email's guest orders.
+  - Old orders read `accountId: null`, so they stay out of histories. The seed sets it on the seeded account holders' orders (Sam Carter, Corner Cup Cafe), so a seed rerun is needed for their C9 to show anything.
+- **Signed-in checkout** links the order to the session's account (`customerId` and `accountId`), whatever email is typed for that order (AC-C4: "Changes here are just for this order"). It never makes a guest record. A staff session checks out as a guest.
+- **Sign-up on a guest's email** sets the password, name and mobile on that guest record (AC-U1, spec 5).
+- **C7's "Save your details"** (`POST /api/account/from-order`, rules in `planAccountFromOrder`, unit-tested). C7's GET says `accountOffer: true` only while:
+  - the viewer isn't signed in as a customer;
+  - the order is placed, ready or collected;
+  - it isn't in an account yet;
+  - its customer has no password and still owns the email's lock;
+  - it's still the pickup day or earlier, Melbourne time.
+  - Saving sets the password, with the order's name and mobile, on the order's customer, puts the order in its history, and signs in. A forwarded or old link can't be used to take over an email after the pickup day.
+- **Profile email change** moves the `customerEmails` lock in the same transaction. Another account's email is 409 `email_taken`. A guest record's email moves to the account; that guest's orders stay with the guest record, out of the history, and its C7 no longer offers an account.
+- **Known risks (no email to check against):**
+  - **Squatting.** Someone who signs up with another person's email blocks the real owner until reset exists. Their later guest orders still never show in the squatter's history.
+  - **Enumeration.** Sign-up's `email_taken` says an account exists. It's slowed by the 10-per-hour limit.
+- **History limit.** C9 shows the latest 50 orders (`limited: true` past that). Waiting for payment and expired orders are never shown.
+- **APIs:** `/api/account/` `sign-in`, `sign-up`, `sign-out`, `session`, `profile` (PATCH), `orders`, `orders/{id}` and `from-order`. Codes are in each route's header comment.
+- **Batch A live checks (8 Oct 2026),** against a production build on :3001 with the emulator. Ad hoc API script, 82 checks, every one passed:
+  - **Sign-up:** new email; guest email (same customer record, earlier guest order stays hidden, detail 404); account email 409; 7-character password, landline, cross-site and no-Origin refused.
+  - **Sign-in:** ok; wrong password, unknown email and guest-only email all give the same 401; `returnTo` kept for `/checkout`, `/admin` refused; 5 failures lock the customer (429 even with the right password) while staff with the same email still sign in; the 21st try from one address is 429.
+  - **Kinds:** a customer gets 403 from the admin APIs and is sent to A1 from `/admin`. Staff get 403 from the account APIs, `customer: null` from the session API and the customer sign-in from `/account`; their checkout counts as a guest. Signed out is 401.
+  - **Checkout and history:** a signed-in order is the account's, keeps the typed email and makes no guest record. Another customer, a malformed ID or a seeded order is 404. Staff's A2 list still loads (orders saved before `accountId`).
+  - **C7 save:** the offer for a guest (and a staff viewer), never for a signed-in customer; saved, signed in and listed; then `already_linked`, `account_exists` (an account's email, and a guest whose email an account took), `not_eligible` (cancelled) and `window_closed`.
+  - **Profile:** moved to a guest's email (lock moved, old lock deleted); another account's email 409; past orders keep their details; signing in works with the new email only. Sign-out clears the cookie.
+  - The server log had only the expected `CredentialsSignin` warnings. The run's customers, orders, locks, throttle records and new-policy rate-limit counts were deleted afterwards.
+  - The seed's `accountId` change wasn't run against the emulator: rerun `bun run seed` to see Sam Carter's and Corner Cup's orders in C9.
+- **Screens (Batch B): decisions and deliberate differences.**
+  - **Who's signed in** comes from `GET /api/account/session`, prefetched by the customer layout. That makes every customer page per request (`connection()`), which they already were.
+  - **Cart and draft owner.**
+    - `StorageOwner` (in the layout) sets the owner while rendering, ahead of the page, so the cart's first read is already the right one: `millstone:cart:{customerId}` signed in, `millstone:cart:guest` otherwise. The C5 draft key works the same way.
+    - The first load after signing in carries a guest cart with items over to the account and empties the guest cart. See "Cart on sign-in" below for the rule.
+    - Signing out leaves the account's cart saved for next time; the guest starts empty.
+    - If the session prefetch fails, the guest's cart is used until the browser's own ask arrives.
+  - **Sign-in, sign-up, C7's save and sign-out** end in a full page load (C7 refetches instead), so the server and every query see the new session.
+  - **Header Sign in / My account** is on C1 and C2 only, as designed. Sign in comes back to that page afterwards, with its query (C2's `?date`).
+  - **C8's back link and intro** follow `returnTo` (`signInPlace`, unit-tested): Checkout, Menu, or Home. "Continue as a guest" shows from checkout only.
+  - **C5 signed in.** The fields come from the account; notes, payment choice and the checkout key are kept from what was typed as a guest (`draftAfterSignIn`, AC-U2). A signed-in customer's own draft wins after that, so edits for this order stay.
+  - **The shared header stays above the account pages**, with the back link under it, as on C4/C5. The design's header has only the back link, or the wordmark on the email-link screens.
+  - **C9 cards** add an "Order details" link to the account order page. A cancelled order that was never paid shows no payment label, as in the admin.
+  - **C9's "Details saved"** uses the success Notice (sage) with OK. The design's flash has the same words. It's a status message: it's announced but doesn't take focus.
+  - **C7's "Your account is set up"** is a neutral Notice with a check, close to the design's bordered box. Long emails wrap inside it.
+  - **The C8 refusal** drops "or reset your password" (no reset yet).
+- **Undesigned copy (Batch B).** All in `accountContent.ts` (and `checkoutContent.ts`), marked as not designed:
+  - "Forgot your password?" page: "We can't reset passwords online yet. You can still order as a guest with the same email, or create an account with a different one.", with "Back to sign in" and "Start an order".
+  - Sign-in: "Signing in…", the lock ("Too many tries. Wait 15 minutes and try again."), the per-address limit and the failure.
+  - The guest-order promise, replaced (decided 8 Oct 2026):
+    - Sign-in's note: "Orders you place while signed in show up in My account."
+    - Sign-up's email hint: "You'll sign in with this."
+    - Sign-up's intro without "past".
+  - Sign-up: "Creating your account…", "There's already an account for this email." with "Sign in instead", the limit, the failure, and the over-200 password error.
+  - C9: "Loading your account…", the orders' loading and failure states, "Showing your latest 50 orders.", the empty box's "Orders you placed as a guest before signing in don't show here.", "Saving…", the profile's email-taken, limit and failure messages, "Order details" (labelled "Order details for MS-…"), "Signing out…" and the sign-out failure.
+  - The account order page as a whole:
+    - "Order MS-…", "Ready from 7am", "Details for this order";
+    - "Refunded to your card." and "Nothing to pay: this order was cancelled.";
+    - loading, failure and "We couldn't find that order in your account.".
+  - C7's save: "Creating your account…", "This order can't be saved to an account any more." (every refusal, see below), the limit and the failure.
+  - The account order page's 404: "Order not found" / "We couldn't find that order in your account." with "Back to My account".
+  - The cart message after signing in (below).
+- **Copy that intentionally differs from the designs (decided 8–10 Oct 2026).** Each follows from "no email, so no reset and no email check":
+  1. C8's refusal drops "or reset your password": "That email and password don't match. Check them and try again." (SignInError.dc.html).
+  2. C8's note under "Create an account" says "Orders you place while signed in show up in My account." instead of "Ordered as a guest before? Create an account with the same email and your past orders come with you."
+  3. Sign-up's intro drops "past": "Save your details for next time and see your orders."
+  4. Sign-up's email hint says "You'll sign in with this." instead of "Ordered as a guest before? Use the same email and those orders come with you."
+  5. "Forgot your password?" opens an honest undesigned page instead of ResetRequest/ResetSent/NewPassword/ResetExpired, which wait for an email provider.
+- **C7 never says an email has an account (decided 10 Oct 2026).**
+  - No "this email already has an account, sign in" hint on C7: anyone with an order link could use it to test whether an email is registered.
+  - A 409 `account_exists` from the save reads like every other refusal: "This order can't be saved to an account any more."
+  - What's left: the offer simply isn't shown when the email has an account. That says about as much as sign-up's `email_taken`, already listed under Known risks.
+- **Cart on sign-in (`mergeCartOnSignIn`, unit-tested, decided 10 Oct 2026).** When the browser has a guest cart and the account has one saved:
+  - either one empty: the other is kept;
+  - same branch and pickup day: one cart, quantities added and capped at 99 (`MAX_QUANTITY`);
+  - otherwise: the guest cart (what the customer was just building) is kept, and a cart message names what was left out: "Your account had an order saved for another branch or day, so we kept the one you just started. We left out Fruit loaf and Sourdough rye loaf." (undesigned). It shows on that branch's menu if that's where sign-in returns; anywhere else it's a C4 message (C5 sends the customer to C4 to read it, as for any cart change).
+  - `SignInCartNotice` sits after the page in the layout, so it pushes the message after C5 has cleared old ones.
+  - **Known gap:** if the session prefetch failed, the merge happens later and its message isn't shown.
+- **QA fixes (10 Oct 2026), from the Claude-in-Chrome pass:**
+  1. **Long emails and names** no longer widen the page: the customer layout sets `overflow-wrap: anywhere` (`wrap-anywhere`), so a word breaks only when it can't fit. Checked at 390px with a 90-character email and a 60-character name on C5 (guest and signed in), C7 (emailed line, password hint, account created), C8, C9 and the order page.
+  2. **C9 focus:** Edit moves focus to Name; Cancel and Save return it to Edit.
+  3. **C8 links keep where you came from:**
+     - the header's Sign in keeps C2's `?date`;
+     - "Forgot your password?" carries `returnTo` (`routes.account.forgotPassword(returnTo)`) to its "Back to sign in";
+     - "Create an account", "Sign in instead" and "Already have an account? Sign in" carry the typed email in `sessionStorage` (`millstone:account:email`, taken once), never in the URL.
+  4. **The cart rule** above (it used to keep the guest cart silently).
+  5. **C7's "See your orders in My account"** shows only when the order is in the signed-in viewer's own account (`inViewersAccount` from `GET /api/orders/{id}`), not on someone else's confirmation link.
+  6. **The order page's tab title** names the order ("Order MS-1081 · Millstone"). The order is read once per request (React `cache`) for the title and the page.
+  7. **An order that isn't yours, or doesn't exist,** under `/account/orders` gets the account's own 404 (`not-found.tsx` beside the page): "We couldn't find that order in your account." with "Back to My account". Still status 404.
+  8. **Lockout (checked, no change needed):** after 5 failures, C8 says "Too many tries. Wait 15 minutes and try again." like A1 (without "ask the owner"). The lock is checked before the account lookup, and unknown emails count failures the same way. A locked account and a locked unknown email gave the same message and the same 429 body. Even the right password is refused while locked.
+  9. **Paid online, signed in:**
+     - The order gets `accountId` when it's placed (awaiting payment). The webhook writes only `status`, `paymentStatus`, `paymentRef`, `paidAt` and the event ID, so the link survives (`planPaymentEvent.test.ts`, "what a payment event may change").
+     - C9 hides `awaiting_payment` and `expired` (`toAccountOrder.test.ts`).
+     - **Live check (10 Oct 2026), partly done.** A signed-in 4242 payment through `localhost:3000` and Stripe's page: while on Stripe's page, C9's API listed nothing. Back on C6, MS-1064 stayed `awaiting_payment`, with `accountId` set and no Stripe event recorded. The webhook route answered (400 to an unsigned POST), so `stripe listen` wasn't delivering to the dev server: most likely its `whsec_` and `.env.local`'s `STRIPE_WEBHOOK_SECRET` were out of step (see Online payments, Findings).
+     - MS-1064 (`batch.c.pay.…@example.com`) is left on the emulator. Resend its `checkout.session.completed`, then check it's `placed` / `paid` and in that account's C9.
+  - **Checked** with ad hoc Playwright at 390px: 1 to 8 on a production build on :3001 (40 checks, all passed; the customer screenshots looked right), 9 against the dev server on :3000. The runs' other customers and orders (MS-1060 to MS-1063) were deleted.
+- **Batch B live checks (8 Oct 2026),** ad hoc Playwright on a production build on :3001 with the emulator, customer screens at 390px and A1 at 1180px, with CSP and console listeners. 52 checks, run twice:
+  - **C1 and C2:** Sign in in the header (returns to C1); none on C4. My account once signed in.
+  - **C5 → C8 → sign-up → C5:**
+    - the guest row and note;
+    - C8 from checkout (Checkout back link, checkout intro, Continue as a guest);
+    - empty and wrong sign-ins (one message, password cleared);
+    - sign-up field errors;
+    - after sign-up: back on C5 with the designed note, name, formatted mobile and email from the account, and the guest's notes kept;
+    - the cart moved to the account's key, the guest key gone.
+  - **Signed-in order → C7:** "See your orders in My account", no offer, and the account's cart cleared.
+  - **C9:** the order card with its call line, no Recurring section, profile edit errors, "Details saved…" with the new name and mobile.
+  - **Order page:** notes, the details it was placed with, and change or cancel. An unknown order page is the site's 404.
+  - **Sign out:** back to C1 as a guest; `/account` sends to sign-in.
+  - **Guest order → C7 save:** the offer with the email in the hint, the short-password error, "Your account is set up", the offer gone, the My account link appearing, and the order in that account's C9.
+  - **Also:** sign-up on an account's email ("Sign in instead"), the forgot page, a new account's empty C9 with the guest note, and a customer session on `/admin` going to A1.
+  - **Console:** 0 CSP reports. The only console lines were the expected 401/404/409s and A1's local-only `ERR_SSL_PROTOCOL_ERROR` (Security headers, below).
+  - **Fixed during QA:** a long email overflowed the "Your account is set up" box.
+  - **Cleanup:** the runs' customers, orders (MS-1080 to MS-1083), throttle records and the emulator's rate-limit counts were deleted afterwards.
+
 ## Investigated but unreproduced bugs
 
 _None yet._
@@ -245,6 +380,7 @@ _None yet._
 
 ## Data model notes
 
+- **`Order.accountId` (step 11):** see Customer accounts (step 11). Not in spec section 5. Always null or equal to `customerId` (checked by the order schema).
 - **Deviations from spec section 5 (by design):** money is stored as integer cents (`priceCents`, `totalCents`, …), not decimals. Order items and recurring-order items/skips are embedded arrays, so `OrderItem.id` / `order_id` don't exist. Email uniqueness is enforced with `customerEmails` / `staffEmails` lock docs.
 - **Fruit loaf is Northcote-only in the seed.** No design has a branch-only product, so the seed also switches Fruit loaf off at Brunswick. The admin Products canvas shows "At 2 of 3 branches · not Fitzroy" for it.
 - **Seed sold-out dates follow the real clock.** They're set to each branch's earliest (and second) pickup date at seed time. A rerun on a later day moves them forward, and the designs' fixed dates (sold out Wed 30 Sep) won't match literally. Seeding before the 2pm cutoff and testing after it puts the "first" sold-out date on a day that can no longer be ordered. That happened in step 4: Fitzroy's Cinnamon scroll was sold out for Sun 4 Oct. To QA the C4 warning, rerun `bun run seed` on the day.
@@ -252,7 +388,7 @@ _None yet._
 - **Additions in step 3 (not in spec section 5).**
   - `Branch.displayOrder` (Northcote 1, Fitzroy 2, Brunswick 3): C1 lists the branches in that order, which is neither A–Z nor doc-ID order.
   - `settings/catalog` `{ categoryOrder }`: see Deferred features.
-  - The client-side cart (`localStorage`, key `millstone:cart:guest`; later `millstone:cart:{customerId}`) stores each line's product **name** but never a price. The name is only for "We took X out" messages after a branch switch, when the new branch's menu no longer has the product. The cart also records the branch and date it was last checked against (`checkedAgainst`), so a branch switch is still recognised after a reload.
+  - The client-side cart (`localStorage`, key `millstone:cart:guest`; `millstone:cart:{customerId}` while signed in, step 11) stores each line's product **name** but never a price. The name is only for "We took X out" messages after a branch switch, when the new branch's menu no longer has the product. The cart also records the branch and date it was last checked against (`checkedAgainst`), so a branch switch is still recognised after a reload.
 
 - **Orders placed at checkout (step 5).**
   - The order's doc ID is the browser's checkout key (a v4 UUID). A retry with the same key and the same order returns the first order (200) and sends no second email. "Same" means the branch, pickup date, payment method, and items with their quantities. Contact details and notes don't count.
@@ -283,14 +419,14 @@ _None yet._
   - They show the first name, the contact email, items, total, branch and pickup day. They never show the phone, notes or full name.
   - The ID can still leak through browser history, a shared screenshot of the URL, or a forwarded link, and it never expires.
   - Later: expire the page some days after pickup, or limit it to the placing browser session and the customer's account.
-- **C5 keeps what's typed in sessionStorage (step 5).** The key is `millstone:checkout:guest`, holding name, mobile, email, notes, payment choice and the checkout key. It lets the details survive a trip to C4 and back. Personal details stay in that tab's storage until the order is placed or the tab is closed.
+- **C5 keeps what's typed in sessionStorage (step 5).** The key is `millstone:checkout:guest` (`millstone:checkout:{customerId}` while signed in, step 11), holding name, mobile, email, notes, payment choice and the checkout key. It lets the details survive a trip to C4 and back. Personal details stay in that tab's storage until the order is placed or the tab is closed.
 - **Any checkout links the order to whoever owns that email (step 5).** A guest who types an existing customer's email adds the order to that customer's record and history. That includes a customer with a password. The customer's own details are never changed. This is spec 5's "guest = customer with no password" model.
 
 - **Staff sessions (step 6).**
   - A session lasts 12 hours from sign-in and doesn't slide: one sign-in per shift, and a tablet left on overnight asks again the next morning (`sessionPolicy.ts`).
   - Every admin API re-reads `staffUsers/{id}`, so removing someone or moving them to another branch applies on their next request, not when the token expires. Pages do the same through the `(staff)` layout.
   - The session token is a JWT. Signing out clears that browser's cookie only; there's no server-side list of sessions to revoke.
-  - Customer sessions don't exist yet. The session's `principal` has a `kind`, and every staff check refuses anything that isn't `kind: "staff"` (403). The accounts step adds `kind: "customer"`.
+  - The session's `principal` has a `kind`. Every staff check refuses anything that isn't `kind: "staff"` (403), and every customer check anything that isn't `kind: "customer"` (step 11).
 - **Auth.js is a beta (`next-auth@5.0.0-beta.32`, step 6).**
   - Under `next dev`, server-side `signIn()` returns the error page URL for a wrong password instead of throwing. With no `AUTH_SECRET` it returns its own callback URL. `signInStaff` handles both: a sign-in only counts when Auth.js redirects to the page that was asked for.
   - The `/api/auth/[...nextauth]` catch-all isn't mounted, so Auth.js's built-in pages and endpoints aren't reachable. Sign-in and sign-out go through `/api/admin/sign-in` and `/api/admin/sign-out`.

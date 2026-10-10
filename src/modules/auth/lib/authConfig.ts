@@ -7,6 +7,7 @@ import { isSessionExpired, SESSION_MAX_AGE_SECONDS } from "./sessionPolicy";
 // small; everything that touches Firestore lives in auth.ts.
 
 export const STAFF_PROVIDER_ID = "staff-credentials";
+export const CUSTOMER_PROVIDER_ID = "customer-credentials";
 
 export const authConfig = {
   providers: [],
@@ -20,9 +21,10 @@ export const authConfig = {
         token.principal = user.principal;
         token.signedInAt = Date.now();
       }
-      // Fixed lifetime from sign-in: Auth.js re-issues the cookie on use, so
-      // its own maxAge alone would slide. Null ends the session.
-      if (isSessionExpired(token.signedInAt, Date.now())) return null;
+      // Fixed lifetime from sign-in, by kind (staff 12h, customers 30 days):
+      // Auth.js re-issues the cookie on use, so its own maxAge alone would
+      // slide. Null ends the session.
+      if (isSessionExpired(token.principal?.kind, token.signedInAt, Date.now())) return null;
       return token;
     },
     session({ session, token }) {

@@ -1,13 +1,6 @@
-import { z } from "zod";
-import type { OrderId } from "@/shared/domain";
+import { anyOrderIdParam, anyOrderRouteParamsSchema } from "@/modules/orders/lib/orderParams";
 
-/**
- * Any order doc ID: a checkout key (UUID), a generated `{recurringOrderId}_{date}`
- * or a seeded ID. Firestore IDs can't contain "/".
- */
-export const adminOrderIdParam = z
-  .string()
-  .regex(/^[A-Za-z0-9_-]{1,128}$/)
-  .transform((value) => value as OrderId);
+/** Staff open any kind of order: checkout, generated or seeded. */
+export const adminOrderIdParam = anyOrderIdParam;
 
-export const adminOrderRouteParamsSchema = z.object({ orderId: adminOrderIdParam });
+export const adminOrderRouteParamsSchema = anyOrderRouteParamsSchema;

@@ -40,6 +40,14 @@ describe("decideRateLimit", () => {
   test("the proposed limits", () => {
     expect(RATE_LIMITS.orders).toEqual({ id: "orders", limit: 10, windowMs: 3_600_000 });
     expect(RATE_LIMITS.staffSignIn).toEqual({ id: "staff-sign-in", limit: 20, windowMs: 900_000 });
+    expect(RATE_LIMITS.customerSignIn).toEqual({ id: "customer-sign-in", limit: 20, windowMs: 900_000 });
+    expect(RATE_LIMITS.customerSignUp).toEqual({ id: "customer-sign-up", limit: 10, windowMs: 3_600_000 });
+    expect(RATE_LIMITS.accountWrite).toEqual({ id: "account-write", limit: 30, windowMs: 900_000 });
+  });
+
+  test("every policy counts on its own (distinct doc ID prefixes)", () => {
+    const ids = Object.values(RATE_LIMITS).map((limit) => limit.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });
 

@@ -1,3 +1,5 @@
+import { SaveDetailsOffer } from "@/modules/account/components/SaveDetailsOffer";
+import { accountContent } from "@/modules/account/content/accountContent";
 import { Card } from "@/shared/components/atoms/Card/Card";
 import { Icon } from "@/shared/components/atoms/Icon/Icon";
 import { PaymentLabel } from "@/shared/components/atoms/PaymentLabel/PaymentLabel";
@@ -7,17 +9,21 @@ import { formatCents } from "@/shared/utils/money";
 import { formatPhone } from "@/shared/utils/phone";
 import { formatPickupDay, formatTimeOfDay } from "@/shared/utils/pickup-dates";
 import { confirmationContent as content } from "../content/confirmationContent";
-import type { OrderConfirmation } from "../types/orderConfirmation";
+import type { OrderConfirmationView } from "../types/orderConfirmation";
 
 export interface ConfirmationDetailsProps {
-  order: OrderConfirmation;
+  order: OrderConfirmationView;
   /** The page heading, focused when C7 opens. */
   titleRef: React.Ref<HTMLHeadingElement>;
   /** Whether the confirmation email went anywhere; the live site has no provider yet. */
   emailed: boolean;
 }
 
-/** C7's content (AC-C9), from ConfGuestPickup.dc.html. */
+/**
+ * C7's content (AC-C9), from ConfGuestPickup.dc.html. A guest may be offered
+ * "Save your details" (AC-C10). When the order is in the signed-in viewer's
+ * own account, there's a way to My account (ConfSignedIn.dc.html).
+ */
 export function ConfirmationDetails({ order, titleRef, emailed }: ConfirmationDetailsProps) {
   const day = formatPickupDay(order.pickupDate);
   const total = formatCents(order.totalCents);
@@ -102,9 +108,18 @@ export function ConfirmationDetails({ order, titleRef, emailed }: ConfirmationDe
         <p>{content.notEmailed}</p>
       )}
 
-      <ButtonLink href={routes.menu(order.branch.id)} block>
-        {content.backToMenu}
-      </ButtonLink>
+      <SaveDetailsOffer orderId={order.orderId} email={order.contactEmail} offered={order.accountOffer} />
+
+      <div className="flex flex-col gap-2">
+        <ButtonLink href={routes.menu(order.branch.id)} block>
+          {content.backToMenu}
+        </ButtonLink>
+        {order.inViewersAccount && (
+          <ButtonLink href={routes.account.home} variant="quiet" block>
+            {accountContent.saveDetails.seeOrders}
+          </ButtonLink>
+        )}
+      </div>
     </>
   );
 }

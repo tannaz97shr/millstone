@@ -8,6 +8,7 @@ import { toProduct } from "@/modules/catalog/lib/toProduct";
 import type {
   Branch,
   BranchProduct,
+  CustomerId,
   IsoInstant,
   Order,
   OrderId,
@@ -39,8 +40,11 @@ export type PlaceOrderResult =
 /**
  * Places an order (AC-C6, C7, C8) in one transaction: re-checks the day with
  * the server's clock, re-reads products and the branch's rows, prices every
- * line, takes the next order number, finds or creates the guest customer,
- * and writes the order. Pay at pickup is placed and unpaid; online waits for
+ * line, takes the next order number, links the customer, and writes the
+ * order. Signed in (`account`), the order is the account's: in its history,
+ * whatever contact details were typed for it (AC-C4). As a guest, it links
+ * to whoever owns the email, or a new guest record (spec 5), and stays out
+ * of every history. Pay at pickup is placed and unpaid; online waits for
  * payment (awaiting_payment, hidden from staff) until the provider's webhook
  * says it's paid. The payment page itself is opened afterwards
  * (startOnlinePayment), outside the transaction.
@@ -49,7 +53,10 @@ export type PlaceOrderResult =
  * first order instead of placing another (planCheckoutRetry has the cases).
  * Problems throw 4xx ApiErrors and write nothing.
  */
-export async function placeOrder(request: ParsedPlaceOrderRequest): Promise<PlaceOrderResult> {
+export async function placeOrder(
+  request: ParsedPlaceOrderRequest,
+  account: CustomerId | null,
+): Promise<PlaceOrderResult> {
   if (request.paymentMethod === "online" && !onlinePaymentsEnabled()) {
     throw new ApiError(422, "payment_method_unavailable", "Online payment is switched off");
   }
@@ -116,7 +123,7 @@ export async function placeOrder(request: ParsedPlaceOrderRequest): Promise<Plac
       );
     }
 
-    const existingCustomerId = await readCustomerIdByEmail(tx, contact.email);
+    const existingCustomerId = account ?? (await readCustomerIdByEmail(tx, contact.email));
     const orderNumber = await allocateOrderNumber(tx);
 
     // Writes. An existing customer is only linked, never changed.
@@ -127,6 +134,7 @@ export async function placeOrder(request: ParsedPlaceOrderRequest): Promise<Plac
       orderNumber,
       branchId,
       customerId,
+      accountId: account,
       contactName: contact.name,
       contactPhone: contact.phone,
       contactEmail: contact.email,

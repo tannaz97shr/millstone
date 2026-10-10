@@ -1,6 +1,7 @@
 import "server-only";
+import { findCustomerById, hasAccount } from "@/modules/customers/lib/findCustomer";
 import { findStaffUserById } from "@/modules/staff/lib/findStaffUser";
-import type { BranchId, StaffRole, StaffUserId } from "@/shared/domain";
+import type { BranchId, Customer, StaffRole, StaffUserId } from "@/shared/domain";
 import { ApiError } from "@/shared/lib/api/apiError";
 import type { SessionPrincipal } from "../types/session";
 import { auth } from "./auth";
@@ -43,6 +44,34 @@ export async function requireOwnerSession(): Promise<StaffActor> {
   const actor = await requireStaffSession();
   if (actor.role !== "owner") throw new ApiError(403, "forbidden", "Owner only");
   return actor;
+}
+
+/** The customer behind a request, as stored now: their account's current details. */
+export type CustomerActor = Customer & { passwordHash: string };
+
+/**
+ * A signed-in customer, else 401 (no session, or the account is gone) or 403
+ * (a staff session: staff never act as customers). Details are re-read from
+ * Firestore, so a profile edit applies at once.
+ */
+export async function requireCustomerSession(): Promise<CustomerActor> {
+  const principal = await requireSession();
+  if (principal.kind !== "customer") throw new ApiError(403, "forbidden", "Customers only");
+  const customer = await findCustomerById(principal.id);
+  if (!hasAccount(customer)) throw new ApiError(401, "unauthenticated", "This account no longer exists");
+  return customer;
+}
+
+/**
+ * The signed-in customer, or null for a guest or a staff session (a staff
+ * member on the customer site counts as a guest). For public routes whose
+ * answer depends on the account, like checkout and C7.
+ */
+export async function getOptionalCustomer(): Promise<CustomerActor | null> {
+  const session = await auth();
+  if (session?.principal?.kind !== "customer") return null;
+  const customer = await findCustomerById(session.principal.id);
+  return hasAccount(customer) ? customer : null;
 }
 
 /** Whether this staff member may see or change a branch's data. */

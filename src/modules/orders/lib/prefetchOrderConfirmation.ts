@@ -1,5 +1,6 @@
 import "server-only";
 import type { QueryClient } from "@tanstack/react-query";
+import { getOptionalCustomer } from "@/modules/auth/lib/requireSession";
 import type { OrderId } from "@/shared/domain";
 import { ApiError } from "@/shared/lib/api/apiError";
 import { logError } from "@/shared/utils/logError";
@@ -16,7 +17,8 @@ export async function prefetchOrderConfirmation(
   orderId: OrderId,
 ): Promise<"ok" | "not_found" | "failed"> {
   try {
-    queryClient.setQueryData(orderKeys.confirmation(orderId), await getOrderConfirmation(orderId));
+    const viewer = await getOptionalCustomer();
+    queryClient.setQueryData(orderKeys.confirmation(orderId), await getOrderConfirmation(orderId, viewer?.id ?? null));
     return "ok";
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) return "not_found";

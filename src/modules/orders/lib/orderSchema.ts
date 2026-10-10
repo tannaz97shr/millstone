@@ -43,6 +43,8 @@ export const orderDocSchema = z
     orderNumber: z.string().regex(/^MS-\d{4,}$/),
     branchId: z.string().min(1),
     customerId: z.string().min(1).nullable(),
+    // Added in step 11; orders saved before it read as null (in no account's history).
+    accountId: z.string().min(1).nullable().default(null),
     contactName: z.string().min(1),
     contactPhone: phoneField,
     contactEmail: emailField,
@@ -78,6 +80,10 @@ export const orderDocSchema = z
       order.totalCents === order.items.reduce((sum, item) => sum + item.lineTotalCents, 0),
     { message: "total must equal the sum of line totals", path: ["totalCents"] },
   )
+  .refine((order) => order.accountId === null || order.accountId === order.customerId, {
+    message: "an order's account is always its customer",
+    path: ["accountId"],
+  })
   .refine((order) => (order.cancellationNote !== null) === (order.cancellationReason === "other"), {
     message: "a note goes with the reason \"other\", and only with it",
     path: ["cancellationNote"],

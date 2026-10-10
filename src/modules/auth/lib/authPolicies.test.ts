@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { safeAdminReturnPath } from "./returnPath";
-import { isSessionExpired, SESSION_MAX_AGE_SECONDS } from "./sessionPolicy";
+import { safeAdminReturnPath, safeCustomerReturnPath } from "./returnPath";
+import {
+  CUSTOMER_SESSION_MAX_AGE_SECONDS,
+  isSessionExpired,
+  SESSION_MAX_AGE_SECONDS,
+  STAFF_SESSION_MAX_AGE_SECONDS,
+} from "./sessionPolicy";
 import {
   isLocked,
   LOCK_MS,
@@ -45,13 +50,65 @@ describe("safeAdminReturnPath", () => {
 
 describe("isSessionExpired", () => {
   const signedInAt = Date.UTC(2026, 9, 3, 20, 0);
-  test("lasts 12 hours from sign-in", () => {
-    expect(isSessionExpired(signedInAt, signedInAt + SESSION_MAX_AGE_SECONDS * 1000)).toBe(false);
-    expect(isSessionExpired(signedInAt, signedInAt + SESSION_MAX_AGE_SECONDS * 1000 + 1)).toBe(true);
+  const after = (seconds: number) => signedInAt + seconds * 1000;
+
+  test("staff sessions last 12 hours from sign-in", () => {
+    expect(STAFF_SESSION_MAX_AGE_SECONDS).toBe(12 * 60 * 60);
+    expect(isSessionExpired("staff", signedInAt, after(STAFF_SESSION_MAX_AGE_SECONDS))).toBe(false);
+    expect(isSessionExpired("staff", signedInAt, after(STAFF_SESSION_MAX_AGE_SECONDS) + 1)).toBe(true);
   });
-  test("a token without a sign-in time is expired", () => {
-    expect(isSessionExpired(undefined, signedInAt)).toBe(true);
-    expect(isSessionExpired(Number.NaN, signedInAt)).toBe(true);
+
+  test("customer sessions last 30 days from sign-in", () => {
+    expect(CUSTOMER_SESSION_MAX_AGE_SECONDS).toBe(30 * 24 * 60 * 60);
+    expect(isSessionExpired("customer", signedInAt, after(STAFF_SESSION_MAX_AGE_SECONDS) + 1)).toBe(false);
+    expect(isSessionExpired("customer", signedInAt, after(CUSTOMER_SESSION_MAX_AGE_SECONDS))).toBe(false);
+    expect(isSessionExpired("customer", signedInAt, after(CUSTOMER_SESSION_MAX_AGE_SECONDS) + 1)).toBe(true);
+  });
+
+  test("the cookie lives as long as the longest session", () => {
+    expect(SESSION_MAX_AGE_SECONDS).toBe(CUSTOMER_SESSION_MAX_AGE_SECONDS);
+  });
+
+  test("a token without a sign-in time, or of no known kind, is expired", () => {
+    expect(isSessionExpired("staff", undefined, signedInAt)).toBe(true);
+    expect(isSessionExpired("customer", Number.NaN, signedInAt)).toBe(true);
+    expect(isSessionExpired(undefined, signedInAt, signedInAt)).toBe(true);
+  });
+});
+
+describe("safeCustomerReturnPath", () => {
+  test("keeps a customer page with its query", () => {
+    expect(safeCustomerReturnPath("/checkout")).toBe("/checkout");
+    expect(safeCustomerReturnPath("/menu/northcote?date=2026-10-08")).toBe("/menu/northcote?date=2026-10-08");
+    expect(safeCustomerReturnPath("/")).toBe("/");
+    expect(safeCustomerReturnPath("/account/orders/abc")).toBe("/account/orders/abc");
+  });
+
+  test("falls back to My account for anything else", () => {
+    for (const value of [
+      null,
+      undefined,
+      "",
+      "checkout",
+      "//evil.example",
+      "https://evil.example/checkout",
+      "/\\evil.example",
+      "/admin",
+      "/admin/products",
+      "/api/account/session",
+      "/account/sign-in",
+      "/account/sign-in?returnTo=/checkout",
+      "/account/sign-up",
+      "/account/forgot-password",
+      "/menu/../admin",
+    ]) {
+      expect(safeCustomerReturnPath(value)).toBe("/account");
+    }
+  });
+
+  test("a path that only starts like an excluded one is fine", () => {
+    expect(safeCustomerReturnPath("/administrator")).toBe("/administrator");
+    expect(safeCustomerReturnPath("/apiary")).toBe("/apiary");
   });
 });
 

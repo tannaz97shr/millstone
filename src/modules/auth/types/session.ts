@@ -1,4 +1,4 @@
-import type { BranchId, StaffRole, StaffUserId } from "@/shared/domain";
+import type { BranchId, CustomerId, StaffRole, StaffUserId } from "@/shared/domain";
 
 /** A signed-in staff member, as carried in the session token. */
 export interface StaffPrincipal {
@@ -11,8 +11,20 @@ export interface StaffPrincipal {
 }
 
 /**
- * Whoever a session belongs to. The accounts step adds a `{ kind: "customer" }`
- * arm with its own provider; staff checks already refuse anything that isn't
- * `kind: "staff"`.
+ * A signed-in customer (an account: a Customer with a password). Contact
+ * details aren't carried: they're re-read on each request, so a profile edit
+ * applies at once.
  */
-export type SessionPrincipal = StaffPrincipal;
+export interface CustomerPrincipal {
+  kind: "customer";
+  id: CustomerId;
+  name: string;
+}
+
+/**
+ * Whoever a session belongs to. Staff checks refuse anything that isn't
+ * `kind: "staff"`, and customer checks anything that isn't `kind: "customer"`.
+ */
+export type SessionPrincipal = StaffPrincipal | CustomerPrincipal;
+
+export type PrincipalKind = SessionPrincipal["kind"];

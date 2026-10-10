@@ -17,6 +17,15 @@ export const RATE_LIMITS = {
   orders: { id: "orders", limit: 10, windowMs: 60 * MINUTE_MS },
   /** Staff sign-in: a branch's counter network, plus the per-email lock (throttleRules.ts). */
   staffSignIn: { id: "staff-sign-in", limit: 20, windowMs: 15 * MINUTE_MS },
+  /** Customer sign-in (C8): the same as staff, plus its own per-email lock. */
+  customerSignIn: { id: "customer-sign-in", limit: 20, windowMs: 15 * MINUTE_MS },
+  /**
+   * New accounts: C8's sign-up and C7's "Save your details". Also slows
+   * anyone using sign-up's "already an account" answer to test emails.
+   */
+  customerSignUp: { id: "customer-sign-up", limit: 10, windowMs: 60 * MINUTE_MS },
+  /** Signed-in changes to an account (C9 profile). */
+  accountWrite: { id: "account-write", limit: 30, windowMs: 15 * MINUTE_MS },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export interface RateLimitState {

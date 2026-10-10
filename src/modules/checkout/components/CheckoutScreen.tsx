@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAccountSession } from "@/modules/account/hooks/useAccountSession";
 import { clearCartMessages } from "@/modules/cart/hooks/useCartMessages";
 import { useCartPage } from "@/modules/cart/hooks/useCartPage";
 import { cartCount } from "@/modules/cart/lib/cartLogic";
@@ -44,11 +45,14 @@ export function CheckoutScreen({ onlinePayments, testPayments, paymentCancelled,
     if (backFromPayment) router.replace(routes.checkout, { scroll: false });
   }, [backFromPayment, router]);
   const page = useCartPage();
+  // Normally already known (the layout's prefetch). If that failed, wait for
+  // the browser's own ask; an error there checks out as a guest.
+  const session = useAccountSession();
   /** Placed: the cart is about to be cleared and C7 is opening. */
   const [placed, setPlaced] = useState(false);
   const { cart, branch, date, branchesQuery, menuQuery } = page;
 
-  const loading = !page.cartReady || branchesQuery.isPending;
+  const loading = !page.cartReady || branchesQuery.isPending || session.isPending;
   const leave =
     !placed &&
     page.cartReady &&
@@ -98,6 +102,7 @@ export function CheckoutScreen({ onlinePayments, testPayments, paymentCancelled,
           backFromPayment={backFromPayment && onlinePayments}
           emailed={emailed}
           onPlaced={() => setPlaced(true)}
+          profile={session.data?.customer ?? null}
           summary={
             <CheckoutSummary
               branch={branch}
