@@ -5,6 +5,13 @@ import { listNames } from "@/shared/utils/listNames";
 const itOrThem = (names: readonly string[]) => (names.length > 1 ? "them" : "it");
 
 export const cartContent = {
+  /**
+   * Undesigned: signing in with a guest cart for another branch or day than
+   * the account's saved cart (mergeCartOnSignIn keeps the guest one).
+   */
+  signInLeftOut: (names: readonly string[]) =>
+    `Your account had an order saved for another branch or day, so we kept the one you just started. We left out ${listNames(names)}.`,
+
   itemCount: (count: number) => (count === 1 ? "1 item" : `${count} items`),
 
   removed: {

@@ -165,3 +165,28 @@ describe("planPaymentEvent: expired", () => {
     expect(planPaymentEvent(once, paid(), NOW).outcome).toBe("paid_after_expiry");
   });
 });
+
+describe("what a payment event may change", () => {
+  // applyPaymentEvent writes only these fields (plus the event ID), so an
+  // order placed signed in keeps its customerId and accountId when the
+  // webhook marks it paid, and shows in C9 from then on.
+  const PAYMENT_FIELDS = new Set(["status", "paymentStatus", "paymentRef", "paidAt"]);
+  const signedIn = { customerId: "cust-1", accountId: "cust-1" } as Partial<Order>;
+
+  test.each([
+    ["paid while waiting", order(signedIn), paid()],
+    ["paid after expiry", order({ ...signedIn, status: "expired" }), paid()],
+    ["paid again", order({ ...signedIn, status: "placed", paymentStatus: "paid" }), paid({ eventId: "evt_2" })],
+    ["expired while waiting", order(signedIn), expired()],
+  ])("%s: only payment fields change", (_label, before, event) => {
+    const { changes } = planPaymentEvent(before, event, NOW);
+    for (const key of Object.keys(changes)) expect(PAYMENT_FIELDS.has(key)).toBe(true);
+  });
+
+  test("paid while waiting places the order", () => {
+    expect(planPaymentEvent(order(signedIn), paid(), NOW).changes).toMatchObject({
+      status: "placed",
+      paymentStatus: "paid",
+    });
+  });
+});

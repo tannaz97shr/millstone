@@ -17,15 +17,14 @@ export interface ConfirmationDetailsProps {
   titleRef: React.Ref<HTMLHeadingElement>;
   /** Whether the confirmation email went anywhere; the live site has no provider yet. */
   emailed: boolean;
-  /** A customer is signed in: "See your orders in My account" (ConfSignedIn.dc.html). */
-  signedIn: boolean;
 }
 
 /**
  * C7's content (AC-C9), from ConfGuestPickup.dc.html. A guest may be offered
- * "Save your details" (AC-C10); a signed-in customer gets a way to My account.
+ * "Save your details" (AC-C10). When the order is in the signed-in viewer's
+ * own account, there's a way to My account (ConfSignedIn.dc.html).
  */
-export function ConfirmationDetails({ order, titleRef, emailed, signedIn }: ConfirmationDetailsProps) {
+export function ConfirmationDetails({ order, titleRef, emailed }: ConfirmationDetailsProps) {
   const day = formatPickupDay(order.pickupDate);
   const total = formatCents(order.totalCents);
   const paid = order.paymentStatus === "paid";
@@ -115,7 +114,7 @@ export function ConfirmationDetails({ order, titleRef, emailed, signedIn }: Conf
         <ButtonLink href={routes.menu(order.branch.id)} block>
           {content.backToMenu}
         </ButtonLink>
-        {signedIn && (
+        {order.inViewersAccount && (
           <ButtonLink href={routes.account.home} variant="quiet" block>
             {accountContent.saveDetails.seeOrders}
           </ButtonLink>

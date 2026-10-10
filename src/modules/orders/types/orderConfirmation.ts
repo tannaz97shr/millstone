@@ -54,4 +54,9 @@ export interface OrderConfirmation {
  */
 export interface OrderConfirmationView extends OrderConfirmation {
   accountOffer: boolean;
+  /**
+   * The order is in the signed-in viewer's own account, so C7 links to My
+   * account (ConfSignedIn). False on anyone else's confirmation link.
+   */
+  inViewersAccount: boolean;
 }

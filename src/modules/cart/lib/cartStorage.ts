@@ -43,16 +43,33 @@ function peekCart(storageKey: string): Cart | null {
   }
 }
 
+/** The saved account items a sign-in left out, until a screen says so (SignInCartNotice). */
+export interface SignInLeftOut {
+  /** The kept (guest) cart's branch, whose cart message scope shows it. */
+  branchId: string;
+  names: string[];
+}
+
+let signInLeftOut: SignInLeftOut | null = null;
+
+/** Takes what the last sign-in left out of the cart, once. */
+export function takeSignInLeftOut(): SignInLeftOut | null {
+  const taken = signInLeftOut;
+  signInLeftOut = null;
+  return taken;
+}
+
 /**
  * Signing in carries the guest cart over to the account (mergeCartOnSignIn)
  * and empties the guest one. Failures only cost the carry-over.
  */
 function carryGuestCartTo(accountKey: string) {
   const guestKey = cartStorageKey(GUEST_CART_OWNER);
-  const merged = mergeCartOnSignIn(peekCart(guestKey), peekCart(accountKey));
+  const { cart, leftOut } = mergeCartOnSignIn(peekCart(guestKey), peekCart(accountKey));
   try {
-    if (merged) window.localStorage.setItem(accountKey, JSON.stringify(merged));
+    if (cart) window.localStorage.setItem(accountKey, JSON.stringify(cart));
     window.localStorage.removeItem(guestKey);
+    if (cart && leftOut.length > 0) signInLeftOut = { branchId: cart.branchId, names: leftOut };
   } catch (error) {
     logError(error, "cartStorage.carryGuestCart", { level: "warn" });
   }

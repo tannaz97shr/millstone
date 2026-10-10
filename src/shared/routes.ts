@@ -30,8 +30,12 @@ export const routes = {
     /** C8 create an account, with the same `returnTo` as sign-in. */
     signUp: (returnTo?: string | null) =>
       returnTo ? `/account/sign-up?${new URLSearchParams({ returnTo })}` : "/account/sign-up",
-    /** C8 "Forgot your password?": no reset without emails yet (undesigned). */
-    forgotPassword: "/account/forgot-password",
+    /**
+     * C8 "Forgot your password?": no reset without emails yet (undesigned).
+     * `returnTo` is kept for its "Back to sign in".
+     */
+    forgotPassword: (returnTo?: string | null) =>
+      returnTo ? `/account/forgot-password?${new URLSearchParams({ returnTo })}` : "/account/forgot-password",
     /** One of the account's own orders. */
     order: (orderId: string) => `/account/orders/${encodeURIComponent(orderId)}`,
   },

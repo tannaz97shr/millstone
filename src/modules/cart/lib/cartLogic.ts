@@ -204,12 +204,41 @@ export function resolvePickupDate(
   return { date: calendar.earliest, movedFrom: wanted };
 }
 
+/** The account's cart after signing in, and the account cart's items that weren't kept. */
+export interface SignInCartMerge {
+  cart: Cart | null;
+  /** Names of the saved account items left out, for a "we left out…" message. Empty when nothing was. */
+  leftOut: string[];
+}
+
 /**
- * The account's cart after signing in. The guest cart is what the customer
- * was just building, so if it has anything in it, it becomes the account's
- * cart (replacing an older one saved there). An empty guest cart leaves the
- * account's cart as it was. Either way the guest cart is then cleared.
+ * Signing in with a guest cart while the account has a cart saved:
+ * - either one empty: the other is kept as it is;
+ * - both for the same branch and pickup day: one cart with both sets of
+ *   lines, quantities added and capped at MAX_QUANTITY;
+ * - otherwise the guest cart (what the customer was just building) is kept,
+ *   and the account cart's items are named as left out.
+ * The guest cart is cleared afterwards either way.
  */
-export function mergeCartOnSignIn(guestCart: Cart | null, accountCart: Cart | null): Cart | null {
-  return cartCount(guestCart) > 0 ? guestCart : accountCart;
+export function mergeCartOnSignIn(guestCart: Cart | null, accountCart: Cart | null): SignInCartMerge {
+  if (!guestCart || cartCount(guestCart) === 0) return { cart: accountCart, leftOut: [] };
+  if (!accountCart || cartCount(accountCart) === 0) return { cart: guestCart, leftOut: [] };
+
+  const samePlace = guestCart.branchId === accountCart.branchId && guestCart.pickupDate === accountCart.pickupDate;
+  if (!samePlace) {
+    return { cart: guestCart, leftOut: lineEntries(accountCart).map(([, line]) => line.name) };
+  }
+
+  const items: Cart["items"] = { ...guestCart.items };
+  for (const [productId, line] of lineEntries(accountCart)) {
+    const guestLine = items[productId];
+    items[productId] = {
+      name: guestLine?.name ?? line.name,
+      quantity: Math.min(MAX_QUANTITY, (guestLine?.quantity ?? 0) + line.quantity),
+    };
+  }
+  return {
+    cart: { ...guestCart, items, checkedAgainst: guestCart.checkedAgainst ?? accountCart.checkedAgainst },
+    leftOut: [],
+  };
 }

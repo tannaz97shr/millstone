@@ -7,6 +7,7 @@ import { TextField } from "@/shared/components/molecules/TextField/TextField";
 import { CONTACT_LIMITS } from "@/modules/checkout/lib/checkoutSchema";
 import { routes } from "@/shared/routes";
 import { accountContent } from "../content/accountContent";
+import { useEmailHandoff } from "../hooks/useEmailHandoff";
 import { useSignUp, type SignUpProblem } from "../hooks/useSignUp";
 import { PASSWORD_LIMITS } from "../lib/accountSchemas";
 import type { SignInPlace } from "../lib/signInContext";
@@ -24,6 +25,7 @@ const problemText: Record<SignUpProblem, string> = {
 export function SignUpForm({ place }: { place: SignInPlace }) {
   const { form, submit, problem, pending } = useSignUp(place.returnTo);
   const { errors } = form.formState;
+  const handOffEmail = useEmailHandoff(form);
   const alertRef = useFocusOnShow<HTMLDivElement>(problem);
 
   return (
@@ -44,7 +46,7 @@ export function SignUpForm({ place }: { place: SignInPlace }) {
               tone="error"
               action={
                 problem === "emailTaken" ? (
-                  <ButtonLink href={routes.account.signIn(place.returnTo)} variant="quiet">
+                  <ButtonLink href={routes.account.signIn(place.returnTo)} variant="quiet" onClick={handOffEmail}>
                     {content.emailTakenAction}
                   </ButtonLink>
                 ) : undefined
@@ -98,7 +100,7 @@ export function SignUpForm({ place }: { place: SignInPlace }) {
       </form>
       <div className="flex flex-wrap items-center gap-1">
         <span>{content.haveAccount}</span>
-        <ButtonLink href={routes.account.signIn(place.returnTo)} variant="quiet">
+        <ButtonLink href={routes.account.signIn(place.returnTo)} variant="quiet" onClick={handOffEmail}>
           {content.signIn}
         </ButtonLink>
       </div>

@@ -78,7 +78,7 @@ function AccountOrderDetails({ order }: { order: AccountOrder }) {
           <h2 id="account-order-notes" className="body-strong">
             {content.notesTitle}
           </h2>
-          <p className="break-words">{order.notes}</p>
+          <p>{order.notes}</p>
         </section>
       )}
 
@@ -88,7 +88,7 @@ function AccountOrderDetails({ order }: { order: AccountOrder }) {
         </h2>
         <p>{order.contact.name}</p>
         <p>{formatPhone(order.contact.phone)}</p>
-        <p className="break-words">{order.contact.email}</p>
+        <p>{order.contact.email}</p>
       </section>
 
       {open && (

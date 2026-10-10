@@ -144,6 +144,7 @@ export const accountContent = {
 
   /** Undesigned page: one of the account's orders (C9 has only the cards). */
   order: {
+    metadataTitle: (orderNumber: string) => `Order ${orderNumber} · Millstone`,
     back: "My account",
     title: (orderNumber: string) => `Order ${orderNumber}`,
     pickupTitle: "Pickup",
@@ -162,6 +163,8 @@ export const accountContent = {
     loading: "Loading your order…",
     loadError: "We couldn't load this order. Check your connection and try again.",
     retry: "Try again",
+    /** The page's 404 (not-found.tsx) and its in-page twin. */
+    notFoundTitle: "Order not found",
     notFound: "We couldn't find that order in your account.",
     backToAccount: "Back to My account",
   },
@@ -178,10 +181,10 @@ export const accountContent = {
     createdTitle: "Your account is set up",
     created: (email: string) => `You're signed in as ${email}, and this order is in My account.`,
     seeOrders: "See your orders in My account",
-    /** Undesigned: 409 account_exists. */
-    accountExists: "There's already an account for this email. Sign in to see your orders.",
-    accountExistsAction: "Sign in",
-    /** Undesigned: 409 already_linked / not_eligible / window_closed. */
+    /**
+     * Undesigned: any 409 (already_linked, not_eligible, window_closed, and
+     * account_exists too: C7 never says an email has an account).
+     */
     unavailable: "This order can't be saved to an account any more.",
     /** Undesigned. */
     rateLimited: "Too many new accounts from this network. Try again in an hour.",

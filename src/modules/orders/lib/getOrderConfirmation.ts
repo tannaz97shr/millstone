@@ -2,7 +2,7 @@ import "server-only";
 import { planAccountFromOrder } from "@/modules/account/lib/planAccountFromOrder";
 import { toBranch } from "@/modules/branches/lib/toBranch";
 import { findCustomerByEmail, findCustomerById } from "@/modules/customers/lib/findCustomer";
-import type { Order, OrderId } from "@/shared/domain";
+import type { CustomerId, Order, OrderId } from "@/shared/domain";
 import { ApiError } from "@/shared/lib/api/apiError";
 import { getDb } from "@/shared/lib/firebase/admin";
 import { branchesRef, ordersRef } from "@/shared/lib/firebase/collections";
@@ -58,12 +58,13 @@ async function accountOfferFor(order: Order, viewerSignedIn: boolean, now: Date)
 /**
  * What C6 and C7 show for one order (GET /api/orders/{orderId}, and the
  * server prefetch), with `state` saying whether it's placed, still waiting
- * for payment, or expired unpaid. `viewerSignedIn`: a customer session is
- * looking, so there's no account offer.
+ * for payment, or expired unpaid. `viewer`: the signed-in customer looking,
+ * or null. A signed-in viewer gets no account offer, and is told whether the
+ * order is in their own account.
  */
 export async function getOrderConfirmation(
   orderId: OrderId,
-  viewerSignedIn: boolean,
+  viewer: CustomerId | null,
   now = new Date(),
 ): Promise<OrderConfirmationView> {
   const snapshot = await firestoreRead(ordersRef().doc(orderId).get(), `orders/${orderId}`);
@@ -78,6 +79,7 @@ export async function getOrderConfirmation(
     branchesRef().doc(order.branchId).get(),
     `branches/${order.branchId}`,
   );
-  const accountOffer = await accountOfferFor(order, viewerSignedIn, now);
-  return { ...toOrderConfirmation(order, toBranch(branchSnapshot)), accountOffer };
+  const accountOffer = await accountOfferFor(order, viewer !== null, now);
+  const inViewersAccount = viewer !== null && order.accountId === viewer;
+  return { ...toOrderConfirmation(order, toBranch(branchSnapshot)), accountOffer, inViewersAccount };
 }

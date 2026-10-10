@@ -342,20 +342,57 @@ describe("removeItems", () => {
 
 describe("mergeCartOnSignIn", () => {
   const product = (id: string, name: string) => ({ id: id as ProductId, name, soldOut: false });
-  const guest = setQuantity(emptyCart(NORTHCOTE, WED), product("rye", "Rye loaf"), 2);
-  const account = setQuantity(emptyCart(FITZROY, THU), product("bagel", "Bagel"), 6);
-
-  test("a guest cart with items becomes the account's cart", () => {
-    expect(mergeCartOnSignIn(guest, account)).toBe(guest);
-    expect(mergeCartOnSignIn(guest, null)).toBe(guest);
-  });
+  const rye = product("rye", "Rye loaf");
+  const bagel = product("bagel", "Plain bagel");
+  const scroll = product("scroll", "Cinnamon scroll");
 
   test("an empty or missing guest cart keeps the account's cart", () => {
-    expect(mergeCartOnSignIn(null, account)).toBe(account);
-    expect(mergeCartOnSignIn(emptyCart(NORTHCOTE, WED), account)).toBe(account);
+    const account = setQuantity(emptyCart(FITZROY, THU), bagel, 6);
+    expect(mergeCartOnSignIn(null, account)).toEqual({ cart: account, leftOut: [] });
+    expect(mergeCartOnSignIn(emptyCart(NORTHCOTE, WED), account)).toEqual({ cart: account, leftOut: [] });
+  });
+
+  test("an empty or missing account cart takes the guest cart as it is", () => {
+    const guest = setQuantity(emptyCart(NORTHCOTE, WED), rye, 2);
+    expect(mergeCartOnSignIn(guest, null)).toEqual({ cart: guest, leftOut: [] });
+    expect(mergeCartOnSignIn(guest, emptyCart(FITZROY, THU))).toEqual({ cart: guest, leftOut: [] });
   });
 
   test("nothing anywhere stays nothing", () => {
-    expect(mergeCartOnSignIn(null, null)).toBeNull();
+    expect(mergeCartOnSignIn(null, null)).toEqual({ cart: null, leftOut: [] });
+  });
+
+  test("same branch and day: lines combine, quantities add up", () => {
+    const guest = setQuantity(setQuantity(emptyCart(NORTHCOTE, WED), rye, 2), bagel, 1);
+    const account = setQuantity(setQuantity(emptyCart(NORTHCOTE, WED), bagel, 6), scroll, 3);
+    const { cart, leftOut } = mergeCartOnSignIn(guest, account);
+    expect(leftOut).toEqual([]);
+    expect(cart?.branchId).toBe(NORTHCOTE);
+    expect(cart?.pickupDate).toBe(WED);
+    expect(cart?.items).toEqual({
+      rye: { name: "Rye loaf", quantity: 2 },
+      bagel: { name: "Plain bagel", quantity: 7 },
+      scroll: { name: "Cinnamon scroll", quantity: 3 },
+    });
+  });
+
+  test("combined quantities stop at the maximum", () => {
+    const guest = setQuantity(emptyCart(NORTHCOTE, WED), bagel, 60);
+    const account = setQuantity(emptyCart(NORTHCOTE, WED), bagel, 60);
+    expect(mergeCartOnSignIn(guest, account).cart?.items.bagel?.quantity).toBe(MAX_QUANTITY);
+  });
+
+  test("another branch: the guest cart wins and the account's items are named", () => {
+    const guest = setQuantity(emptyCart(NORTHCOTE, WED), rye, 2);
+    const account = setQuantity(setQuantity(emptyCart(FITZROY, WED), bagel, 6), scroll, 1);
+    const result = mergeCartOnSignIn(guest, account);
+    expect(result.cart).toBe(guest);
+    expect([...result.leftOut].sort()).toEqual(["Cinnamon scroll", "Plain bagel"]);
+  });
+
+  test("same branch, another day: the guest cart wins and the account's items are named", () => {
+    const guest = setQuantity(emptyCart(NORTHCOTE, WED), rye, 2);
+    const account = setQuantity(emptyCart(NORTHCOTE, FRI), bagel, 6);
+    expect(mergeCartOnSignIn(guest, account)).toEqual({ cart: guest, leftOut: ["Plain bagel"] });
   });
 });

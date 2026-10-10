@@ -1,11 +1,9 @@
 "use client";
 
 import { Button } from "@/shared/components/atoms/Button/Button";
-import { ButtonLink } from "@/shared/components/atoms/ButtonLink/ButtonLink";
 import { Card } from "@/shared/components/atoms/Card/Card";
 import { Notice } from "@/shared/components/molecules/Notice/Notice";
 import { TextField } from "@/shared/components/molecules/TextField/TextField";
-import { routes } from "@/shared/routes";
 import { accountContent } from "../content/accountContent";
 import { useFocusOnShow } from "../hooks/useFocusOnShow";
 import { useSaveDetails, type SaveDetailsProblem } from "../hooks/useSaveDetails";
@@ -14,7 +12,6 @@ import { PASSWORD_LIMITS } from "../lib/accountSchemas";
 const content = accountContent.saveDetails;
 
 const problemText: Record<SaveDetailsProblem, string> = {
-  accountExists: content.accountExists,
   unavailable: content.unavailable,
   rateLimited: content.rateLimited,
   failed: content.failed,
@@ -37,12 +34,11 @@ export function SaveDetailsOffer({ orderId, email, offered }: SaveDetailsOfferPr
   const { form, submit, problem, created, pending } = useSaveDetails(orderId);
   const alertRef = useFocusOnShow<HTMLDivElement>(problem);
   const createdRef = useFocusOnShow<HTMLDivElement>(created);
-  const confirmationPath = routes.orderConfirmation(orderId);
 
   if (created) {
     return (
       <div ref={createdRef} className="focus-visible:shadow-none">
-        <Notice tone="neutral" icon="check" title={content.createdTitle} className="break-words">
+        <Notice tone="neutral" icon="check" title={content.createdTitle}>
           {content.created(email)}
         </Notice>
       </div>
@@ -68,18 +64,7 @@ export function SaveDetailsOffer({ orderId, email, offered }: SaveDetailsOfferPr
       >
         {problem && (
           <div ref={alertRef} className="focus-visible:shadow-none">
-            <Notice
-              tone="error"
-              action={
-                problem === "accountExists" ? (
-                  <ButtonLink href={routes.account.signIn(confirmationPath)} variant="quiet">
-                    {content.accountExistsAction}
-                  </ButtonLink>
-                ) : undefined
-              }
-            >
-              {problemText[problem]}
-            </Notice>
+            <Notice tone="error">{problemText[problem]}</Notice>
           </div>
         )}
         {/* For password managers: the account's email goes with the new password. */}

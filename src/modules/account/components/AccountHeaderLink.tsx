@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ButtonLink } from "@/shared/components/atoms/ButtonLink/ButtonLink";
 import { routes } from "@/shared/routes";
 import { accountContent } from "../content/accountContent";
@@ -12,19 +12,21 @@ function showsOn(pathname: string): boolean {
 }
 
 /**
- * C1/C2 header: "Sign in" for a guest (back to this page afterwards), "My
- * account" once signed in. Nothing until the session is known, so it never
+ * C1/C2 header: "Sign in" for a guest (back to this page afterwards, with its
+ * query, so C2 keeps its ?date), "My account" once signed in. Nothing until the session is known, so it never
  * flips from one to the other.
  */
 export function AccountHeaderLink() {
   const pathname = usePathname();
+  const search = useSearchParams().toString();
   const session = useAccountSession();
   if (!showsOn(pathname) || !session.data) return null;
+  const here = search ? `${pathname}?${search}` : pathname;
   const signedIn = session.data.customer !== null;
   return (
     // -mr-2: the quiet button's text lines up with the page gutter, as in the design.
     <ButtonLink
-      href={signedIn ? routes.account.home : routes.account.signIn(pathname)}
+      href={signedIn ? routes.account.home : routes.account.signIn(here)}
       variant="quiet"
       className="-mr-2"
     >

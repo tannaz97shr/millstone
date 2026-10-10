@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Button } from "@/shared/components/atoms/Button/Button";
 import { Card } from "@/shared/components/atoms/Card/Card";
 import { Notice } from "@/shared/components/molecules/Notice/Notice";
@@ -25,16 +26,23 @@ export function ProfileSection({ profile }: { profile: AccountProfile }) {
     useProfileForm(profile);
   const { errors } = form.formState;
   const alertRef = useFocusOnShow<HTMLDivElement>(problem);
-  const savedRef = useFocusOnShow<HTMLDivElement>(saved);
+
+  // Edit → the first field; Cancel or a save → back to Edit. "Details saved"
+  // is a status message, so it's announced without taking focus.
+  const editRef = useRef<HTMLButtonElement>(null);
+  const wasEditing = useRef(editing);
+  useEffect(() => {
+    if (editing && !wasEditing.current) form.setFocus("name");
+    if (!editing && wasEditing.current) editRef.current?.focus();
+    wasEditing.current = editing;
+  }, [editing, form]);
 
   return (
     <>
       {saved && (
-        <div ref={savedRef} className="focus-visible:shadow-none">
-          <Notice tone="success" onDismiss={dismissSaved}>
-            {content.saved}
-          </Notice>
-        </div>
+        <Notice tone="success" onDismiss={dismissSaved} focusAfterDismiss={editRef}>
+          {content.saved}
+        </Notice>
       )}
       <Card as="section" aria-labelledby="account-details-title" className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
@@ -42,7 +50,7 @@ export function ProfileSection({ profile }: { profile: AccountProfile }) {
             {content.title}
           </h2>
           {!editing && (
-            <Button variant="secondary" onClick={startEditing} aria-label={content.editLabel}>
+            <Button ref={editRef} variant="secondary" onClick={startEditing} aria-label={content.editLabel}>
               {content.edit}
             </Button>
           )}
@@ -58,7 +66,7 @@ export function ProfileSection({ profile }: { profile: AccountProfile }) {
             ).map(([label, value]) => (
               <div key={label} className="flex flex-col">
                 <dt className="caption text-ink-muted">{label}</dt>
-                <dd className="break-words">{value}</dd>
+                <dd>{value}</dd>
               </div>
             ))}
           </dl>

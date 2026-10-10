@@ -28,7 +28,7 @@ export function safeAdminReturnPath(value: string | null | undefined): string {
 const isUnder = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(`${prefix}/`);
 
 /** Customer pages a sign-in must never land on: the admin, the API and the sign-in pages themselves. */
-const CUSTOMER_EXCLUDED = [routes.admin.home, "/api", routes.account.signIn(), routes.account.signUp(), routes.account.forgotPassword];
+const CUSTOMER_EXCLUDED = [routes.admin.home, "/api", routes.account.signIn(), routes.account.signUp(), routes.account.forgotPassword()];
 
 /**
  * Where a customer goes after signing in or creating an account: any page of

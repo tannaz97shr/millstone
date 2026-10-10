@@ -18,7 +18,7 @@ export async function prefetchOrderConfirmation(
 ): Promise<"ok" | "not_found" | "failed"> {
   try {
     const viewer = await getOptionalCustomer();
-    queryClient.setQueryData(orderKeys.confirmation(orderId), await getOrderConfirmation(orderId, viewer !== null));
+    queryClient.setQueryData(orderKeys.confirmation(orderId), await getOrderConfirmation(orderId, viewer?.id ?? null));
     return "ok";
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) return "not_found";

@@ -16,10 +16,11 @@ const saveDetailsSchema = z.object({ password: newPasswordField });
 type SaveDetailsValues = z.input<typeof saveDetailsSchema>;
 
 /** What C7's offer says after a refusal. */
-export type SaveDetailsProblem = "accountExists" | "unavailable" | "rateLimited" | "failed";
+export type SaveDetailsProblem = "unavailable" | "rateLimited" | "failed";
 
 const PROBLEMS: Partial<Record<string, SaveDetailsProblem>> = {
-  account_exists: "accountExists",
+  // Said like the others: the offer never tells anyone an email has an account.
+  account_exists: "unavailable",
   already_linked: "unavailable",
   not_eligible: "unavailable",
   window_closed: "unavailable",

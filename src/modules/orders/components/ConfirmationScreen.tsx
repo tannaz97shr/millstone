@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useAccountSession } from "@/modules/account/hooks/useAccountSession";
 import { updateCart } from "@/modules/cart/hooks/useCart";
 import { clearCheckoutDraft, readCheckoutDraft } from "@/modules/checkout/lib/checkoutDraftStorage";
 import { ButtonLink } from "@/shared/components/atoms/ButtonLink/ButtonLink";
@@ -26,7 +25,6 @@ const content = confirmationContent.page;
  */
 export function ConfirmationScreen({ orderId, emailed }: { orderId: string; emailed: boolean }) {
   const { query, phase, checkAgain } = useOrderConfirmationQuery(orderId);
-  const signedIn = Boolean(useAccountSession().data?.customer);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const state = query.data?.state;
   const confirmed = state === "confirmed";
@@ -48,7 +46,7 @@ export function ConfirmationScreen({ orderId, emailed }: { orderId: string; emai
   if (query.data) {
     switch (query.data.state) {
       case "confirmed":
-        return <ConfirmationDetails order={query.data} titleRef={titleRef} emailed={emailed} signedIn={signedIn} />;
+        return <ConfirmationDetails order={query.data} titleRef={titleRef} emailed={emailed} />;
       case "awaiting_payment":
         return (
           <ConfirmingScreen

@@ -7,6 +7,7 @@ import { TextField } from "@/shared/components/molecules/TextField/TextField";
 import { routes } from "@/shared/routes";
 import { accountContent } from "../content/accountContent";
 import { useCustomerSignIn, type CustomerSignInProblem } from "../hooks/useCustomerSignIn";
+import { useEmailHandoff } from "../hooks/useEmailHandoff";
 import type { SignInPlace } from "../lib/signInContext";
 import { useFocusOnShow } from "../hooks/useFocusOnShow";
 
@@ -23,6 +24,7 @@ const problemText: Record<CustomerSignInProblem, string> = {
 export function CustomerSignInForm({ place }: { place: SignInPlace }) {
   const { form, submit, problem, pending } = useCustomerSignIn(place.returnTo);
   const { errors } = form.formState;
+  const handOffEmail = useEmailHandoff(form);
   const alertRef = useFocusOnShow<HTMLDivElement>(problem);
 
   return (
@@ -60,7 +62,7 @@ export function CustomerSignInForm({ place }: { place: SignInPlace }) {
               error={errors.password?.message}
               {...form.register("password")}
             />
-            <ButtonLink href={routes.account.forgotPassword} variant="quiet" className="-ml-2 self-start">
+            <ButtonLink href={routes.account.forgotPassword(place.returnTo)} variant="quiet" className="-ml-2 self-start">
               {content.forgot}
             </ButtonLink>
           </div>
@@ -72,7 +74,7 @@ export function CustomerSignInForm({ place }: { place: SignInPlace }) {
       <hr className="border-line" />
       <div className="flex flex-col gap-3">
         <p className="body-strong">{content.newTitle}</p>
-        <ButtonLink href={routes.account.signUp(place.returnTo)} variant="secondary" block>
+        <ButtonLink href={routes.account.signUp(place.returnTo)} variant="secondary" block onClick={handOffEmail}>
           {content.createAccount}
         </ButtonLink>
         <p className="caption text-ink-muted">{content.newNote}</p>

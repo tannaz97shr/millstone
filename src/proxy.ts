@@ -40,7 +40,7 @@ function gateAccount(request: NextRequest, kind: PrincipalKind | undefined): Nex
   const { pathname, search } = request.nextUrl;
   const isCustomer = kind === "customer";
 
-  if (pathname === routes.account.forgotPassword) return NextResponse.next();
+  if (pathname === routes.account.forgotPassword()) return NextResponse.next();
   if (pathname === routes.account.signIn() || pathname === routes.account.signUp()) {
     if (!isCustomer) return NextResponse.next();
     const returnTo = safeCustomerReturnPath(request.nextUrl.searchParams.get("returnTo"));

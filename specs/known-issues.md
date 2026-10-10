@@ -289,16 +289,16 @@ Email and password, on the existing Auth.js setup, as a second principal next to
   - **Who's signed in** comes from `GET /api/account/session`, prefetched by the customer layout. That makes every customer page per request (`connection()`), which they already were.
   - **Cart and draft owner.**
     - `StorageOwner` (in the layout) sets the owner while rendering, ahead of the page, so the cart's first read is already the right one: `millstone:cart:{customerId}` signed in, `millstone:cart:guest` otherwise. The C5 draft key works the same way.
-    - The first load after signing in carries a guest cart with items over to the account (`mergeCartOnSignIn`) and empties the guest cart.
+    - The first load after signing in carries a guest cart with items over to the account and empties the guest cart. See "Cart on sign-in" below for the rule.
     - Signing out leaves the account's cart saved for next time; the guest starts empty.
     - If the session prefetch fails, the guest's cart is used until the browser's own ask arrives.
   - **Sign-in, sign-up, C7's save and sign-out** end in a full page load (C7 refetches instead), so the server and every query see the new session.
-  - **Header Sign in / My account** is on C1 and C2 only, as designed. Sign in comes back to that page afterwards.
+  - **Header Sign in / My account** is on C1 and C2 only, as designed. Sign in comes back to that page afterwards, with its query (C2's `?date`).
   - **C8's back link and intro** follow `returnTo` (`signInPlace`, unit-tested): Checkout, Menu, or Home. "Continue as a guest" shows from checkout only.
   - **C5 signed in.** The fields come from the account; notes, payment choice and the checkout key are kept from what was typed as a guest (`draftAfterSignIn`, AC-U2). A signed-in customer's own draft wins after that, so edits for this order stay.
   - **The shared header stays above the account pages**, with the back link under it, as on C4/C5. The design's header has only the back link, or the wordmark on the email-link screens.
   - **C9 cards** add an "Order details" link to the account order page. A cancelled order that was never paid shows no payment label, as in the admin.
-  - **C9's "Details saved"** uses the success Notice (sage) with OK. The design's flash has the same words.
+  - **C9's "Details saved"** uses the success Notice (sage) with OK. The design's flash has the same words. It's a status message: it's announced but doesn't take focus.
   - **C7's "Your account is set up"** is a neutral Notice with a check, close to the design's bordered box. Long emails wrap inside it.
   - **The C8 refusal** drops "or reset your password" (no reset yet).
 - **Undesigned copy (Batch B).** All in `accountContent.ts` (and `checkoutContent.ts`), marked as not designed:
@@ -314,7 +314,43 @@ Email and password, on the existing Auth.js setup, as a second principal next to
     - "Order MS-…", "Ready from 7am", "Details for this order";
     - "Refunded to your card." and "Nothing to pay: this order was cancelled.";
     - loading, failure and "We couldn't find that order in your account.".
-  - C7's save: "Creating your account…", "There's already an account for this email. Sign in to see your orders." with "Sign in", "This order can't be saved to an account any more.", the limit and the failure.
+  - C7's save: "Creating your account…", "This order can't be saved to an account any more." (every refusal, see below), the limit and the failure.
+  - The account order page's 404: "Order not found" / "We couldn't find that order in your account." with "Back to My account".
+  - The cart message after signing in (below).
+- **Copy that intentionally differs from the designs (decided 8–10 Oct 2026).** Each follows from "no email, so no reset and no email check":
+  1. C8's refusal drops "or reset your password": "That email and password don't match. Check them and try again." (SignInError.dc.html).
+  2. C8's note under "Create an account" says "Orders you place while signed in show up in My account." instead of "Ordered as a guest before? Create an account with the same email and your past orders come with you."
+  3. Sign-up's intro drops "past": "Save your details for next time and see your orders."
+  4. Sign-up's email hint says "You'll sign in with this." instead of "Ordered as a guest before? Use the same email and those orders come with you."
+  5. "Forgot your password?" opens an honest undesigned page instead of ResetRequest/ResetSent/NewPassword/ResetExpired, which wait for an email provider.
+- **C7 never says an email has an account (decided 10 Oct 2026).**
+  - No "this email already has an account, sign in" hint on C7: anyone with an order link could use it to test whether an email is registered.
+  - A 409 `account_exists` from the save reads like every other refusal: "This order can't be saved to an account any more."
+  - What's left: the offer simply isn't shown when the email has an account. That says about as much as sign-up's `email_taken`, already listed under Known risks.
+- **Cart on sign-in (`mergeCartOnSignIn`, unit-tested, decided 10 Oct 2026).** When the browser has a guest cart and the account has one saved:
+  - either one empty: the other is kept;
+  - same branch and pickup day: one cart, quantities added and capped at 99 (`MAX_QUANTITY`);
+  - otherwise: the guest cart (what the customer was just building) is kept, and a cart message names what was left out: "Your account had an order saved for another branch or day, so we kept the one you just started. We left out Fruit loaf and Sourdough rye loaf." (undesigned). It shows on that branch's menu if that's where sign-in returns; anywhere else it's a C4 message (C5 sends the customer to C4 to read it, as for any cart change).
+  - `SignInCartNotice` sits after the page in the layout, so it pushes the message after C5 has cleared old ones.
+  - **Known gap:** if the session prefetch failed, the merge happens later and its message isn't shown.
+- **QA fixes (10 Oct 2026), from the Claude-in-Chrome pass:**
+  1. **Long emails and names** no longer widen the page: the customer layout sets `overflow-wrap: anywhere` (`wrap-anywhere`), so a word breaks only when it can't fit. Checked at 390px with a 90-character email and a 60-character name on C5 (guest and signed in), C7 (emailed line, password hint, account created), C8, C9 and the order page.
+  2. **C9 focus:** Edit moves focus to Name; Cancel and Save return it to Edit.
+  3. **C8 links keep where you came from:**
+     - the header's Sign in keeps C2's `?date`;
+     - "Forgot your password?" carries `returnTo` (`routes.account.forgotPassword(returnTo)`) to its "Back to sign in";
+     - "Create an account", "Sign in instead" and "Already have an account? Sign in" carry the typed email in `sessionStorage` (`millstone:account:email`, taken once), never in the URL.
+  4. **The cart rule** above (it used to keep the guest cart silently).
+  5. **C7's "See your orders in My account"** shows only when the order is in the signed-in viewer's own account (`inViewersAccount` from `GET /api/orders/{id}`), not on someone else's confirmation link.
+  6. **The order page's tab title** names the order ("Order MS-1081 · Millstone"). The order is read once per request (React `cache`) for the title and the page.
+  7. **An order that isn't yours, or doesn't exist,** under `/account/orders` gets the account's own 404 (`not-found.tsx` beside the page): "We couldn't find that order in your account." with "Back to My account". Still status 404.
+  8. **Lockout (checked, no change needed):** after 5 failures, C8 says "Too many tries. Wait 15 minutes and try again." like A1 (without "ask the owner"). The lock is checked before the account lookup, and unknown emails count failures the same way. A locked account and a locked unknown email gave the same message and the same 429 body. Even the right password is refused while locked.
+  9. **Paid online, signed in:**
+     - The order gets `accountId` when it's placed (awaiting payment). The webhook writes only `status`, `paymentStatus`, `paymentRef`, `paidAt` and the event ID, so the link survives (`planPaymentEvent.test.ts`, "what a payment event may change").
+     - C9 hides `awaiting_payment` and `expired` (`toAccountOrder.test.ts`).
+     - **Live check (10 Oct 2026), partly done.** A signed-in 4242 payment through `localhost:3000` and Stripe's page: while on Stripe's page, C9's API listed nothing. Back on C6, MS-1064 stayed `awaiting_payment`, with `accountId` set and no Stripe event recorded. The webhook route answered (400 to an unsigned POST), so `stripe listen` wasn't delivering to the dev server: most likely its `whsec_` and `.env.local`'s `STRIPE_WEBHOOK_SECRET` were out of step (see Online payments, Findings).
+     - MS-1064 (`batch.c.pay.…@example.com`) is left on the emulator. Resend its `checkout.session.completed`, then check it's `placed` / `paid` and in that account's C9.
+  - **Checked** with ad hoc Playwright at 390px: 1 to 8 on a production build on :3001 (40 checks, all passed; the customer screenshots looked right), 9 against the dev server on :3000. The runs' other customers and orders (MS-1060 to MS-1063) were deleted.
 - **Batch B live checks (8 Oct 2026),** ad hoc Playwright on a production build on :3001 with the emulator, customer screens at 390px and A1 at 1180px, with CSP and console listeners. 52 checks, run twice:
   - **C1 and C2:** Sign in in the header (returns to C1); none on C4. My account once signed in.
   - **C5 → C8 → sign-up → C5:**
