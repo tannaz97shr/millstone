@@ -26,7 +26,7 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
     - ~~Create the Vercel project and add the variables.~~ Live at https://millstone-two.vercel.app/ (functions in `syd1`).
     - ~~Create a dedicated service account.~~ Vercel uses its own service account. Its roles weren't checked in the smoke test; they should be Cloud Datastore User and Storage Object Admin only.
     - ~~Merge to main, then run the post-deploy smoke test.~~ Passed 6 Oct 2026 (below).
-  - **Still to do by hand:** create the two TTL policies (below), if not done yet. The smoke test can't see them.
+  - ~~**Still to do by hand:** create the two TTL policies (below).~~ Done: both are on `millstone-dc47f` (seen 10 Oct 2026) and now in `firestore.indexes.json` too.
   - **First deploy: every Firestore call failed (6 Oct 2026).**
     - The first key in Vercel wasn't a readable PEM. Once fixed, every call failed with `16 UNAUTHENTICATED: Request had invalid authentication credentials`. `/api/branches` answered 500, C1 said "We couldn't load our branches" and `/menu/{branch}` was a 404.
     - Pasting the email and key again from one fresh JSON key and redeploying fixed it.
@@ -51,7 +51,7 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
     - **Console:** no errors apart from the browser's "Failed to load resource" lines for the expected 400, 401 and 429 answers.
     - **Left on live by design:** the hidden `smoke-test-loaf` product. There's no hard delete; cleanup removes its photo, so it goes back to its letter. The order counter also stays past 1047. A rerun's product would get the ID `smoke-test-loaf-2`.
     - **Cleanup:** `bun run cleanup:smoke:live -- --order=MS-1047 --product=smoke-test-loaf`, then the same command with `--yes`.
-- **Firestore TTL policies (step 9), set by hand once.** On collection group `rateLimits`, field `expiresAt`; on collection group `signInThrottle`, field `expiresAt`. TTL deletes within about 24 hours of expiry; reads check their own window, so a late delete changes nothing. Throttle records saved before step 9 have no `expiresAt` and are never pruned (a handful at most).
+- **Firestore TTL policies (step 9).** On collection group `rateLimits`, field `expiresAt`; on collection group `signInThrottle`, field `expiresAt`. First set by hand; since 10 Oct 2026 they're `fieldOverrides` in `firestore.indexes.json` (`"ttl": true`, with the default ascending, descending and array-contains index settings, matching what the live project has), so `firebase deploy --only firestore:indexes` keeps them instead of offering to delete them. Customer sign-in records (step 11) share `signInThrottle`, so the same policy prunes them. TTL deletes within about 24 hours of expiry; reads check their own window, so a late delete changes nothing. Throttle records saved before step 9 have no `expiresAt` and are never pruned (a handful at most).
 - **Customer accounts index (step 11).** Deploy the new orders index (`accountId` ASC, `pickupDate` DESC, `createdAt` DESC) to the live project before step 11 is merged: `bunx firebase deploy --only firestore:indexes --project live`. Without it, C9's history (`GET /api/account/orders`) fails with `FAILED_PRECONDITION` on live. The emulator doesn't need it.
 - **Emulator needs a JDK (21+)** installed locally (`brew install --cask temurin@21`).
 - ~~**`POST /api/orders` has no rate limiting (step 5).**~~ Done 5 Oct 2026 (step 9): see Privacy and security notes, Rate limits. Still open: a per-email limit and a bot check.
