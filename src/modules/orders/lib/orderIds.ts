@@ -26,12 +26,23 @@ export function orderCounterToDoc(next: number): OrderCounterDoc {
  * checkouts can never get the same one. Call before any transaction writes.
  */
 export async function allocateOrderNumber(transaction: Transaction): Promise<string> {
+  const [number] = await allocateOrderNumbers(transaction, 1);
+  return number;
+}
+
+/**
+ * `count` consecutive numbers in one read and one write, for a transaction
+ * that places several orders (recurring generation catching up two days).
+ * The counter can only be read once per transaction, before any write.
+ */
+export async function allocateOrderNumbers(transaction: Transaction, count: number): Promise<string[]> {
+  if (count === 0) return [];
   const snapshot = await transaction.get(orderCounterRef());
   const next = snapshot.exists
     ? parseDoc(orderCounterDocSchema, snapshot).next
     : FIRST_ORDER_NUMBER;
-  transaction.set(orderCounterRef(), orderCounterToDoc(next + 1));
-  return formatOrderNumber(next);
+  transaction.set(orderCounterRef(), orderCounterToDoc(next + count));
+  return Array.from({ length: count }, (_, i) => formatOrderNumber(next + i));
 }
 
 /**

@@ -19,6 +19,7 @@ function toRecurringOrderItem(item: RecurringOrderItemDoc): RecurringOrderItem {
 
 export function toRecurringOrder(snapshot: DocumentSnapshot): RecurringOrder {
   const doc = parseDoc(recurringOrderDocSchema, snapshot);
+  const createdAt = timestampToIso(doc.createdAt);
   return {
     id: snapshot.id as RecurringOrderId,
     customerId: doc.customerId as CustomerId,
@@ -30,7 +31,10 @@ export function toRecurringOrder(snapshot: DocumentSnapshot): RecurringOrder {
     notes: doc.notes,
     items: doc.items.map(toRecurringOrderItem),
     skipDates: [...doc.skipDates],
-    createdAt: timestampToIso(doc.createdAt),
+    generatedThrough: doc.generatedThrough,
+    version: doc.version,
+    createdAt,
+    updatedAt: doc.updatedAt ? timestampToIso(doc.updatedAt) : createdAt,
   };
 }
 
@@ -45,6 +49,9 @@ export function recurringOrderToDoc(order: Omit<RecurringOrder, "id">): Recurrin
     notes: order.notes,
     items: order.items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
     skipDates: [...order.skipDates],
+    generatedThrough: order.generatedThrough,
+    version: order.version,
     createdAt: Timestamp.fromDate(new Date(order.createdAt)),
+    updatedAt: Timestamp.fromDate(new Date(order.updatedAt)),
   };
 }

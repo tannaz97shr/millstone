@@ -83,6 +83,8 @@ export const adminOrdersContent = {
     tomorrow: (day: string) => `Tomorrow · ${day}`,
     caption: (count: number, ready: number | null) => `${orders(count)}${ready === null ? "" : ` · ${ready} ready`}`,
     branchCaption: (count: number) => `· ${orders(count)}`,
+    /** Undesigned (step 12): a generated order whose items were all unavailable (AC-R9); its note says why. */
+    noItems: "No items",
   },
   empty: {
     searchTitle: (query: string) => `No orders match “${query}”.`,

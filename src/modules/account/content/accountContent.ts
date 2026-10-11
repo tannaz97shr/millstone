@@ -4,7 +4,7 @@
 // undesigned.
 
 /** Where C8 was opened from: sets its back link, intro and "Continue as a guest". */
-export type SignInContext = "checkout" | "menu" | "home";
+export type SignInContext = "checkout" | "menu" | "home" | "recurring";
 
 export const accountContent = {
   /** C1/C2 header (Home.dc.html, Menu.dc.html). */
@@ -17,6 +17,7 @@ export const accountContent = {
     checkout: "Checkout",
     menu: "Menu",
     home: "Home",
+    recurring: "Home",
   } satisfies Record<SignInContext, string>,
 
   signIn: {
@@ -26,6 +27,9 @@ export const accountContent = {
       checkout: "Sign in and we'll fill in your details for this order.",
       menu: "Sign in to check out faster and see your past orders.",
       home: "Sign in to check out faster and see your past orders.",
+      /** RecGuest.dc.html (AC-R1). */
+      recurring:
+        "You need an account to set up a recurring order, so you can change, skip or pause it later. Sign in, or create an account below.",
     } satisfies Record<SignInContext, string>,
     email: "Email",
     password: "Password",
@@ -84,7 +88,7 @@ export const accountContent = {
     startOrder: "Start an order",
   },
 
-  /** C9, from AccountArea.dc.html (without the Recurring orders section, which comes next step). */
+  /** C9, from AccountArea.dc.html. Its Recurring orders section is in recurringContent. */
   myAccount: {
     metadataTitle: "My account · Millstone",
     title: "My account",

@@ -16,6 +16,8 @@ export const COLLECTIONS = {
   staffEmails: "staffEmails",
   orders: "orders",
   recurringOrders: "recurringOrders",
+  /** generationRuns/{branchId}_{pickupDate}: one branch's recurring-order generation for a date. Pruned by a TTL policy on `expiresAt`. */
+  generationRuns: "generationRuns",
   counters: "counters",
   /** signInThrottle/{sha256(normalizedEmail)}: failed staff sign-ins (A1). */
   signInThrottle: "signInThrottle",
@@ -42,6 +44,7 @@ export const staffUsersRef = () => getDb().collection(COLLECTIONS.staffUsers);
 export const staffEmailsRef = () => getDb().collection(COLLECTIONS.staffEmails);
 export const ordersRef = () => getDb().collection(COLLECTIONS.orders);
 export const recurringOrdersRef = () => getDb().collection(COLLECTIONS.recurringOrders);
+export const generationRunsRef = () => getDb().collection(COLLECTIONS.generationRuns);
 export const countersRef = () => getDb().collection(COLLECTIONS.counters);
 export const signInThrottleRef = () => getDb().collection(COLLECTIONS.signInThrottle);
 export const rateLimitsRef = () => getDb().collection(COLLECTIONS.rateLimits);

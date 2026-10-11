@@ -27,7 +27,15 @@ import {
   toTimeOfDay,
 } from "@/shared/utils/pickup-dates";
 import { seedBranches } from "../data/branches";
-import { SEED_ORDER_NUMBERS, type SeedDay, type SeedOrder, seedOrders, seedRecurring, type SeedStamp } from "../data/orders";
+import {
+  SEED_ORDER_NUMBERS,
+  type SeedDay,
+  type SeedOrder,
+  seedOrders,
+  seedPausedRecurring,
+  seedRecurring,
+  type SeedStamp,
+} from "../data/orders";
 import { seedProducts } from "../data/products";
 import { upsertDoc, type WriteTally } from "./upsert";
 
@@ -140,14 +148,28 @@ function buildOrder(spec: SeedOrder, context: SeedContext): Omit<Order, "id"> {
   };
 }
 
-/** Old generated orders from a seed run on an earlier day; they'd hold MS-1042 twice. */
+/**
+ * Old seeded MS-1042s from a seed run on an earlier day; they'd hold the
+ * number twice. Orders the generation job made from the seed's recurring
+ * order (other numbers) are real orders and stay.
+ */
 async function removeStaleGenerated(currentId: OrderId, tally: WriteTally): Promise<void> {
   const snapshot = await ordersRef().where("recurringOrderId", "==", seedRecurring.id).get();
   for (const doc of snapshot.docs) {
-    if (doc.id === currentId) continue;
+    if (doc.id === currentId || doc.get("orderNumber") !== formatOrderNumber(seedRecurring.generated.number)) continue;
     await doc.ref.delete();
     tally.record(`${COLLECTIONS.orders} (stale generated, deleted)`, "updated");
   }
+}
+
+/**
+ * The generation cursor to seed: `seeded`, unless generation has already
+ * moved it further (a rerun must never make it look at a day again).
+ */
+async function cursorFor(id: RecurringOrderId, seeded: IsoDate): Promise<IsoDate> {
+  const snapshot = await recurringOrdersRef().doc(id).get();
+  const stored = snapshot.exists ? (snapshot.get("generatedThrough") as unknown) : null;
+  return typeof stored === "string" && stored > seeded ? (stored as IsoDate) : seeded;
 }
 
 /** Seed numbers belong to seed docs only; anything else holding one is a clash. */
@@ -189,6 +211,7 @@ export async function seedOrdersAndRecurring(
   const cafe = customerFor(context, seedRecurring.email);
   const cafeDays = daysFor(context, seedRecurring.branchId);
   const recurringId = seedRecurring.id as RecurringOrderId;
+  const cafeCreatedAt = instantAt(cafeDays, { day: "D0", daysFrom: -15, time: "10:00" });
   tally.record(
     COLLECTIONS.recurringOrders,
     await upsertDoc(
@@ -203,7 +226,37 @@ export async function seedOrdersAndRecurring(
         notes: seedRecurring.notes,
         items: seedRecurring.items.map(([quantity, productId]) => ({ productId, quantity })),
         skipDates: [],
-        createdAt: instantAt(cafeDays, { day: "D0", daysFrom: -15, time: "10:00" }),
+        // D0's order (MS-1042) is seeded below; the job makes the next one.
+        generatedThrough: await cursorFor(recurringId, cafeDays.D0),
+        version: 0,
+        createdAt: cafeCreatedAt,
+        updatedAt: cafeCreatedAt,
+      }),
+    ),
+  );
+
+  // Its paused Fitzroy order: nothing generated, so its cursor is today.
+  const fitzroyDays = daysFor(context, seedPausedRecurring.branchId);
+  const pausedId = seedPausedRecurring.id as RecurringOrderId;
+  const pausedCreatedAt = instantAt(fitzroyDays, { day: "D0", daysFrom: -57, time: "09:30" });
+  tally.record(
+    COLLECTIONS.recurringOrders,
+    await upsertDoc(
+      recurringOrdersRef().doc(pausedId),
+      recurringOrderToDoc({
+        customerId: customerFor(context, seedPausedRecurring.email).id,
+        branchId: seedPausedRecurring.branchId,
+        daysOfWeek: [...seedPausedRecurring.daysOfWeek] as Weekday[],
+        status: "paused",
+        startsOn: addDays(fitzroyDays.D0, -56),
+        endsOn: null,
+        notes: seedPausedRecurring.notes,
+        items: seedPausedRecurring.items.map(([quantity, productId]) => ({ productId, quantity })),
+        skipDates: [],
+        generatedThrough: await cursorFor(pausedId, melbourneDateOf(now)),
+        version: 0,
+        createdAt: pausedCreatedAt,
+        updatedAt: pausedCreatedAt,
       }),
     ),
   );

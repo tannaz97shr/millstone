@@ -53,6 +53,10 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
     - **Cleanup:** `bun run cleanup:smoke:live -- --order=MS-1047 --product=smoke-test-loaf`, then the same command with `--yes`.
 - **Firestore TTL policies (step 9).** On collection group `rateLimits`, field `expiresAt`; on collection group `signInThrottle`, field `expiresAt`. First set by hand; since 10 Oct 2026 they're `fieldOverrides` in `firestore.indexes.json` (`"ttl": true`, with the default ascending, descending and array-contains index settings, matching what the live project has), so `firebase deploy --only firestore:indexes` keeps them instead of offering to delete them. Customer sign-in records (step 11) share `signInThrottle`, so the same policy prunes them. TTL deletes within about 24 hours of expiry; reads check their own window, so a late delete changes nothing. Throttle records saved before step 9 have no `expiresAt` and are never pruned (a handful at most).
 - **Customer accounts index (step 11).** Deploy the new orders index (`accountId` ASC, `pickupDate` DESC, `createdAt` DESC) to the live project before step 11 is merged: `bunx firebase deploy --only firestore:indexes --project live`. Without it, C9's history (`GET /api/account/orders`) fails with `FAILED_PRECONDITION` on live. The emulator doesn't need it.
+- **Recurring orders (step 12): by hand before merging.**
+  - **`CRON_SECRET`** in Vercel (Production only, Sensitive): `openssl rand -hex 32`. Without it the cron route answers 503 and logs "Recurring generation is off: CRON_SECRET is not set"; orders are still made when staff open A2 or a customer changes a recurring order. Locally, add one to `.env.local` only to call the cron route by hand.
+  - **Indexes:** `bunx firebase deploy --only firestore:indexes --project live` adds the `generationRuns` TTL policy (`expiresAt`). No new composite index: the recurring-order queries use the two that were already there, and `(recurringOrderId, pickupDate)` on orders.
+  - **Seed:** rerun `bun run seed` (emulator) and `bun run seed:live`, so the seeded recurring orders carry the new fields and the paused Fitzroy one exists. Without a rerun they still read (defaults), with no cursor.
 - **Emulator needs a JDK (21+)** installed locally (`brew install --cask temurin@21`).
 - ~~**`POST /api/orders` has no rate limiting (step 5).**~~ Done 5 Oct 2026 (step 9): see Privacy and security notes, Rate limits. Still open: a per-email limit and a bot check.
 - **No email provider (step 5); emails are off on the live site (step 9).** Emails go through `sendEmail` (`src/shared/lib/email/`).
@@ -79,7 +83,9 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
 
 - ~~**Admin free-text search (AC-A3).**~~ Resolved 4 Oct 2026 (step 6, Batch B): orders store `searchTokens` (see Data model notes), searched with `array-contains` plus two composite indexes.
 - ~~**Category display order.**~~ Resolved 1 Oct 2026 (step 3): `settings/catalog` holds `categoryOrder` (seeded Breads, Pastries, Bagels). Categories not listed go last, A–Z. When A5 lets the owner type a new category, it should append it to this list.
-- **"For cafes and regulars" (step 3).** In `design/customer/Home.dc.html`, left out until the recurring-order step. ~~The C1 and C2 header Sign in~~ Built in step 11.
+- ~~**"For cafes and regulars" (step 3).**~~ Built in step 12, Batch B (`RecurringPromo` on C1). ~~The C1 and C2 header Sign in~~ Built in step 11.
+- **Recurring orders: paying online (step 12, deferred).** Generated orders are always pay at pickup (spec 6, 8). A "Pay online now" for a generated order would go through the payment adapter's `createCheckout`, like checkout. Not built.
+- **Recurring orders: no emails (step 12).** Generated orders send no confirmation, and nothing promises a reminder. Customers see them in C9 and C12. Once email exists, a generated-order email could go out from the generation transaction's caller, like checkout's.
 - **Checkout: accounts and online payment (step 5).**
   - Left out of C5: the guest "Have an account? Sign in" row and signed-in prefill (`CheckoutSignedIn.dc.html`).
   - Left out of C7: the "Save your details for next time" offer (AC-C10).
@@ -370,6 +376,197 @@ Email and password, on the existing Auth.js setup, as a second principal next to
   - **Fixed during QA:** a long email overflowed the "Your account is set up" box.
   - **Cleanup:** the runs' customers, orders (MS-1080 to MS-1083), throttle records and the emulator's rate-limit counts were deleted afterwards.
 
+## Recurring orders (step 12)
+
+Signed-in customers' standing orders (spec 8, AC-R1 to R10). Started 10 Oct 2026; Batch A is the server, Batch B the screens (C9 section, C10 to C12, the C1 block).
+
+- **Decisions (10 Oct 2026, the plan's open questions, all as recommended):**
+  1. **No pickup time.** Pickup is by date, as everywhere else ("ready from 7am", `Branch.opensAt`).
+  2. **Status stays `active | paused`.** "Ended" is derived from `endsOn` (`displayStatus`), as the designs show. There's no stored `cancelled`.
+  3. **No stored "next run".** The doc stores the generation cursor `generatedThrough`, and the next pickup is worked out for display (`nextPickup`).
+  4. **"We make each one at 2pm the day before"** stays (Batch B), with the time from the branch. The order is fixed at the cutoff, and staff see it within minutes through A2's catch-up. C12's "closing" row covers the gap until it's made.
+  5. **A2's list request generates** what's due for its branches, after the response (`after()`).
+  6. **No email** for generated orders (above).
+  7. **Pay at pickup only** (above).
+  8. **At most 10 recurring orders** per account that haven't ended (`MAX_LIVE_RECURRING_ORDERS`, 422 `limit_reached`).
+  9. **No live variant** of `recurring:generate`. On the live site the cron runs it.
+  10. **"Stop now"** sets `endsOn` to the last locked date (`stopNowEndsOn`), so an order already made (or about to be) still stands and shows as made. Before the first pickup it's the day before the start: "ended before it began". The doc schema allows `endsOn = startsOn − 1` for that.
+  11. **Seed:** the design's paused Fitzroy order (`seed-corner-cup-fitzroy`, Corner Cup, Saturdays, 2 × seeded, 2 × white) is added, and `seed-corner-cup`'s cursor is D0.
+  12. **Cron at `0 4 * * *`** (04:00 UTC).
+  13. **The start date** can change in an edit only until its first pickup's cutoff (`hasStarted`). After that the stored start stays, whatever is sent.
+- **Data model.**
+  - New fields on `recurringOrders`, each with a Zod default, so older docs read (no migration):
+    - `generatedThrough` (IsoDate | null)
+    - `version` (0)
+    - `updatedAt` (null, which reads as `createdAt`)
+  - `version` goes up on every customer save. A save sends the version it read; a different one is 409 `recurring_changed`. Generation moves only the cursor, never `version` or `updatedAt`, so a page left open over a cutoff doesn't get a needless 409.
+  - New collection `generationRuns/{branchId}_{pickupDate}`: a lease (90 s) and a completion mark for one branch's run up to a date, with counts. TTL on `expiresAt` (60 days). It isn't what prevents duplicates (below).
+  - Firestore rules: unchanged. Everything stays closed to clients; only the Admin SDK reads and writes.
+  - IDs: recurring orders get Firestore auto IDs (no natural slug). Generated orders keep `{recurringOrderId}_{pickupDate}`. Route params refuse `_`, so the two can't be confused.
+- **Date rules (`src/shared/utils/pickup-dates/recurringSchedule.ts`, unit-tested).**
+  - **Locked dates:** a pickup date is locked once its cutoff (the branch's cutoff time the day before, Melbourne) has passed. `lockedThrough` is tomorrow after today's cutoff, else today. Closed days don't change it.
+  - **What generation looks at:** `dueDates` are the dates after the cursor up to the last locked one, and never before today. So a missed run catches up today and tomorrow, and nothing is back-filled (AC-R6).
+  - **The other helpers:** `upcomingPickups` (made, closing, skipped or open; paused and ended orders show only made ones), `endDateOptions`, `firstPickupFrom` and `isEnded` / `displayStatus`.
+- **Generation (`src/modules/recurring-orders/lib/generation/`).**
+  - **One transaction per recurring order** (`generateForRecurringOrder`):
+    1. It reads the recurring order, branch, customer, each due date's order doc, the products, the branch's rows and the counter.
+    2. It plans with `planGeneration` (pure, unit-tested).
+    3. It creates the orders, taking numbers with `allocateOrderNumbers(tx, n)` (one counter read, so two days can be made in one transaction).
+    4. It moves the cursor to the last locked date.
+  - **What each order is:** `placed`, `at_pickup`, `unpaid`, with `recurringOrderId`. `customerId` and `accountId` are the account (so it's in C9's history). Contact details come from the account as it is then, and notes are the recurring order's notes.
+  - **Items it can't make:**
+    - Items sold out that day, switched off at the branch, hidden, or missing are left out.
+    - Each one is named in `generationNote`: "Sourdough rye loaf ×4 skipped: sold out; Plain bagel ×12 skipped: not on the menu" (the reasons are `sold out` and `not on the menu`).
+    - With nothing left, the order is still made: $0, no items, with the note (AC-R9).
+    - Prices are today's (AC-P3). The line rule is checkout's (`priceLine`, pulled out of `priceOrder`).
+  - **No order (cursor still moves):** a skipped or paused date, a date outside start–end, or a closed day.
+  - **No order and no cursor move** (retried next run, logged as an error): a missing customer or branch.
+  - **Idempotent two ways.** The cursor means a rerun has nothing due. And an order already at the date's ID counts as made, never as one to create.
+  - **Branch runs (`runGeneration`).** Each branch is worked through up to its last locked date:
+    - It takes the run's lease first, and skips the branch if the run is already complete or another run holds the lease.
+    - It queries the branch's active recurring orders (the existing `(branchId, status)` index) and opens a transaction only for those that would make something (`hasDueOrders`).
+    - Sequential, within a time budget. A run that stops early, or has a failure, isn't marked complete, so the next trigger carries on.
+    - At a bakery's volume (dozens) this is far under a second per branch.
+  - **Three triggers, one code path:**
+    1. **Vercel Cron**, `GET /api/cron/recurring-orders` at `0 4 * * *`.
+       - That's 2pm AEST (April to October) and 3pm AEDT (October to April). Hobby runs it some time in the hour, which is after a 2pm cutoff in both seasons.
+       - `Authorization: Bearer $CRON_SECRET`, compared in constant time (`decideCronAuth`, unit-tested). Wrong or missing: 401. Unset, blank or under 16 characters: 503, and the job is off.
+       - No session and no rate limit. `maxDuration = 60`, with a 45 s budget. The answer has counts only, no personal data.
+       - **Limit:** a branch whose cutoff is later than 14:00 isn't due yet at 04:00 UTC (the summer slot is 15:00 AEDT). Triggers 2 and 3 cover it, and the next day's cron would then make the *following* day's. All branches are at 2pm.
+    2. **A2 catch-up.** `GET /api/admin/orders` checks the run record for each branch in view (one read each) and, for any not complete, runs `runGeneration` for them in `after()` (20 s budget, `maxDuration = 30`). The next 30 s refresh shows the orders. It never throws and never slows the list.
+    3. **Generate before every customer write.**
+       - Edit, skip, undo, pause, resume and end first run `generateForRecurringOrder` with the recurring order as it stands.
+       - The write's own transaction then refuses (503 `try_again`) if anything is still due.
+       - So a change after a cutoff can't alter that day's order (AC-R4), and a resume after a cutoff can't back-fill it (AC-R6).
+  - **Local script** `bun run recurring:generate`:
+    - A dry run by default: no orders, no cursor, no run record.
+    - `-- --yes` writes. `--now=<instant>` pretends the clock says that, and `--branch=<id>` runs one branch.
+    - The emulator only: the seed's guard, and `--project` is refused.
+- **APIs** (`/api/account/recurring-orders`, codes in each route's header):
+  - `GET` (list), `POST` (create).
+  - `GET` and `PATCH` `/{id}` (detail; edit).
+  - `POST /{id}/actions`: `pause`, `resume`, `skip`, `unskip`, `end_now`, `end_after`.
+  - **Every write:** the same-origin check, `requireCustomerSession`, then the rate limit, then Zod. Writes answer with the fresh detail.
+  - **Who gets what:** another customer's, a malformed or a missing ID is the same 404. Staff get 403 and signed out gets 401.
+  - **Validation:**
+    - Shared with the form (`recurringSchemas.ts`): 1 to 7 unique weekdays; 1 to 30 unique items, quantity 1 to 99; ISO dates with the end on or after the start; notes up to 500. Prices are never accepted.
+    - On the server (`checkFields`, `planEdit`, `planAction`, unit-tested):
+      - closed weekdays (422 `closed_day`);
+      - the earliest start, checkout's rule (422 `start_too_early` with `earliest`);
+      - new items must be on the branch's menu (422 `items_unavailable`). Items already in may stay after leaving it; generation leaves them out with a note (AC-P2);
+      - the end is one of its pickup days (422 `not_scheduled` on create or edit, 409 for C12's `end_after`);
+      - nothing locked (409 `date_locked`);
+      - not ended (409 `not_allowed`).
+    - Past skips are dropped on every save, at most 60 kept, and skips on days no longer chosen are dropped on edit.
+  - **Rate limits** (per address): `recurringCreate` 10 per hour, `recurringWrite` 30 per 15 minutes.
+- **Admin.** No new screen. A2/A3 already show the Recurring tag and the highlighted note. A2's row now says "No items" (undesigned) for a generated order with nothing left; A3 already did.
+- **Batch A live checks (10 Oct 2026),** ad hoc API scripts against my production build on :3001 with the emulator (`CRON_SECRET` set only in that process), plus `recurring:generate`.
+  - **API: 54 checks, all passed.**
+    - **Cron:** no header, a wrong secret, or the secret without "Bearer" got 401. The right one got 200 with three branches. The second call got `already_complete`, 0 made, and no "@" anywhere in the answer. A second instance started with `CRON_SECRET=""` answered 503, and its log named the variable only.
+    - **Access:** signed out 401; cross-site and no Origin 403; staff (a temporary emulator staff user) 403 on list, create and detail, while A2 still answered 200; a customer on A2 403; another customer's detail, PATCH and action 404; a malformed or unknown ID 404.
+    - **Create:** no items 400 (naming `items`); Monday `closed_day`; today `start_too_early` with `earliest`; Fruit loaf at Brunswick `items_unavailable`; a Wednesday end `not_scheduled`; an unknown branch 404; a smuggled `priceCents` ignored.
+    - **A valid create** gave 201 with "$2.80 / $9.50 each today", six open rows from the earliest day, no Mondays, and end options on its own days only.
+    - **Actions:**
+      - skip, then undo (version +1 each);
+      - a stale version `recurring_changed`;
+      - a Wednesday `not_scheduled`;
+      - today `date_locked`;
+      - pause (no rows), then skip while paused `not_allowed`, then resume;
+      - end after a day;
+      - stop now, which gave "ended", with `endsOn` = `stopNowEndsOn`;
+      - an edit of an ended order `not_allowed`, and the ended one listed last.
+    - **Edits:** days, items and notes saved with version +1; Fruit loaf `items_unavailable`; Monday `closed_day`; no days 400.
+  - **Cap and limit:** with 10 live orders, create got 422 `limit_reached`. The 11th create in the hour from one address got 429 with `Retry-After`.
+  - **Generation with `--now`** (Brunswick only, so the seed's Northcote order wasn't touched):
+    - Plain bagel sold out for Tue 13 Oct gave MS-1065: placed, at pickup, unpaid, the account's, $0.00, no items, note "Plain bagel ×8 skipped: sold out". The cursor moved to Tue 13; `version` didn't change.
+    - The same run again: `already_complete`. With the run record deleted, the cursor alone gave 0 made.
+    - Fri 16 (Wed to Fri not chosen) gave MS-1066, 8 × Plain bagel, $22.40.
+    - The customer's C12 then showed both as made (locked), and C9's history listed both with `recurring: true` and MS-1065's note (AC-R10).
+  - **After the real 2pm cutoff (11 Oct 2026, a Sunday, about 4pm AEDT): 4 checks, all passed.**
+    - **How:** the real clock (no `--now`), my production build on :3001 and the emulator. A QA customer had three Sunday + Tuesday recurring orders, set to `startsOn` Sun 4 and `generatedThrough` Sat 10, which is "yesterday's 2pm passed and no run happened". The locked date was Mon 12, a closed day at every branch, so the checks used today's locked date (Sun 11). The flip of *tomorrow* to locked at 2pm is covered by the unit tests and the `--now` runs above. **Decided 11 Oct 2026 not to re-run on a weekday.**
+    - **Closing row:** the detail's first row was `{Sun 11, closing}`, then no Mon 12 row, then Tue 13 `open`. `firstChangeable` was Tue 13, and the list's next pickup was Sun 11, closing.
+    - **Edit after the cutoff:**
+      - `skip` and `end_after` for Sun 11 and Mon 12 got 409 `date_locked`, "Orders for … have closed", with `version` unchanged.
+      - An item edit got 200. It first made MS-1055 for Sun 11 with the **old** items and note (4 × Plain bagel, $11.20). The new items apply from Tue 13. The stored start stayed (started), and the row showed `made` (AC-R4).
+      - **The UI message wasn't checked:** C12 is Batch B. Check its `date_locked` copy then.
+    - **Resume doesn't back-fill:** resuming a paused one got 200, made no Sun 11 order, moved the cursor to Mon 12, and the first row was Tue 13 `open` (AC-R6).
+    - **A2 catch-up:** QA Fitzroy staff's A2 list answered in 39 ms. `after()` then made MS-1056 (placed, at pickup, unpaid, the account's) and completed `fitzroy_2026-10-12` with 1 generated. `version` stayed 0, and no Northcote or Brunswick run record was written. A second A2 call made nothing, and A2's Sun 11 list included the order.
+    - **Test data:** the QA customer, its 3 recurring orders, MS-1055 and MS-1056, the QA staff user, the run record and this session's rate-limit docs are removed after a dry run. The counter isn't wound back, so MS-1055 and MS-1056 are used.
+    - The emulator's data predated step 12's seed (no paused Fitzroy order, no cursors). Rerun `bun run seed` before Batch B's QA.
+- **Undesigned copy (Batch A).** "No items" on A2's row. The generation note's separator ("; ") when more than one item is left out; the designs show one.
+- **Batch B: the screens (11 Oct 2026).** C10 to C12, C9's Recurring orders section, C1's "For cafes and regulars" and C8's recurring intro. All twelve plan questions were answered as recommended:
+  - Routes: `/account/recurring`, `/new`, `/[id]` and `/[id]/edit` (`routes.account.recurring.*`), all under the existing `/account` gate.
+  - Skip and Undo sit on every upcoming row; there's no separate "skip next".
+  - "Cancel" is "End recurring order", which opens the end sheet (Stop now, or After a pickup day). Nothing is ever deleted.
+  - C1's button always links to C11 new. A guest goes to C8 first, which shows the recurring intro (AC-R1, `signInPlace` context `recurring`). Signing up keeps the `returnTo`, so it lands on C11.
+  - The end sheet keeps the designed 14-day strip; days that aren't options are struck through. A later end is set in C11's month picker.
+  - C11 lists items sold out on the first day normally. Generation leaves them out with a note.
+  - An item that's left the menu stays in an edit, with a note. It can be lowered or removed but not raised (`max` = the quantity it has).
+  - The "2pm" in copy is the branch's `orderCutoffTime`.
+  - A made row's order number is plain text, as designed. **Possible follow-up:** link it to `/account/orders/{id}`.
+  - A version clash (409 `recurring_changed`) reloads the order into C11 or C12 and says why. Nothing is retried or merged.
+  - The limit of 10 shows only when saving (422).
+  - Ended orders stay in C10, listed last, with no "remove".
+  - **One additive API change:** the list and detail responses carry `today` (Melbourne). Without it, the browser would read its own clock to say "Today, Sun 11 Oct".
+  - **Admin:** no code changes. The A2/A3 Recurring tag was re-checked (below).
+  - **Unit tests:** `recurringText`, `recurringForm`, `recurringProblems` and `signInContext` (recurring context), 588 tests in all.
+- **Undesigned copy (Batch B).** All of it is in `recurringContent.ts`, marked undesigned. None of it mentions emails or reminders.
+  - **C12 rows and boxes:**
+    - The closing row: "Ordering for this day closed at {2pm Sat 10 Oct}. To change it, call {Brunswick} on {phone}."
+    - "Ended before its first pickup" (Stop now before the start).
+    - Off the menu: "Not on the menu at {branch} right now. We'll leave it out of each order until it's back." (C12 and C11).
+  - **Load errors:** "We couldn't load your recurring orders. / this recurring order. Check your connection and try again." with "Try again". C11's menu: "We couldn't load what this branch makes…".
+  - **Loading:** "Loading your recurring orders…", "Loading this recurring order…" and "Loading what this branch makes…".
+  - **404 page:** "Recurring order not found" / "We couldn't find that recurring order in your account." / "Back to recurring orders".
+  - **Refusals (`recurringProblems.ts`):**
+    - `recurring_changed`: "This recurring order changed in another window, so we've loaded the latest version. Check it and try again."
+    - `date_locked`: "Ordering for {Tue 13 Oct} has closed, so it can't change here. Call {branch} on {phone}."
+    - `not_allowed`: "This recurring order has ended, so it can't be changed." When paused: "Resume this recurring order to skip a day."
+    - `closed_day`: "{Branch} is closed on {Mondays}. Take that day off to save."
+    - `items_unavailable`: "{Name} isn't on the menu at {branch} now. Remove it to save."
+    - `start_too_early`: "The earliest start is now {day}. Choose that day or later." The start picker moves its earliest day to match.
+    - `not_scheduled`: "Choose one of your pickup days."
+    - `limit_reached`: "You already have 10 recurring orders, the most one account can have. End one to set up another."
+    - `rate_limited`: "Too many changes from this network. Wait 15 minutes and try again."
+    - `try_again` / `unavailable`: "We couldn't save that just now. Try again." Anything else: "…Check your connection and try again."
+  - **Pending labels:** "Starting…", "Saving…", "Pausing…", "Resuming…" and "Ending…".
+  - **Other changes from the designs:**
+    - C12's flash wording is as designed. Skip and Undo show no flash (as designed).
+    - C11's create back link always goes to C10. The design returns to C9 when opened from there.
+    - The C11 edit page for an ended order shows "This recurring order has ended, so it can't be changed." instead of the form.
+- **Batch B live checks (11 Oct 2026, a Sunday, about 4–5pm AEDT).** Ad hoc Playwright against my production build on :3001 and the freshly seeded emulator. Customer screens at 390px, A2/A3 at 1180px. Screenshots were inspected, then deleted. **All passed** after one fix (below).
+  - **Guest:** C1's block went to C8 with `returnTo=/account/recurring/new`, the recurring intro and a "Home" back link. Create an account then landed on C11. Signed in, C1's button opens C11 directly.
+  - **C11 create:**
+    - An empty save showed the three designed errors, with "Fix the 3 things marked above." and focus on the Branch section.
+    - Mondays showed as closed. Everything bagel wasn't listed at Brunswick. "$2.80 each today" showed.
+    - The footer read "4 items · Tue and Sun · Brunswick".
+    - Saving opened C12 with "Your recurring order is set up. First pickup Tue 13 Oct.", focused.
+  - **C12:**
+    - Skip moved focus to that row's Undo, and Undo (keyboard) moved it back to Skip.
+    - Pause showed its message (focused), the dashed Paused card and "No new pickups while paused." Resume showed "Resumed. Your next new order is for …". OK dismissed the message.
+  - **C11 edit:** branch locked, "Changes apply from …". Adding Thursday saved, and the page title became "Brunswick, Tue, Thu and Sun".
+  - **End sheet:**
+    - It opened with its title focused and "End it now" chosen. Escape returned focus to "End recurring order".
+    - "After a pickup day" had the first day ready, and ending said "This recurring order will end after {day}."
+    - Stop now gave the ended box, no actions and a focused message. Stopped before its first pickup, it read "Ended before its first pickup".
+  - **C10 and C9:** active first and ended last, as designed. C9: "1 recurring order. Next pickup Today, Sun 11 Oct." with "Manage recurring orders".
+  - **Real states:**
+    - The closing row ("Today, Sun 11 Oct"), with the order's start and cursor set back on QA data.
+    - Then a write made MS-1057, and the row read "Order MS-1057 is made…". C9's history showed MS-1057 with the Recurring tag.
+    - Plain bagel switched off at Brunswick: the note showed in C12 and C11, and the stepper couldn't go up but could go down. The row was put back exactly as it was.
+  - **Version clash (real):** a skip in a second tab, then Save in C11 edit. The message showed and the form reloaded (notes back to the saved ones). The next Save worked.
+  - **404:** an unknown ID, the seed's Corner Cup order (another account's) and a malformed ID all gave 404 with the account's wording.
+  - **Staff:** a staff session on `/account/recurring` went to C8, and the API answered 403. A2 at 1180px showed MS-1057 with the Recurring tag, and so did A3.
+  - **44px:** every button and button-styled link on C10, C11 and C12 was at least 44 × 44.
+  - **Checked with faked API answers (Playwright `route`), UI only.** The real clock can't produce these on demand; their server side was checked live in Batch A.
+    - `date_locked` on a skip: the message, the branch's phone link, and focus.
+    - `try_again` and `rate_limited` on Pause.
+    - `limit_reached` on create (focused).
+    - C11's menu failing to load, then Try again working.
+  - **Not checked live:** C10 and C12's load-error state. The server pre-fills both pages, so the browser only fetches when that read failed, which can't be forced without breaking Firestore. The state uses the same `LoadErrorNotice` as C9.
+  - **Fixed during the checks:** after a skip, focus fell to the page. The answer renders a moment after the request settles, so focus went to the old Skip button just before it was replaced. The row now waits for its new button (`data-row-kind`) before moving focus.
+  - **Test data:** the QA customer `batch.rec30@example.com`, its 2 recurring orders, MS-1057, the QA staff user and this session's rate-limit docs are removed after a dry run. The order counter isn't wound back, so MS-1057 is used.
+
 ## Investigated but unreproduced bugs
 
 _None yet._
@@ -381,6 +578,7 @@ _None yet._
 ## Data model notes
 
 - **`Order.accountId` (step 11):** see Customer accounts (step 11). Not in spec section 5. Always null or equal to `customerId` (checked by the order schema).
+- **Recurring orders (step 12):** `generatedThrough`, `version` and `updatedAt` aren't in spec section 5, and nor is the `generationRuns` collection. See Recurring orders (step 12).
 - **Deviations from spec section 5 (by design):** money is stored as integer cents (`priceCents`, `totalCents`, …), not decimals. Order items and recurring-order items/skips are embedded arrays, so `OrderItem.id` / `order_id` don't exist. Email uniqueness is enforced with `customerEmails` / `staffEmails` lock docs.
 - **Fruit loaf is Northcote-only in the seed.** No design has a branch-only product, so the seed also switches Fruit loaf off at Brunswick. The admin Products canvas shows "At 2 of 3 branches · not Fitzroy" for it.
 - **Seed sold-out dates follow the real clock.** They're set to each branch's earliest (and second) pickup date at seed time. A rerun on a later day moves them forward, and the designs' fixed dates (sold out Wed 30 Sep) won't match literally. Seeding before the 2pm cutoff and testing after it puts the "first" sold-out date on a day that can no longer be ordered. That happened in step 4: Fitzroy's Cinnamon scroll was sold out for Sun 4 Oct. To QA the C4 warning, rerun `bun run seed` on the day.
@@ -407,7 +605,7 @@ _None yet._
 - **Seed orders (step 6, Batch B).**
   - The admin canvases' orders, MS-1029 to MS-1046, plus MS-1027 (`expired`) and MS-1028 (`awaiting_payment`) to show they stay hidden. Doc IDs are `seed-ms-NNNN`. MS-1042 is generated from `recurringOrders/seed-corner-cup` with the ID `seed-corner-cup_{date}`.
   - Days follow the clock per branch: D0 is today, or the next open day; then the two open days after it, and the open day before. Times are fixed Melbourne times on those days, so a rerun on the same day changes nothing, and a rerun puts every seed order back to its seeded state. A seed run before about 8:30am gives some of D0's ready/collected times in the future. Seeding on a closed day (Monday, for every seeded branch) puts D0 on the next open day, so some history times are in the future too (e.g. MS-1037 cancelled 8:30am Tue and refunded earlier). Seed data only; left as is.
-  - The seed raises `counters/orders.next` to at least 1047, and refuses to run if a non-seed order holds a number from 1027 to 1046 (`bun run seed --reset` clears that). A generated MS-1042 from an earlier day's run is deleted.
+  - The seed raises `counters/orders.next` to at least 1047, and refuses to run if a non-seed order holds a number from 1027 to 1046 (`bun run seed --reset` clears that). A generated MS-1042 from an earlier day's run is deleted. Since step 12, only an MS-1042 is: orders the generation job made from `seed-corner-cup` are real orders and stay. A rerun never moves the cursor back.
   - The seed's guests (Priya Nair, Tom Walsh and others) are customers without passwords, as checkout creates them. Corner Cup Cafe has an account, since a recurring order needs one. Names, phones and the `cornercup.example.com`-style emails are from the canvases.
 - **Test orders on the emulator (3 Oct 2026).** Step 5's API checks left orders MS-1001 to MS-1005 and guest customers `ben.okafor@example.com` and `tap.twice@example.com` on the emulator. Step 6's Batch A checks added two "Test Batch A" pay-at-pickup orders (one at Fitzroy, one at Northcote) and the guest `batch.a@example.com`. `bun run seed --reset` clears them.
 - **Batch B QA orders (4 Oct 2026).** The emulator had no orders when Batch B started. QA placed MS-1047 to MS-1050 through checkout (guest `ben.okafor@example.com`) and then deleted them, so the counter is at 1052. The guest record stays.
@@ -609,7 +807,7 @@ _None yet._
     - A day the picker can't mark falls back to the earliest.
   - **The list refreshes every 60s.** A tap on a row changed elsewhere since gets a 409 (`availability_changed`, carrying the row now), and the row updates.
   - **The customer menu is fresh on every load.** The API is `no-store` and C2 renders per request. In an open tab, TanStack keeps a menu for 60s and refetches on focus (decided 5 Oct 2026: kept). Checkout rechecks on the server anyway.
-  - **The messages mention recurring orders** ("Recurring orders will leave it out…"), as on the canvas. Generating recurring orders isn't built yet.
+  - **The messages mention recurring orders** ("Recurring orders will leave it out…"), as on the canvas. Since step 12 that's what generation does (see Recurring orders (step 12)).
   - **Undesigned copy:**
     - The picker note after the cutoff ("…because orders closed at 2pm today") and when tomorrow is closed ("Earliest pickup is Wed 7 Oct.").
     - The orders lines: "3 orders for Tue 6 Oct already have it: MS-1040, MS-1042 and MS-1044. Those orders stay as placed, so call the customers if you can't make it." and "… still to collect already have it …", with "… and 7 more" past five.

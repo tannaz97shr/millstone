@@ -38,6 +38,17 @@ export const routes = {
       returnTo ? `/account/forgot-password?${new URLSearchParams({ returnTo })}` : "/account/forgot-password",
     /** One of the account's own orders. */
     order: (orderId: string) => `/account/orders/${encodeURIComponent(orderId)}`,
+    /** Recurring orders (C10 to C12). Signed in only, like the rest of /account. */
+    recurring: {
+      /** C10 My recurring orders. */
+      list: "/account/recurring",
+      /** C11 Set up a recurring order. */
+      new: "/account/recurring/new",
+      /** C12 one recurring order. */
+      detail: (recurringOrderId: string) => `/account/recurring/${encodeURIComponent(recurringOrderId)}`,
+      /** C11 Change recurring order. */
+      edit: (recurringOrderId: string) => `/account/recurring/${encodeURIComponent(recurringOrderId)}/edit`,
+    },
   },
   admin: {
     home: "/admin",

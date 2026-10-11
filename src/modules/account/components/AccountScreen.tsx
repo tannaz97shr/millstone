@@ -3,6 +3,7 @@
 import { Button } from "@/shared/components/atoms/Button/Button";
 import { Notice } from "@/shared/components/molecules/Notice/Notice";
 import { LoadingMessage } from "@/shared/components/molecules/LoadState/LoadState";
+import { RecurringSummarySection } from "@/modules/recurring-orders/components/RecurringSummarySection";
 import { routes } from "@/shared/routes";
 import { accountContent } from "../content/accountContent";
 import { useAccountSession } from "../hooks/useAccountSession";
@@ -15,8 +16,7 @@ const content = accountContent.myAccount;
 
 /**
  * C9 My account (AccountArea.dc.html, MyAccountNew.dc.html): details, the
- * account's orders and Sign out. The Recurring orders section comes with
- * recurring orders (next step).
+ * Recurring orders section, the account's orders and Sign out.
  */
 export function AccountScreen() {
   const session = useAccountSession();
@@ -31,6 +31,7 @@ export function AccountScreen() {
         {profile && <p className="text-ink-muted">{content.signedInAs(profile.email)}</p>}
       </div>
       {profile ? <ProfileSection profile={profile} /> : <LoadingMessage>{content.loading}</LoadingMessage>}
+      <RecurringSummarySection />
       <AccountOrders />
       <div className="flex flex-col items-start gap-3">
         {failed && <Notice tone="error">{content.signOutFailed}</Notice>}

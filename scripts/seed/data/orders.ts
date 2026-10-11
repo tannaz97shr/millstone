@@ -206,3 +206,16 @@ export const seedRecurring = {
     placedAt: at("D0", -1, "14:00"),
   },
 };
+
+/** The cafe's second recurring order, paused, as in RecList.dc.html (Fitzroy, Saturdays). */
+export const seedPausedRecurring = {
+  id: "seed-corner-cup-fitzroy",
+  branchId: FITZROY,
+  email: "orders@cornercup.example.com",
+  daysOfWeek: [6] as const,
+  notes: "",
+  items: [
+    [2, P.seeded],
+    [2, P.white],
+  ] as [number, ProductId][],
+};

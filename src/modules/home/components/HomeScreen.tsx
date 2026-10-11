@@ -6,6 +6,7 @@ import type { BranchSummary } from "@/modules/branches/types/branchSummary";
 import { cartContent } from "@/modules/cart/content/cartContent";
 import { useCart } from "@/modules/cart/hooks/useCart";
 import { cartCount } from "@/modules/cart/lib/cartLogic";
+import { RecurringPromo } from "@/modules/recurring-orders/components/RecurringPromo";
 import { Button } from "@/shared/components/atoms/Button/Button";
 import { ButtonLink } from "@/shared/components/atoms/ButtonLink/ButtonLink";
 import { ChoiceGroup, type ChoiceOption } from "@/shared/components/molecules/ChoiceGroup/ChoiceGroup";
@@ -42,7 +43,7 @@ function branchOption(branch: BranchSummary): ChoiceOption {
 
 /**
  * C1. The first visit, a branch already chosen, and back from the menu with
- * items: all three come from the stored cart.
+ * items: all three come from the stored cart. "For cafes and regulars" closes the page.
  */
 export function HomeScreen() {
   const branchesQuery = useBranchesQuery();
@@ -98,6 +99,8 @@ export function HomeScreen() {
           </ButtonLink>
         )}
       </section>
+
+      <RecurringPromo cutoff={branches.length ? sharedCutoff(branches) : null} />
 
       <BottomBar>
         {selected ? (
