@@ -33,6 +33,7 @@ The site runs on **Vercel**, on the Firebase project **`millstone-dc47f`**. That
   | `bun run seed:live` | seeds the demo data (idempotent, no reset) |
   | `bun run migrate:orders:live` | the order migration |
   | `bun run cleanup:smoke:live` | removes what the smoke test made |
+  | `bun run cleanup:recurring-smoke:live` | removes what the recurring smoke test made (`smoke-recurring@example.com` only) |
 
 ### One-time setup
 
@@ -91,6 +92,24 @@ Then clean up. Without `--yes`, the command only prints what it would delete:
 ```bash
 bun run cleanup:smoke:live -- --order=MS-NNNN --product=<product-id>
 bun run cleanup:smoke:live -- --order=MS-NNNN --product=<product-id> --yes
+```
+
+### Recurring orders smoke test
+
+Do it in one sitting that doesn't cross the 2pm cutoff, so nothing is generated. At 390px:
+- create an account as `smoke-recurring@example.com`
+- C1's "For cafes and regulars" opens C11: set up a Brunswick order (Tue + Sat, 2 items, the earliest start)
+- check C12's upcoming rows: all open, no Mondays, no closing row
+- skip the first row, reload, and check it's still skipped
+- end it now: C12 should say "Ended before its first pickup", and C9's order history should be empty
+
+The cron needs no secret in hand for a check: use Vercel → Settings → Cron Jobs → Run, then look in the logs for `[recurring generation] cron: …`.
+
+Then clean up, with a dry run first:
+
+```bash
+bun run cleanup:recurring-smoke:live
+bun run cleanup:recurring-smoke:live -- --yes
 ```
 
 ### What the live site does differently
