@@ -111,6 +111,7 @@ export async function listRecurringOrders(customerId: CustomerId, now: Date): Pr
       .map((summary, index) => ({ summary, index }))
       .sort((a, b) => ended(a.summary.status) - ended(b.summary.status) || a.index - b.index)
       .map(({ summary }) => summary),
+    today: melbourneDateOf(now),
   };
 }
 

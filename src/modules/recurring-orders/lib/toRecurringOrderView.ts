@@ -6,6 +6,7 @@ import {
   endDateOptions,
   firstChangeableDate,
   firstPickupFrom,
+  melbourneDateOf,
   nextPickup,
   stopNowEndsOn,
   upcomingPickups,
@@ -78,6 +79,7 @@ export function toRecurringOrderDetail(input: RecurringViewInput): RecurringOrde
   const from = recurringOrder.startsOn > firstChangeable ? recurringOrder.startsOn : firstChangeable;
   return {
     ...toRecurringOrderSummary(input),
+    today: melbourneDateOf(now),
     notes: recurringOrder.notes,
     upcoming: upcomingPickups(recurringOrder, branch, now, made),
     firstChangeable,

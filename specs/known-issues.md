@@ -83,7 +83,7 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
 
 - ~~**Admin free-text search (AC-A3).**~~ Resolved 4 Oct 2026 (step 6, Batch B): orders store `searchTokens` (see Data model notes), searched with `array-contains` plus two composite indexes.
 - ~~**Category display order.**~~ Resolved 1 Oct 2026 (step 3): `settings/catalog` holds `categoryOrder` (seeded Breads, Pastries, Bagels). Categories not listed go last, A–Z. When A5 lets the owner type a new category, it should append it to this list.
-- **"For cafes and regulars" (step 3).** In `design/customer/Home.dc.html`, left out until the recurring-order step (step 12, Batch B). ~~The C1 and C2 header Sign in~~ Built in step 11.
+- ~~**"For cafes and regulars" (step 3).**~~ Built in step 12, Batch B (`RecurringPromo` on C1). ~~The C1 and C2 header Sign in~~ Built in step 11.
 - **Recurring orders: paying online (step 12, deferred).** Generated orders are always pay at pickup (spec 6, 8). A "Pay online now" for a generated order would go through the payment adapter's `createCheckout`, like checkout. Not built.
 - **Recurring orders: no emails (step 12).** Generated orders send no confirmation, and nothing promises a reminder. Customers see them in C9 and C12. Once email exists, a generated-order email could go out from the generation transaction's caller, like checkout's.
 - **Checkout: accounts and online payment (step 5).**
@@ -494,6 +494,78 @@ Signed-in customers' standing orders (spec 8, AC-R1 to R10). Started 10 Oct 2026
     - **Test data:** the QA customer, its 3 recurring orders, MS-1055 and MS-1056, the QA staff user, the run record and this session's rate-limit docs are removed after a dry run. The counter isn't wound back, so MS-1055 and MS-1056 are used.
     - The emulator's data predated step 12's seed (no paused Fitzroy order, no cursors). Rerun `bun run seed` before Batch B's QA.
 - **Undesigned copy (Batch A).** "No items" on A2's row. The generation note's separator ("; ") when more than one item is left out; the designs show one.
+- **Batch B: the screens (11 Oct 2026).** C10 to C12, C9's Recurring orders section, C1's "For cafes and regulars" and C8's recurring intro. All twelve plan questions were answered as recommended:
+  - Routes: `/account/recurring`, `/new`, `/[id]` and `/[id]/edit` (`routes.account.recurring.*`), all under the existing `/account` gate.
+  - Skip and Undo sit on every upcoming row; there's no separate "skip next".
+  - "Cancel" is "End recurring order", which opens the end sheet (Stop now, or After a pickup day). Nothing is ever deleted.
+  - C1's button always links to C11 new. A guest goes to C8 first, which shows the recurring intro (AC-R1, `signInPlace` context `recurring`). Signing up keeps the `returnTo`, so it lands on C11.
+  - The end sheet keeps the designed 14-day strip; days that aren't options are struck through. A later end is set in C11's month picker.
+  - C11 lists items sold out on the first day normally. Generation leaves them out with a note.
+  - An item that's left the menu stays in an edit, with a note. It can be lowered or removed but not raised (`max` = the quantity it has).
+  - The "2pm" in copy is the branch's `orderCutoffTime`.
+  - A made row's order number is plain text, as designed. **Possible follow-up:** link it to `/account/orders/{id}`.
+  - A version clash (409 `recurring_changed`) reloads the order into C11 or C12 and says why. Nothing is retried or merged.
+  - The limit of 10 shows only when saving (422).
+  - Ended orders stay in C10, listed last, with no "remove".
+  - **One additive API change:** the list and detail responses carry `today` (Melbourne). Without it, the browser would read its own clock to say "Today, Sun 11 Oct".
+  - **Admin:** no code changes. The A2/A3 Recurring tag was re-checked (below).
+  - **Unit tests:** `recurringText`, `recurringForm`, `recurringProblems` and `signInContext` (recurring context), 588 tests in all.
+- **Undesigned copy (Batch B).** All of it is in `recurringContent.ts`, marked undesigned. None of it mentions emails or reminders.
+  - **C12 rows and boxes:**
+    - The closing row: "Ordering for this day closed at {2pm Sat 10 Oct}. To change it, call {Brunswick} on {phone}."
+    - "Ended before its first pickup" (Stop now before the start).
+    - Off the menu: "Not on the menu at {branch} right now. We'll leave it out of each order until it's back." (C12 and C11).
+  - **Load errors:** "We couldn't load your recurring orders. / this recurring order. Check your connection and try again." with "Try again". C11's menu: "We couldn't load what this branch makes…".
+  - **Loading:** "Loading your recurring orders…", "Loading this recurring order…" and "Loading what this branch makes…".
+  - **404 page:** "Recurring order not found" / "We couldn't find that recurring order in your account." / "Back to recurring orders".
+  - **Refusals (`recurringProblems.ts`):**
+    - `recurring_changed`: "This recurring order changed in another window, so we've loaded the latest version. Check it and try again."
+    - `date_locked`: "Ordering for {Tue 13 Oct} has closed, so it can't change here. Call {branch} on {phone}."
+    - `not_allowed`: "This recurring order has ended, so it can't be changed." When paused: "Resume this recurring order to skip a day."
+    - `closed_day`: "{Branch} is closed on {Mondays}. Take that day off to save."
+    - `items_unavailable`: "{Name} isn't on the menu at {branch} now. Remove it to save."
+    - `start_too_early`: "The earliest start is now {day}. Choose that day or later." The start picker moves its earliest day to match.
+    - `not_scheduled`: "Choose one of your pickup days."
+    - `limit_reached`: "You already have 10 recurring orders, the most one account can have. End one to set up another."
+    - `rate_limited`: "Too many changes from this network. Wait 15 minutes and try again."
+    - `try_again` / `unavailable`: "We couldn't save that just now. Try again." Anything else: "…Check your connection and try again."
+  - **Pending labels:** "Starting…", "Saving…", "Pausing…", "Resuming…" and "Ending…".
+  - **Other changes from the designs:**
+    - C12's flash wording is as designed. Skip and Undo show no flash (as designed).
+    - C11's create back link always goes to C10. The design returns to C9 when opened from there.
+    - The C11 edit page for an ended order shows "This recurring order has ended, so it can't be changed." instead of the form.
+- **Batch B live checks (11 Oct 2026, a Sunday, about 4–5pm AEDT).** Ad hoc Playwright against my production build on :3001 and the freshly seeded emulator. Customer screens at 390px, A2/A3 at 1180px. Screenshots were inspected, then deleted. **All passed** after one fix (below).
+  - **Guest:** C1's block went to C8 with `returnTo=/account/recurring/new`, the recurring intro and a "Home" back link. Create an account then landed on C11. Signed in, C1's button opens C11 directly.
+  - **C11 create:**
+    - An empty save showed the three designed errors, with "Fix the 3 things marked above." and focus on the Branch section.
+    - Mondays showed as closed. Everything bagel wasn't listed at Brunswick. "$2.80 each today" showed.
+    - The footer read "4 items · Tue and Sun · Brunswick".
+    - Saving opened C12 with "Your recurring order is set up. First pickup Tue 13 Oct.", focused.
+  - **C12:**
+    - Skip moved focus to that row's Undo, and Undo (keyboard) moved it back to Skip.
+    - Pause showed its message (focused), the dashed Paused card and "No new pickups while paused." Resume showed "Resumed. Your next new order is for …". OK dismissed the message.
+  - **C11 edit:** branch locked, "Changes apply from …". Adding Thursday saved, and the page title became "Brunswick, Tue, Thu and Sun".
+  - **End sheet:**
+    - It opened with its title focused and "End it now" chosen. Escape returned focus to "End recurring order".
+    - "After a pickup day" had the first day ready, and ending said "This recurring order will end after {day}."
+    - Stop now gave the ended box, no actions and a focused message. Stopped before its first pickup, it read "Ended before its first pickup".
+  - **C10 and C9:** active first and ended last, as designed. C9: "1 recurring order. Next pickup Today, Sun 11 Oct." with "Manage recurring orders".
+  - **Real states:**
+    - The closing row ("Today, Sun 11 Oct"), with the order's start and cursor set back on QA data.
+    - Then a write made MS-1057, and the row read "Order MS-1057 is made…". C9's history showed MS-1057 with the Recurring tag.
+    - Plain bagel switched off at Brunswick: the note showed in C12 and C11, and the stepper couldn't go up but could go down. The row was put back exactly as it was.
+  - **Version clash (real):** a skip in a second tab, then Save in C11 edit. The message showed and the form reloaded (notes back to the saved ones). The next Save worked.
+  - **404:** an unknown ID, the seed's Corner Cup order (another account's) and a malformed ID all gave 404 with the account's wording.
+  - **Staff:** a staff session on `/account/recurring` went to C8, and the API answered 403. A2 at 1180px showed MS-1057 with the Recurring tag, and so did A3.
+  - **44px:** every button and button-styled link on C10, C11 and C12 was at least 44 × 44.
+  - **Checked with faked API answers (Playwright `route`), UI only.** The real clock can't produce these on demand; their server side was checked live in Batch A.
+    - `date_locked` on a skip: the message, the branch's phone link, and focus.
+    - `try_again` and `rate_limited` on Pause.
+    - `limit_reached` on create (focused).
+    - C11's menu failing to load, then Try again working.
+  - **Not checked live:** C10 and C12's load-error state. The server pre-fills both pages, so the browser only fetches when that read failed, which can't be forced without breaking Firestore. The state uses the same `LoadErrorNotice` as C9.
+  - **Fixed during the checks:** after a skip, focus fell to the page. The answer renders a moment after the request settles, so focus went to the old Skip button just before it was replaced. The row now waits for its new button (`data-row-kind`) before moving focus.
+  - **Test data:** the QA customer `batch.rec30@example.com`, its 2 recurring orders, MS-1057, the QA staff user and this session's rate-limit docs are removed after a dry run. The order counter isn't wound back, so MS-1057 is used.
 
 ## Investigated but unreproduced bugs
 

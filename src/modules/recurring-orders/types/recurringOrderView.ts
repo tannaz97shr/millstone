@@ -50,6 +50,8 @@ export interface RecurringOrderSummary {
 
 /** C12, and C11's edit form. */
 export interface RecurringOrderDetail extends RecurringOrderSummary {
+  /** Today in Melbourne, so the browser can say "Today, Sun 11 Oct" without reading its own clock. */
+  today: IsoDate;
   notes: string;
   /** Up to six rows from today: made, closing, skipped or open (AC-R5). */
   upcoming: UpcomingPickup[];
@@ -69,4 +71,6 @@ export interface RecurringOrderDetail extends RecurringOrderSummary {
 
 export interface RecurringOrdersResponse {
   recurringOrders: RecurringOrderSummary[];
+  /** Today in Melbourne (see RecurringOrderDetail.today). */
+  today: IsoDate;
 }

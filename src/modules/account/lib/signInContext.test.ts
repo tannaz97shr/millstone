@@ -18,6 +18,16 @@ describe("signInPlace", () => {
     expect(signInPlace("/")).toEqual({ context: "home", returnTo: "/", backHref: "/" });
   });
 
+  test("a recurring-order page says why an account is needed, returns there, with Home as the back link", () => {
+    for (const path of ["/account/recurring", "/account/recurring/new", "/account/recurring/abc123/edit"]) {
+      expect(signInPlace(path)).toEqual({ context: "recurring", returnTo: path, backHref: "/" });
+    }
+  });
+
+  test("a path that only starts like the recurring pages isn't one", () => {
+    expect(signInPlace("/account/recurringx").context).toBe("home");
+  });
+
   test("a gated account page returns there, with Home as the back link", () => {
     expect(signInPlace("/account/orders/abc")).toEqual({
       context: "home",

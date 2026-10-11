@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AccountScreen } from "@/modules/account/components/AccountScreen";
 import { accountContent } from "@/modules/account/content/accountContent";
 import { prefetchAccountOrders } from "@/modules/account/lib/prefetchAccountOrders";
+import { prefetchRecurringOrders } from "@/modules/recurring-orders/lib/prefetchRecurring";
 import { getOptionalCustomer } from "@/modules/auth/lib/requireSession";
 import { getQueryClient } from "@/shared/lib/query/getQueryClient";
 import { routes } from "@/shared/routes";
@@ -17,7 +18,10 @@ export default async function MyAccountPage() {
   if (!customer) redirect(routes.account.signIn(routes.account.home));
 
   const queryClient = getQueryClient();
-  await prefetchAccountOrders(queryClient, customer.id);
+  await Promise.all([
+    prefetchAccountOrders(queryClient, customer.id),
+    prefetchRecurringOrders(queryClient, customer.id),
+  ]);
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <AccountScreen />
