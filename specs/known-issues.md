@@ -52,8 +52,14 @@ Maintained by Claude Code. The spec (`millstone-spec.md`) stays the source of tr
     - **Left on live by design:** the hidden `smoke-test-loaf` product. There's no hard delete; cleanup removes its photo, so it goes back to its letter. The order counter also stays past 1047. A rerun's product would get the ID `smoke-test-loaf-2`.
     - **Cleanup:** `bun run cleanup:smoke:live -- --order=MS-1047 --product=smoke-test-loaf`, then the same command with `--yes`.
 - **Firestore TTL policies (step 9).** On collection group `rateLimits`, field `expiresAt`; on collection group `signInThrottle`, field `expiresAt`. First set by hand; since 10 Oct 2026 they're `fieldOverrides` in `firestore.indexes.json` (`"ttl": true`, with the default ascending, descending and array-contains index settings, matching what the live project has), so `firebase deploy --only firestore:indexes` keeps them instead of offering to delete them. Customer sign-in records (step 11) share `signInThrottle`, so the same policy prunes them. TTL deletes within about 24 hours of expiry; reads check their own window, so a late delete changes nothing. Throttle records saved before step 9 have no `expiresAt` and are never pruned (a handful at most).
-- **Customer accounts index (step 11).** Deploy the new orders index (`accountId` ASC, `pickupDate` DESC, `createdAt` DESC) to the live project before step 11 is merged: `bunx firebase deploy --only firestore:indexes --project live`. Without it, C9's history (`GET /api/account/orders`) fails with `FAILED_PRECONDITION` on live. The emulator doesn't need it.
-- **Recurring orders (step 12): by hand before merging.**
+- ~~**Customer accounts index (step 11).**~~ Done: confirmed Enabled on live in the step 12 rollout (11 Oct 2026). Deploy the new orders index (`accountId` ASC, `pickupDate` DESC, `createdAt` DESC) to the live project before step 11 is merged: `bunx firebase deploy --only firestore:indexes --project live`. Without it, C9's history (`GET /api/account/orders`) fails with `FAILED_PRECONDITION` on live. The emulator doesn't need it.
+- ~~**Recurring orders (step 12): by hand before merging.**~~ Done 11 Oct 2026, just after the merge (958b8af was already serving, with the cron answering 503 until then):
+  - `bunx firebase deploy --only firestore:rules,firestore:indexes --project live`: all 12 composite indexes Enabled, and the three TTL policies (`rateLimits`, `signInThrottle`, `generationRuns`) on.
+  - `bun run seed:live`.
+  - `CRON_SECRET` added in Vercel (Production only, Sensitive), then a redeploy.
+  - A manual Run from Vercel's Cron Jobs page (Sun 11 Oct, after 2pm) logged `[recurring generation] cron: northcote through 2026-10-12 done, 0 made, 0 failed; fitzroy …; brunswick …` (the same for both). That's right: Mon 12 was the last locked date, and every branch is closed on Mondays.
+  - **Still to check:** the first *scheduled* run's log, which should be a 200 from `vercel-cron/1.0` between 04:00 and 04:59 UTC. Then the live recurring smoke test and its cleanup (`cleanup:recurring-smoke:live`, see Tooling).
+  - What was asked for, kept for reference:
   - **`CRON_SECRET`** in Vercel (Production only, Sensitive): `openssl rand -hex 32`. Without it the cron route answers 503 and logs "Recurring generation is off: CRON_SECRET is not set"; orders are still made when staff open A2 or a customer changes a recurring order. Locally, add one to `.env.local` only to call the cron route by hand.
   - **Indexes:** `bunx firebase deploy --only firestore:indexes --project live` adds the `generationRuns` TTL policy (`expiresAt`). No new composite index: the recurring-order queries use the two that were already there, and `(recurringOrderId, pickupDate)` on orders.
   - **Seed:** rerun `bun run seed` (emulator) and `bun run seed:live`, so the seeded recurring orders carry the new fields and the paused Fitzroy one exists. Without a rerun they still read (defaults), with no cursor.
@@ -896,6 +902,14 @@ _None yet._
 - **`next-env.d.ts` is tracked** even though `.gitignore` lists it; Next regenerates it on every build.
 - **Live mode (step 8 as "staging", renamed in step 9, 5 Oct 2026).** Runs the app or a script locally against the live project `millstone-dc47f`: the public site's data.
   - **Commands.**
+    - **`bun run cleanup:recurring-smoke:live [-- --yes]` (step 12 rollout, 11 Oct 2026).** It removes what the recurring smoke test leaves, for the one hard-coded account `smoke-recurring@example.com` only:
+      - its recurring orders (any status);
+      - any orders by `customerId` or `accountId`;
+      - the customer and its email lock;
+      - its customer `signInThrottle` doc;
+      - every `rateLimits` doc.
+
+      It never touches `generationRuns`, and the order counter stays. It's a dry run without `--yes`. It refuses, deleting nothing, if the email lock points at a customer with another email. Rehearsed on the emulator with fixture docs, all as expected: dry run, `--yes`, a rerun ("no account"), another customer's docs kept, and the email-mismatch refusal.
     - `bun run dev:live`, `bun run seed:live`, `bun run migrate:orders:live` and `bun run cleanup:smoke:live` read only the gitignored `.env.live.local` (names in the committed `.env.live.local.example`), through `bun --no-env-file --env-file=…`.
     - `.firebaserc` has the alias `live`.
     - `dev:live` and `seed:live` print a boxed "LIVE DATA: millstone-dc47f" warning before they start.
