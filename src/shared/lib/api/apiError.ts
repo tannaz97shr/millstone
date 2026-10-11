@@ -88,6 +88,21 @@ export type ApiErrorCode =
   | "unsupported_image"
   /** Admin (A5): a photo smaller than the minimum size (422). */
   | "image_too_small"
+  /**
+   * Recurring orders: saved on another screen since this one read it (409).
+   * Carries the version now; nothing is written.
+   */
+  | "recurring_changed"
+  /** Recurring orders (C12): that pickup day's cutoff has passed; only a call to the branch changes it (409). */
+  | "date_locked"
+  /** Recurring orders (C12): not one of this order's pickup days, or not in a state that allows the action (409). */
+  | "not_scheduled"
+  /** Recurring orders (C11): the account already has the most live recurring orders allowed (422). */
+  | "limit_reached"
+  /** Recurring orders (C11): a start date before the earliest pickup the branch takes (422). Carries `earliest`. */
+  | "start_too_early"
+  /** A cutoff passed while saving; the same request a moment later works (503). */
+  | "try_again"
   /** Firestore didn't answer in time (503). */
   | "unavailable"
   | "server_error";

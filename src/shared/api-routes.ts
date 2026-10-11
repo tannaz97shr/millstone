@@ -26,10 +26,22 @@ export const apiRoutes = {
     order: (orderId: string) => `/api/account/orders/${encodeURIComponent(orderId)}`,
     /** POST: C7's "Save your details": an account from a guest order (AC-C10). */
     fromOrder: "/api/account/from-order",
+    /** GET: the account's recurring orders (C10, C9); POST: a new one (C11). */
+    recurringOrders: "/api/account/recurring-orders",
+    /** GET: one recurring order with its upcoming pickups (C12); PATCH: save changes (C11 edit). */
+    recurringOrder: (recurringOrderId: string) =>
+      `/api/account/recurring-orders/${encodeURIComponent(recurringOrderId)}`,
+    /** POST: pause, resume, skip, unskip or end (C12). */
+    recurringOrderAction: (recurringOrderId: string) =>
+      `/api/account/recurring-orders/${encodeURIComponent(recurringOrderId)}/actions`,
   },
   webhooks: {
     /** POST, from Stripe only: signed payment events (checkout paid or expired). */
     stripe: "/api/webhooks/stripe",
+  },
+  cron: {
+    /** GET, from Vercel Cron only (Bearer CRON_SECRET): daily recurring-order generation. Also named in vercel.json. */
+    recurringOrders: "/api/cron/recurring-orders",
   },
   admin: {
     /** POST: staff sign-in (A1). */

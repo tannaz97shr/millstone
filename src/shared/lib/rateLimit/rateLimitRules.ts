@@ -26,6 +26,10 @@ export const RATE_LIMITS = {
   customerSignUp: { id: "customer-sign-up", limit: 10, windowMs: 60 * MINUTE_MS },
   /** Signed-in changes to an account (C9 profile). */
   accountWrite: { id: "account-write", limit: 30, windowMs: 15 * MINUTE_MS },
+  /** New recurring orders (C11). On top of the per-account cap (MAX_LIVE_RECURRING_ORDERS). */
+  recurringCreate: { id: "recurring-create", limit: 10, windowMs: 60 * MINUTE_MS },
+  /** Changes to recurring orders: C11 edits and C12's pause, resume, skip, undo and end. */
+  recurringWrite: { id: "recurring-write", limit: 30, windowMs: 15 * MINUTE_MS },
 } as const satisfies Record<string, RateLimitPolicy>;
 
 export interface RateLimitState {

@@ -14,6 +14,7 @@ bun run seed           # demo data into the emulator (--reset wipes it first)
 bun run dev            # http://localhost:3000, settings from .env.local
 bun run test           # unit tests for the pure rules
 bun run lint
+bun run recurring:generate   # recurring orders due now: a dry run; add -- --yes to make them (emulator only)
 ```
 
 ## Deploying
@@ -40,7 +41,9 @@ The site runs on **Vercel**, on the Firebase project **`millstone-dc47f`**. That
    ```bash
    gcloud firestore fields ttls update expiresAt --collection-group=rateLimits --enable-ttl --project=millstone-dc47f
    gcloud firestore fields ttls update expiresAt --collection-group=signInThrottle --enable-ttl --project=millstone-dc47f
+   gcloud firestore fields ttls update expiresAt --collection-group=generationRuns --enable-ttl --project=millstone-dc47f
    ```
+   All three are also `fieldOverrides` in `firestore.indexes.json`, so step 3 creates them too.
 3. **Rules and indexes** (only when `firestore.rules`, `firestore.indexes.json` or `storage.rules` change):
    ```bash
    bunx firebase deploy --only firestore:rules,firestore:indexes,storage --project live
@@ -60,6 +63,7 @@ The site runs on **Vercel**, on the Firebase project **`millstone-dc47f`**. That
    | `AUTH_SECRET` | a new secret: `openssl rand -base64 33` |
    | `AUTH_TRUST_HOST` | `true` |
    | `ONLINE_PAYMENTS_ENABLED` | `false` |
+   | `CRON_SECRET` | a new secret: `openssl rand -hex 32`. Vercel Cron sends it to `/api/cron/recurring-orders`; without it, recurring orders are made only when staff open A2 or a customer changes one |
 
    **Never set:** any `*_EMULATOR_HOST` variable (not even empty), `DEV_PAGES`, `GOOGLE_APPLICATION_CREDENTIALS` or `SEED_*`.
 
@@ -95,4 +99,5 @@ bun run cleanup:smoke:live -- --order=MS-NNNN --product=<product-id> --yes
 - **`/dev/*` is a 404**, whatever `DEV_PAGES` says.
 - **Photos:** uploads must be under 4 MB, so A5 shrinks photos in the browser first.
 - **Rate limits:** orders are limited to 10 per address per hour, and staff sign-in to 20 per address per 15 minutes.
+- **Recurring orders** are made by a daily Vercel Cron job at 04:00 UTC (2pm AEST, 3pm AEDT; Hobby runs it within that hour), and sooner whenever staff open A2 after the cutoff. Crons only run on the production deployment.
 - **Headers:** security headers and a static-friendly CSP are set in `next.config.mjs`.

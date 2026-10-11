@@ -71,7 +71,7 @@ export function OrderGroups({
                       payment={row.paymentLabel}
                       customerName={row.contactName}
                       phone={row.contactPhone}
-                      items={row.items}
+                      items={row.items.length > 0 ? row.items : content.noItems}
                       totalCents={row.totalCents}
                       recurring={row.recurring}
                       notes={row.notes ?? undefined}
